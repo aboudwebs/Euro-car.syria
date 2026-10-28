@@ -8,6 +8,7 @@ import '../../core/models.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
 import '../../widgets/app_bar.dart';
+import '../../widgets/backdrop.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/inputs.dart';
 import '../../widgets/panel.dart';
@@ -32,12 +33,15 @@ class PartDetailsScreen extends StatelessWidget {
     }
 
     final Part? found = part;
-    return Scaffold(
-      appBar: buildScreenBar(context, 'تفاصيل القطعة'),
-      body: SafeArea(
-        child: found == null ? _missing(context, state) : _Details(part: found),
+    return AppBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: buildScreenBar(context, 'تفاصيل القطعة'),
+        body: SafeArea(
+          child: found == null ? _missing(context, state) : _Details(part: found),
+        ),
+        bottomNavigationBar: found == null ? null : _BuyBar(part: found),
       ),
-      bottomNavigationBar: found == null ? null : _BuyBar(part: found),
     );
   }
 
@@ -82,41 +86,43 @@ class _Details extends StatelessWidget {
     final String? altGrade = part.altGrade;
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
       children: <Widget>[
+        Text(
+          part.name,
+          style: TextStyle(
+            color: p.text,
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
+            height: 1.3,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          'تفاصيل القطعة والسعر والتوافق مع السيارات',
+          style: TextStyle(color: p.muted, fontSize: 14, height: 1.45),
+        ),
+        const SizedBox(height: 18),
         Panel(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(
-                part.brand,
-                style: TextStyle(color: p.primary, fontSize: 14, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                part.name,
-                style: TextStyle(
-                  color: p.text,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 16),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
-                        Text('رقم القطعة', style: TextStyle(color: p.muted, fontSize: 13)),
-                        const SizedBox(height: 6),
+                        Text('رقم القطعة', style: TextStyle(color: p.primary, fontSize: 14)),
+                        const SizedBox(height: 4),
                         PartNumberPlate(number: part.pn, large: true),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 12),
                   StatusChip(
                     label: part.inStock ? 'متوفرة' : 'غير متوفرة',
                     tone: part.inStock ? StatusTone.success : StatusTone.waiting,
@@ -131,68 +137,87 @@ class _Details extends StatelessWidget {
               const SizedBox(height: 14),
               Divider(color: p.line),
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
+                padding: const EdgeInsets.symmetric(vertical: 14),
                 child: Row(
                   children: <Widget>[
                     Text('السعر', style: TextStyle(color: p.muted, fontSize: 14)),
                     const Spacer(),
                     Text(
                       formatUsd(part.price),
-                      style: TextStyle(color: p.primary, fontSize: 28, fontWeight: FontWeight.w900),
+                      style: TextStyle(color: p.primary, fontSize: 26, fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
               ),
               Divider(color: p.line),
-              InfoRow(label: 'الماركة الأساسية', value: part.brand),
-              if (part.inStock)
+              const SizedBox(height: 12),
+              Text(
+                'الماركة الأساسية',
+                style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                part.brand,
+                style: TextStyle(color: p.text.withValues(alpha: 0.8), fontSize: 15),
+              ),
+              if (part.inStock) ...<Widget>[
+                const SizedBox(height: 6),
                 InfoRow(
                   label: 'الكمية المتاحة',
                   value: '${part.stock}',
                   valueColor: part.lowStock ? p.warn : null,
                 ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        Panel(
-          color: p.primary.withValues(alpha: 0.09),
-          borderColor: p.primary.withValues(alpha: 0.35),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Icon(Icons.check_circle_outline_rounded, color: p.primary, size: 21),
-                  const SizedBox(width: 8),
-                  Text(
-                    'التوافق مع السيارات',
-                    style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w800),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                fit.isNotEmpty
-                    ? fit
-                    : 'قائمة الموديلات والسنوات المتوافقة غير مسجّلة لهذه القطعة، لذلك لن نعرض توافقاً غير مؤكّد. '
-                        'أرسل رقم الشاصي (VIN) أو اطلب مطابقة رقم القطعة للتأكد من توافقها مع سيارتك قبل الشراء.',
-                style: TextStyle(color: p.text, fontSize: 14, height: 1.7),
-              ),
-              if (altGrade != null) ...<Widget>[
-                const SizedBox(height: 8),
-                Text(
-                  'درجة البديل: $altGrade',
-                  style: TextStyle(color: p.muted, fontSize: 13.5),
-                ),
               ],
-              const SizedBox(height: 6),
-              TextButton(
-                onPressed: () => openSpecialRequestForPart(context, part),
-                child: const Text(
-                  'طلب مطابقة أو قطعة خاصة',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: p.accent.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: p.accent.withValues(alpha: 0.30)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Row(
+                          children: <Widget>[
+                            Icon(Icons.check_circle_outline_rounded, color: p.primary, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'التوافق مع السيارات',
+                              style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          fit.isNotEmpty
+                              ? fit
+                              : 'قائمة الموديلات والسنوات المتوافقة غير مسجّلة لهذه القطعة، لذلك لن نعرض توافقاً غير مؤكّد. '
+                                  'أرسل رقم الشاصي (VIN) أو اطلب مطابقة رقم القطعة للتأكد من توافقها مع سيارتك قبل الشراء.',
+                          style: TextStyle(color: p.text.withValues(alpha: 0.8), fontSize: 14, height: 1.7),
+                        ),
+                        if (altGrade != null) ...<Widget>[
+                          const SizedBox(height: 8),
+                          Text(
+                            'درجة البديل: $altGrade',
+                            style: TextStyle(color: p.muted, fontSize: 13.5),
+                          ),
+                        ],
+                        const SizedBox(height: 6),
+                        TextButton(
+                          onPressed: () => openSpecialRequestForPart(context, part),
+                          child: const Text(
+                            'طلب مطابقة أو قطعة خاصة',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -251,8 +276,11 @@ class _BuyBar extends StatelessWidget {
       );
     }
 
-    return Material(
-      color: p.panel,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: p.barBg,
+        border: Border(top: BorderSide(color: p.barLine)),
+      ),
       child: SafeArea(
         top: false,
         child: Padding(

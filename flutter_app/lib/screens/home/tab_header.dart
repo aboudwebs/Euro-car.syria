@@ -1,4 +1,4 @@
-// The title area at the top of every main tab.
+// The title area at the top of every main tab (the web app's page heading: a 24 px title and a muted subtitle).
 
 import 'package:flutter/material.dart';
 
@@ -21,7 +21,7 @@ class TabHeader extends StatelessWidget {
     final Palette p = Palette.of(context);
     final String? sub = subtitle;
     return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(16, 14, 8, 6),
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 8),
       child: Row(
         children: <Widget>[
           Expanded(
@@ -33,15 +33,16 @@ class TabHeader extends StatelessWidget {
                   style: TextStyle(
                     color: p.text,
                     fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    height: 1.2,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    height: 1.25,
                   ),
                 ),
                 if (sub != null && sub.isNotEmpty) ...<Widget>[
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 3),
                   Text(
                     sub,
-                    style: TextStyle(color: p.muted, fontSize: 13.5, height: 1.4),
+                    style: TextStyle(color: p.muted, fontSize: 14, height: 1.45),
                   ),
                 ],
               ],

@@ -1,4 +1,5 @@
 // Orders tab: the caller's orders (GET /api/orders) and special requests (GET /api/special-requests).
+// The switch between the two lists is the web app's inset segmented track.
 
 import 'package:flutter/material.dart';
 
@@ -7,6 +8,8 @@ import '../../state/app_state.dart';
 import '../../theme/palette.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/inputs.dart';
+import '../../widgets/panel.dart';
+import '../../widgets/segmented.dart';
 import '../home/tab_header.dart';
 import '../special/special_request_screen.dart';
 import 'order_card.dart';
@@ -27,25 +30,13 @@ class OrdersScreen extends StatelessWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-          child: SegmentedButton<OrdersView>(
-            segments: const <ButtonSegment<OrdersView>>[
-              ButtonSegment<OrdersView>(
-                value: OrdersView.orders,
-                label: Text('الطلبات'),
-                icon: Icon(Icons.receipt_long_outlined),
-              ),
-              ButtonSegment<OrdersView>(
-                value: OrdersView.requests,
-                label: Text('الطلبات الخاصة'),
-                icon: Icon(Icons.travel_explore_rounded),
-              ),
+          child: SegmentedTrack<OrdersView>(
+            selected: view,
+            onChanged: state.setOrdersView,
+            options: const <SegmentOption<OrdersView>>[
+              SegmentOption<OrdersView>(value: OrdersView.orders, label: 'الطلبات'),
+              SegmentOption<OrdersView>(value: OrdersView.requests, label: 'الطلبات الخاصة'),
             ],
-            selected: <OrdersView>{view},
-            showSelectedIcon: false,
-            expandedInsets: EdgeInsets.zero,
-            onSelectionChanged: (Set<OrdersView> selection) {
-              state.setOrdersView(selection.first);
-            },
           ),
         ),
         Expanded(
@@ -95,12 +86,15 @@ class _OrdersList extends StatelessWidget {
             ),
             const SizedBox(height: 10),
           ],
-          EmptyState(
-            icon: Icons.receipt_long_outlined,
-            title: 'لا توجد طلبات بعد',
-            message: 'ستظهر طلباتك هنا بعد إتمام أول عملية شراء.',
-            actionLabel: 'تصفّح الكتالوج',
-            onAction: () => state.selectTab(tabCatalog),
+          Panel(
+            padding: EdgeInsets.zero,
+            child: EmptyState(
+              icon: Icons.receipt_long_outlined,
+              title: 'لا توجد طلبات بعد',
+              message: 'ستظهر طلباتك هنا بعد إتمام أول عملية شراء.',
+              actionLabel: 'تصفّح الكتالوج',
+              onAction: () => state.selectTab(tabCatalog),
+            ),
           ),
         ],
       );
@@ -183,10 +177,13 @@ class _RequestsList extends StatelessWidget {
       }
       if (requests.isEmpty) {
         children.add(
-          const EmptyState(
-            icon: Icons.travel_explore_rounded,
-            title: 'لا توجد طلبات خاصة',
-            message: 'القطعة غير متوفرة في الكتالوج؟ اطلبها وسنؤمّنها لك ونرسل لك السعر.',
+          const Panel(
+            padding: EdgeInsets.zero,
+            child: EmptyState(
+              icon: Icons.travel_explore_rounded,
+              title: 'لا توجد طلبات خاصة',
+              message: 'القطعة غير متوفرة في الكتالوج؟ اطلبها وسنؤمّنها لك ونرسل لك السعر.',
+            ),
           ),
         );
       } else {

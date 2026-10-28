@@ -8,10 +8,9 @@ import '../../core/models.dart';
 import '../../core/referral.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
-import '../../widgets/feedback.dart';
 import '../../widgets/inputs.dart';
-import '../../widgets/panel.dart';
 import '../../widgets/pickers.dart';
+import '../../widgets/segmented.dart';
 import '../../widgets/select_field.dart';
 import 'auth_widgets.dart';
 
@@ -161,73 +160,55 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final String? error = _error;
     final ReferralInput? signed = _signedReferral;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 440),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton.icon(
-                      onPressed: _busy ? null : widget.onBack,
-                      icon: const Icon(Icons.arrow_back_rounded),
-                      label: const Text('تسجيل الدخول'),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const AuthHeader(),
-                  const SizedBox(height: 22),
-                  if (pending != null)
-                    PendingApprovalCard(
-                      title: 'تم إرسال طلبك للمراجعة بنجاح!',
-                      message: pending,
-                      onBack: widget.onBack,
-                    )
-                  else
-                    ..._form(p, error, signed),
-                ],
-              ),
-            ),
+    return AuthScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          const AuthHeader(),
+          const SizedBox(height: 20),
+          AuthModeSwitch(
+            registering: true,
+            onLogin: _busy ? null : widget.onBack,
+            onRegister: null,
           ),
-        ),
+          const SizedBox(height: 18),
+          if (pending != null)
+            PendingApprovalCard(
+              title: 'تم إرسال طلبك للمراجعة بنجاح!',
+              message: pending,
+              onBack: widget.onBack,
+            )
+          else ...<Widget>[
+            RoleSelector(
+              role: _role,
+              registering: true,
+              onChanged: (String value) => setState(() {
+                _role = value;
+                _error = null;
+              }),
+            ),
+            const SizedBox(height: 16),
+            AuthFormCard(
+              title: _isWorkshop ? 'بيانات اعتماد الورشة الجديدة' : 'بيانات حساب المسوّق الجديد',
+              children: _form(p, error, signed),
+            ),
+          ],
+        ],
       ),
     );
   }
 
   List<Widget> _form(Palette p, String? error, ReferralInput? signed) {
     return <Widget>[
-      Text(
-        'إنشاء حساب جديد',
-        style: TextStyle(color: p.text, fontSize: 22, fontWeight: FontWeight.w900),
-      ),
-      const SizedBox(height: 14),
-      RoleSelector(
-        role: _role,
-        registering: true,
-        onChanged: (String value) => setState(() {
-          _role = value;
-          _error = null;
-        }),
-      ),
-      const SizedBox(height: 20),
-      Text(
-        _isWorkshop ? 'بيانات اعتماد الورشة الجديدة' : 'بيانات حساب المسوّق الجديد',
-        style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w800),
-      ),
-      const SizedBox(height: 12),
       AppTextField(
         controller: _name,
         label: _isWorkshop ? 'اسم الورشة أو الشركة الرسمي' : 'الاسم الكامل',
         icon: Icons.badge_outlined,
         textInputAction: TextInputAction.next,
         maxLength: 100,
+        radius: 10,
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: 12),
       AppTextField(
         controller: _phone,
         label: 'رقم الموبايل',
@@ -236,12 +217,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         keyboardType: TextInputType.phone,
         textInputAction: TextInputAction.next,
         ltr: true,
+        radius: 10,
       ),
-      const SizedBox(height: 14),
+      const SizedBox(height: 12),
       PasswordField(
         controller: _password,
         label: 'كلمة المرور (4 أحرف على الأقل)',
         textInputAction: _isWorkshop ? TextInputAction.next : TextInputAction.done,
+        radius: 10,
         onSubmitted: (String _) {
           if (!_isWorkshop) {
             _submit();
@@ -249,55 +232,73 @@ class _RegisterScreenState extends State<RegisterScreen> {
         },
       ),
       if (_isWorkshop) ...<Widget>[
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         AppTextField(
           controller: _license,
           label: 'رقم السجل التجاري / ترخيص الورشة',
           icon: Icons.verified_outlined,
           textInputAction: TextInputAction.next,
           maxLength: 80,
+          radius: 10,
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         SelectField(
           label: 'المحافظة',
           value: _city,
           icon: Icons.location_on_outlined,
+          radius: 10,
           onTap: _pickCity,
         ),
-        const SizedBox(height: 14),
-        Text(
-          'اختصاص الورشة (الماركات)',
-          style: TextStyle(color: p.muted, fontSize: 13, fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: <Widget>[
-            for (final String brand in specialtyBrands)
-              FilterChip(
-                label: Text(brand),
-                selected: _specs.contains(brand),
-                onSelected: (bool on) => setState(() {
-                  if (on) {
-                    _specs.add(brand);
-                  } else {
-                    _specs.remove(brand);
-                  }
-                }),
-              ),
-          ],
-        ),
-        if (_specs.contains(otherLabel)) ...<Widget>[
-          const SizedBox(height: 12),
-          AppTextField(
-            controller: _otherBrand,
-            label: 'اسم الماركة الإضافية',
-            textInputAction: TextInputAction.next,
-            maxLength: 60,
+        const SizedBox(height: 12),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: p.fieldBg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: p.line),
           ),
-        ],
-        const SizedBox(height: 14),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  'اختصاص الورشة (الماركات)',
+                  style: TextStyle(color: p.muted, fontSize: 13, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    for (final String brand in specialtyBrands)
+                      ToggleChip(
+                        label: brand,
+                        selected: _specs.contains(brand),
+                        onTap: () => setState(() {
+                          if (_specs.contains(brand)) {
+                            _specs.remove(brand);
+                          } else {
+                            _specs.add(brand);
+                          }
+                        }),
+                      ),
+                  ],
+                ),
+                if (_specs.contains(otherLabel)) ...<Widget>[
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    controller: _otherBrand,
+                    label: 'اسم الماركة الإضافية',
+                    textInputAction: TextInputAction.next,
+                    maxLength: 60,
+                    radius: 8,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         if (signed != null) ...<Widget>[
           AppTextField(
             controller: _referral,
@@ -305,6 +306,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             icon: Icons.link_rounded,
             ltr: true,
             readOnly: true,
+            radius: 10,
             suffix: IconButton(
               onPressed: _busy ? null : _clearReferral,
               tooltip: 'إزالة رابط الدعوة',
@@ -323,34 +325,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
             hint: 'MK-XXXXXX',
             icon: Icons.link_rounded,
             ltr: true,
+            radius: 10,
             textInputAction: TextInputAction.done,
             onChanged: _onReferralChanged,
           ),
-        const SizedBox(height: 14),
-        Panel(
-          color: p.primary.withValues(alpha: 0.1),
-          borderColor: p.primary.withValues(alpha: 0.35),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: <Widget>[
-              Icon(Icons.shield_outlined, color: p.primary, size: 20),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  'حسابات الورشات تتطلب مراجعة وموافقة الإدارة قبل التفعيل.',
-                  style: TextStyle(color: p.text, fontSize: 13, height: 1.5),
+        const SizedBox(height: 12),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: p.accent.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: <Widget>[
+                Icon(Icons.verified_user_outlined, color: p.primary, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'حسابات الورشات تتطلب مراجعة وموافقة الإدارة قبل التفعيل.',
+                    style: TextStyle(color: p.primary, fontSize: 12.5, height: 1.5),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
-      if (error != null) ...<Widget>[
-        const SizedBox(height: 16),
-        NoticeBanner(message: error, kind: NoticeKind.error),
-      ],
-      const SizedBox(height: 18),
+      const SizedBox(height: 16),
       PrimaryButton(
+        flat: true,
+        color: !_isWorkshop ? const Color(0xFFF59E0B) : null,
         label: _isWorkshop ? 'إرسال طلب اعتماد الورشة' : 'إنشاء الحساب فوراً',
         busy: _busy,
         onPressed: _submit,
@@ -362,6 +367,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           textAlign: TextAlign.center,
           style: TextStyle(color: p.muted, fontSize: 13, height: 1.5),
         ),
+      ],
+      if (error != null) ...<Widget>[
+        const SizedBox(height: 12),
+        AuthMessage(text: error),
       ],
     ];
   }

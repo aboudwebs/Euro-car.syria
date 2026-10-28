@@ -8,7 +8,9 @@ import '../../core/text_utils.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
 import '../../widgets/feedback.dart';
+import '../../widgets/inputs.dart';
 import '../../widgets/search_field.dart';
+import '../../widgets/segmented.dart';
 import '../home/tab_header.dart';
 import '../special/special_request_screen.dart';
 import 'part_card.dart';
@@ -81,28 +83,23 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
     final List<Part> shown = _filtered(all);
 
-    String? subtitle;
-    if (state.partsLoaded) {
-      subtitle = shown.length == all.length
-          ? '${all.length} قطعة'
-          : '${shown.length} من ${all.length} قطعة';
-    }
-
     return Column(
       children: <Widget>[
         TabHeader(
-          title: 'الكتالوج',
-          subtitle: subtitle,
+          title: 'متجر اليورو',
+          subtitle: 'ابحث برقم القطعة أو رقم الشاصي واحصل على السعر فورًا',
           actions: <Widget>[
-            IconButton(
-              onPressed: () => openSpecialRequest(context),
+            RoundIconButton(
+              onTap: () => openSpecialRequest(context),
               tooltip: 'طلب قطعة خاصة',
-              icon: Icon(Icons.playlist_add_rounded, color: p.primary, size: 28),
+              icon: Icons.playlist_add_rounded,
+              iconColor: p.primary,
+              size: 44,
             ),
           ],
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
           child: SearchField(
             controller: _search,
             hint: 'رقم القطعة أو اسمها أو رقم الشاصي (VIN)',
@@ -113,35 +110,38 @@ class _CatalogScreenState extends State<CatalogScreen> {
             },
           ),
         ),
-        SizedBox(height: 42, child: _brandChips(brands)),
-        const SizedBox(height: 6),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
+          child: SegmentedTrack<String>(
+            layout: SegmentLayout.scroll,
+            selected: _brand,
+            onChanged: (String value) => setState(() => _brand = value),
+            options: <SegmentOption<String>>[
+              const SegmentOption<String>(value: '', label: 'الكل'),
+              for (final String brand in brands) SegmentOption<String>(value: brand, label: brand),
+            ],
+          ),
+        ),
+        if (state.partsLoaded)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+            child: Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text(
+                shown.length == all.length ? '${all.length} قطعة' : '${shown.length} من ${all.length} قطعة',
+                style: TextStyle(color: p.muted, fontSize: 12.5),
+              ),
+            ),
+          ),
         Expanded(
           child: RefreshIndicator(
-            color: p.primary,
+            color: p.accent,
             backgroundColor: p.panel,
             onRefresh: () => state.loadParts(),
             child: _list(context, state, shown),
           ),
         ),
       ],
-    );
-  }
-
-  Widget _brandChips(List<String> brands) {
-    return ListView.separated(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: brands.length + 1,
-      separatorBuilder: (BuildContext context, int index) => const SizedBox(width: 8),
-      itemBuilder: (BuildContext context, int index) {
-        final String value = index == 0 ? '' : brands[index - 1];
-        return ChoiceChip(
-          label: Text(index == 0 ? 'الكل' : value),
-          selected: _brand == value,
-          showCheckmark: false,
-          onSelected: (bool on) => setState(() => _brand = value),
-        );
-      },
     );
   }
 
@@ -201,7 +201,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
         }
         final Part part = shown[index - top.length];
         return Padding(
-          padding: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.only(bottom: 12),
           child: PartCard(
             key: ValueKey<String>(part.id),
             part: part,

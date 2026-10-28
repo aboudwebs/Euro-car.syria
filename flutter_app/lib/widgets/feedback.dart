@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../core/labels.dart';
 import '../theme/palette.dart';
+import 'inputs.dart';
 
+/// A small status pill: a tinted fill and hairline border in the tone colour (the web app's status badges).
 class StatusChip extends StatelessWidget {
   const StatusChip({super.key, required this.label, required this.tone});
 
@@ -17,15 +19,15 @@ class StatusChip extends StatelessWidget {
     final Color color = p.toneColor(tone);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.38)),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 3),
         child: Text(
           label,
-          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w800),
+          style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700),
         ),
       ),
     );
@@ -34,7 +36,7 @@ class StatusChip extends StatelessWidget {
 
 enum NoticeKind { info, success, warning, error }
 
-/// A message strip with an icon, used for errors, confirmations and hints.
+/// A message box with an icon, used for errors, confirmations and hints (rounded 16, tinted fill and border).
 class NoticeBanner extends StatelessWidget {
   const NoticeBanner({
     super.key,
@@ -55,19 +57,24 @@ class NoticeBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final Palette p = Palette.of(context);
     final Color color;
+    final Color ink;
     final IconData icon;
     switch (kind) {
       case NoticeKind.success:
         color = p.ok;
+        ink = p.ok;
         icon = Icons.check_circle_outline_rounded;
       case NoticeKind.warning:
         color = p.warn;
+        ink = p.warn;
         icon = Icons.warning_amber_rounded;
       case NoticeKind.error:
         color = p.err;
+        ink = p.errText;
         icon = Icons.error_outline_rounded;
       case NoticeKind.info:
-        color = p.primary;
+        color = p.accent;
+        ink = p.text.withValues(alpha: 0.85);
         icon = Icons.info_outline_rounded;
     }
     final VoidCallback? retry = onRetry;
@@ -77,7 +84,7 @@ class NoticeBanner extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withValues(alpha: 0.4)),
         ),
         child: Padding(
@@ -87,7 +94,7 @@ class NoticeBanner extends StatelessWidget {
             children: <Widget>[
               Padding(
                 padding: const EdgeInsets.only(top: 1),
-                child: Icon(icon, color: color, size: 20),
+                child: Icon(icon, color: kind == NoticeKind.info ? p.primary : ink, size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -95,14 +102,14 @@ class NoticeBanner extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Text(
                     message,
-                    style: TextStyle(color: p.text, fontSize: 14, height: 1.5),
+                    style: TextStyle(color: ink, fontSize: 14, height: 1.5),
                   ),
                 ),
               ),
               if (retry != null)
                 TextButton(
                   onPressed: retry,
-                  child: Text(retryLabel, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+                  child: Text(retryLabel, style: TextStyle(color: ink, fontWeight: FontWeight.w700)),
                 ),
               if (dismiss != null)
                 IconButton(
@@ -142,28 +149,38 @@ class EmptyState extends StatelessWidget {
     final String? label = actionLabel;
     final VoidCallback? action = onAction;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Icon(icon, size: 44, color: p.muted),
-          const SizedBox(height: 14),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: p.accent.withValues(alpha: 0.12),
+              border: Border.all(color: p.accent.withValues(alpha: 0.25)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Icon(icon, size: 34, color: p.primary),
+            ),
+          ),
+          const SizedBox(height: 16),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w800),
+            style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w700),
           ),
           if (text != null) ...<Widget>[
             const SizedBox(height: 6),
             Text(
               text,
               textAlign: TextAlign.center,
-              style: TextStyle(color: p.muted, fontSize: 14, height: 1.5),
+              style: TextStyle(color: p.muted, fontSize: 14, height: 1.55),
             ),
           ],
           if (label != null && action != null) ...<Widget>[
             const SizedBox(height: 18),
-            FilledButton(onPressed: action, child: Text(label)),
+            PrimaryButton(label: label, onPressed: action, compact: true),
           ],
         ],
       ),
@@ -171,7 +188,7 @@ class EmptyState extends StatelessWidget {
   }
 }
 
-/// A centred spinner with a short explanation.
+/// A centred spinner with a short explanation (the web app's blue ring spinner and caption).
 class LoadingBlock extends StatelessWidget {
   const LoadingBlock({super.key, required this.message});
 
@@ -186,12 +203,12 @@ class LoadingBlock extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           const SizedBox(
-            width: 28,
-            height: 28,
-            child: CircularProgressIndicator(strokeWidth: 3),
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
           ),
           const SizedBox(height: 14),
-          Text(message, style: TextStyle(color: p.muted, fontSize: 14)),
+          Text(message, style: TextStyle(color: p.muted, fontSize: 13)),
         ],
       ),
     );

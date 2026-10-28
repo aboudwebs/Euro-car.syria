@@ -1,4 +1,7 @@
 // Cards for the orders tab: a placed order (expandable list of its parts) and a special request.
+//
+// Like the web "طلباتي" list: the order or part name with its date and amount, the status as a coloured line of
+// text, a red box with the cancellation reason and a blue box with the admin's note.
 
 import 'package:flutter/material.dart';
 
@@ -6,7 +9,6 @@ import '../../core/format.dart';
 import '../../core/labels.dart';
 import '../../core/models.dart';
 import '../../theme/palette.dart';
-import '../../widgets/feedback.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/part_plate.dart';
 
@@ -40,30 +42,37 @@ class _OrderCardState extends State<OrderCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
                 child: Text(
                   'طلب ${order.label}',
-                  style: TextStyle(color: p.text, fontSize: 16.5, fontWeight: FontWeight.w900),
+                  style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w700),
                 ),
               ),
-              StatusChip(
-                label: orderStatusLabel(order.status),
-                tone: statusTone(order.status),
+              const SizedBox(width: 12),
+              Text(
+                formatUsd(order.total),
+                style: TextStyle(
+                  color: p.text,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 3),
           Text(
             '${formatDate(order.createdAt)} · ${payMethodLabel(order.payMethod)}',
-            style: TextStyle(color: p.muted, fontSize: 13),
+            style: TextStyle(color: p.muted, fontSize: 12.5),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 9),
           Row(
             children: <Widget>[
-              Text(
-                formatUsd(order.total),
-                style: TextStyle(color: p.text, fontSize: 20, fontWeight: FontWeight.w900),
+              _StatusLine(
+                label: orderStatusLabel(order.status),
+                color: p.toneColor(statusTone(order.status)),
               ),
               const Spacer(),
               if (hasItems) ...<Widget>[
@@ -85,11 +94,37 @@ class _OrderCardState extends State<OrderCard> {
           ],
           if (_open && hasItems) ...<Widget>[
             const SizedBox(height: 8),
-            Divider(color: p.line),
+            Divider(height: 1, thickness: 1, color: p.line),
             for (final OrderLine line in order.items) _OrderLineRow(line: line),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// A status as a small semibold line of coloured text with a dot in front (the web list shows status as text).
+class _StatusLine extends StatelessWidget {
+  const _StatusLine({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        DecoratedBox(
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          child: const SizedBox(width: 8, height: 8),
+        ),
+        const SizedBox(width: 7),
+        Text(
+          label,
+          style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w700),
+        ),
+      ],
     );
   }
 }
@@ -103,7 +138,7 @@ class _OrderLineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final Palette p = Palette.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
@@ -135,7 +170,7 @@ class _OrderLineRow extends StatelessWidget {
             children: <Widget>[
               Text(
                 formatUsd(line.lineTotal),
-                style: TextStyle(color: p.text, fontSize: 14.5, fontWeight: FontWeight.w800),
+                style: TextStyle(color: p.text, fontSize: 14.5, fontWeight: FontWeight.w700),
               ),
               Text(
                 '${line.qty} × ${formatUsd(line.unitPrice)}',
@@ -164,40 +199,45 @@ class RequestCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Expanded(
                 child: Text(
                   request.partName,
-                  style: TextStyle(color: p.text, fontSize: 16.5, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w700),
                 ),
               ),
-              StatusChip(
-                label: specialStatusLabel(request.status),
-                tone: statusTone(request.status),
-              ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${request.brandLabel} · ${formatDate(request.createdAt)}',
-            style: TextStyle(color: p.muted, fontSize: 13),
-          ),
-          if (price != null && price > 0) ...<Widget>[
-            const SizedBox(height: 10),
-            Row(
-              children: <Widget>[
-                Text('السعر المقترح', style: TextStyle(color: p.muted, fontSize: 14)),
-                const Spacer(),
+              if (price != null && price > 0) ...<Widget>[
+                const SizedBox(width: 12),
                 Text(
                   formatUsd(price),
-                  style: TextStyle(color: p.primary, fontSize: 19, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    color: p.text,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
                 ),
               ],
-            ),
+            ],
+          ),
+          const SizedBox(height: 3),
+          Text(
+            '${request.brandLabel} · ${formatDate(request.createdAt)}',
+            style: TextStyle(color: p.muted, fontSize: 12.5),
+          ),
+          const SizedBox(height: 9),
+          _StatusLine(
+            label: specialStatusLabel(request.status),
+            color: p.toneColor(statusTone(request.status)),
+          ),
+          if (price != null && price > 0) ...<Widget>[
+            const SizedBox(height: 4),
+            Text('السعر المقترح', style: TextStyle(color: p.muted, fontSize: 12)),
           ],
           if (request.adminNote.isNotEmpty) ...<Widget>[
             const SizedBox(height: 10),
-            NoteBox(text: 'ملاحظة الإدارة: ${request.adminNote}', color: p.primary),
+            NoteBox(text: 'ملاحظة الإدارة: ${request.adminNote}', color: p.accent),
           ],
         ],
       ),

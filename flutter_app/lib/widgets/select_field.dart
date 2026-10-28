@@ -12,6 +12,7 @@ class SelectField extends StatelessWidget {
     required this.onTap,
     this.placeholder = 'اختر',
     this.icon,
+    this.radius = 16,
   });
 
   final String label;
@@ -19,6 +20,9 @@ class SelectField extends StatelessWidget {
   final VoidCallback onTap;
   final String placeholder;
   final IconData? icon;
+
+  /// Corner radius of the field (16 like the web app's `.input`; the sign-in forms use 10).
+  final double radius;
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +40,10 @@ class SelectField extends StatelessWidget {
           ),
         ),
         Material(
-          color: p.panelAlt,
+          color: p.fieldBg,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: p.line),
+            borderRadius: BorderRadius.circular(radius),
+            side: BorderSide(color: p.fieldLine),
           ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -49,14 +53,14 @@ class SelectField extends StatelessWidget {
               child: Row(
                 children: <Widget>[
                   if (leading != null) ...<Widget>[
-                    Icon(leading, color: p.muted, size: 21),
+                    Icon(leading, color: p.muted, size: 20),
                     const SizedBox(width: 12),
                   ],
                   Expanded(
                     child: Text(
                       empty ? placeholder : value,
                       style: TextStyle(
-                        color: empty ? p.muted : p.text,
+                        color: empty ? p.placeholder : p.text,
                         fontSize: 16,
                       ),
                     ),

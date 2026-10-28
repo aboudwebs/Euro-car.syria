@@ -16,6 +16,7 @@ import 'screens/home/home_shell.dart';
 import 'state/app_state.dart';
 import 'theme/app_theme.dart';
 import 'theme/palette.dart';
+import 'widgets/backdrop.dart';
 import 'widgets/part_plate.dart';
 
 class EuroApp extends StatefulWidget {
@@ -87,7 +88,7 @@ class _EuroAppState extends State<EuroApp> {
     final Palette p = dark ? Palette.dark : Palette.light;
     final SystemUiOverlayStyle style = (dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
       statusBarColor: Colors.transparent,
-      systemNavigationBarColor: p.panel,
+      systemNavigationBarColor: dark ? p.bg : p.panel,
       systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
     );
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -120,15 +121,25 @@ class _Splash extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            BrandMark(size: 26),
-            SizedBox(height: 28),
-            CircularProgressIndicator(),
-          ],
+    final Palette p = Palette.of(context);
+    return AppBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              const BrandMark(size: 34),
+              const SizedBox(height: 28),
+              const SizedBox(
+                width: 40,
+                height: 40,
+                child: CircularProgressIndicator(strokeWidth: 2.5),
+              ),
+              const SizedBox(height: 14),
+              Text('جاري تحميل اليورو...', style: TextStyle(color: p.muted, fontSize: 12)),
+            ],
+          ),
         ),
       ),
     );

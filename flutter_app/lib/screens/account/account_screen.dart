@@ -1,4 +1,6 @@
 // Account tab: profile photo, profile editing (PUT /api/auth), appearance, support and sign-out.
+//
+// The profile card, stat cards, edit form, support button and red sign-out button follow the web account page.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +16,8 @@ import '../../widgets/feedback.dart';
 import '../../widgets/inputs.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/pickers.dart';
+import '../../widgets/pressable.dart';
+import '../../widgets/segmented.dart';
 import '../../widgets/select_field.dart';
 import '../home/tab_header.dart';
 
@@ -154,7 +158,7 @@ class _AccountScreenState extends State<AccountScreen> {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             UserAvatar(name: '', bytes: bytes, size: 160),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             const Text(
               'ستظهر الصورة بهذا الشكل في حسابك.',
               textAlign: TextAlign.center,
@@ -166,9 +170,10 @@ class _AccountScreenState extends State<AccountScreen> {
             onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text('إلغاء'),
           ),
-          FilledButton(
+          PrimaryButton(
+            label: 'اعتماد الصورة',
+            compact: true,
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('اعتماد الصورة'),
           ),
         ],
       ),
@@ -233,22 +238,26 @@ class _AccountScreenState extends State<AccountScreen> {
   Future<void> _confirmLogout() async {
     final bool? confirmed = await showDialog<bool>(
       context: context,
-      builder: (BuildContext dialogContext) => AlertDialog(
-        title: const Text('تسجيل الخروج'),
-        content: const Text(
-          'هل تريد تسجيل الخروج من حسابك؟ سيتم تفريغ السلة المحفوظة على هذا الجهاز.',
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('إلغاء'),
+      builder: (BuildContext dialogContext) {
+        final Palette p = Palette.of(dialogContext);
+        return AlertDialog(
+          title: const Text('تسجيل الخروج'),
+          content: const Text(
+            'هل تريد تسجيل الخروج من حسابك؟ سيتم تفريغ السلة المحفوظة على هذا الجهاز.',
           ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('تسجيل الخروج'),
-          ),
-        ],
-      ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(foregroundColor: p.errText),
+              child: const Text('تسجيل الخروج'),
+            ),
+          ],
+        );
+      },
     );
     if (confirmed == true && mounted) {
       await AppScope.read(context).logout();
@@ -288,16 +297,11 @@ class _AccountScreenState extends State<AccountScreen> {
               SecondaryButton(
                 label: 'التواصل مع الدعم عبر واتساب',
                 icon: Icons.support_agent_rounded,
-                color: p.ok,
+                iconColor: p.ok,
                 onPressed: _openSupport,
               ),
               const SizedBox(height: 10),
-              SecondaryButton(
-                label: 'تسجيل الخروج',
-                icon: Icons.logout_rounded,
-                color: p.err,
-                onPressed: _confirmLogout,
-              ),
+              _LogoutButton(onPressed: _confirmLogout),
               const SizedBox(height: 10),
               Center(
                 child: TextButton.icon(
@@ -316,79 +320,97 @@ class _AccountScreenState extends State<AccountScreen> {
     );
   }
 
+  /// The profile card: a blue wash fading to glass, the photo with its change badge, and the account details.
   Widget _profileCard(Palette p, AppState state, AppUser user) {
     final DateTime? since = user.createdAt;
     final String? city = user.city;
+    final List<Color> wash = p.isDark
+        ? const <Color>[Color(0x330A84FF), Color(0x0FFFFFFF), Color(0x05FFFFFF)]
+        : const <Color>[Color(0xFFDDEBFF), Color(0xFFFFFFFF), Color(0xFFF8FAFC)];
     return Panel(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: <Widget>[
-          SizedBox(
-            width: 84,
-            height: 84,
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: <Widget>[
-                UserAvatar(name: user.name, bytes: state.avatarBytes, size: 84),
-                PositionedDirectional(
-                  bottom: -6,
-                  end: -6,
-                  child: Material(
-                    color: p.primary,
-                    shape: CircleBorder(side: BorderSide(color: p.bg, width: 2)),
-                    child: InkWell(
-                      customBorder: const CircleBorder(),
-                      onTap: _avatarBusy ? null : _changePhoto,
-                      child: SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: _avatarBusy
-                            ? const Padding(
-                                padding: EdgeInsets.all(9),
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.4,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Icon(Icons.photo_camera_rounded, size: 18, color: Colors.white),
+      padding: EdgeInsets.zero,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: wash,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: <Widget>[
+              SizedBox(
+                width: 80,
+                height: 80,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: <Widget>[
+                    UserAvatar(name: user.name, bytes: state.avatarBytes, size: 80),
+                    PositionedDirectional(
+                      bottom: -6,
+                      end: -6,
+                      child: Material(
+                        color: p.accent,
+                        shape: CircleBorder(side: BorderSide(color: p.bg, width: 2)),
+                        child: InkWell(
+                          customBorder: const CircleBorder(),
+                          onTap: _avatarBusy ? null : _changePhoto,
+                          child: SizedBox(
+                            width: 34,
+                            height: 34,
+                            child: _avatarBusy
+                                ? const Padding(
+                                    padding: EdgeInsets.all(8),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.4,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Icon(Icons.photo_camera_rounded, size: 17, color: Colors.white),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      user.name,
+                      style: TextStyle(
+                        color: p.text,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    StatusChip(
+                      label: user.isWorkshop ? 'حساب ورشة معتمد' : 'حساب مسوّق',
+                      tone: StatusTone.success,
+                    ),
+                    const SizedBox(height: 8),
+                    _ProfileLine(icon: Icons.phone_outlined, text: user.phone, ltr: true),
+                    if (city != null && city.isNotEmpty)
+                      _ProfileLine(icon: Icons.location_on_outlined, text: city),
+                    if (since != null)
+                      _ProfileLine(
+                        icon: Icons.schedule_rounded,
+                        text: 'عضو منذ ${formatDate(since)}',
+                        small: true,
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 18),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  user.name,
-                  style: TextStyle(color: p.text, fontSize: 19, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 6),
-                StatusChip(
-                  label: user.isWorkshop ? 'حساب ورشة معتمد' : 'حساب مسوّق',
-                  tone: StatusTone.success,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  user.phone,
-                  textDirection: TextDirection.ltr,
-                  style: TextStyle(color: p.muted, fontSize: 13.5),
-                ),
-                if (city != null && city.isNotEmpty)
-                  Text(city, style: TextStyle(color: p.muted, fontSize: 13.5)),
-                if (since != null)
-                  Text(
-                    'عضو منذ ${formatDate(since)}',
-                    style: TextStyle(color: p.muted, fontSize: 12.5),
-                  ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -406,24 +428,29 @@ class _AccountScreenState extends State<AccountScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  Text('كود المسوّق', style: TextStyle(color: p.muted, fontSize: 13)),
+                  Text('كود المسوّق', style: TextStyle(color: p.muted, fontSize: 13.5)),
                   Text(
                     code ?? 'غير متوفر',
                     textDirection: TextDirection.ltr,
-                    style: TextStyle(color: p.primary, fontSize: 20, fontWeight: FontWeight.w900),
+                    style: TextStyle(
+                      color: p.primary,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
                   ),
                   Text(
                     'يُستخدم هذا الكود عند تسجيل ورشة جديدة.',
-                    style: TextStyle(color: p.muted, fontSize: 12.5),
+                    style: TextStyle(color: p.placeholder, fontSize: 12.5),
                   ),
                 ],
               ),
             ),
             if (code != null)
-              IconButton(
-                onPressed: () => _copyCode(code),
+              RoundIconButton(
+                icon: Icons.copy_rounded,
                 tooltip: 'نسخ الكود',
-                icon: Icon(Icons.copy_rounded, color: p.muted),
+                onTap: () => _copyCode(code),
               ),
           ],
         ),
@@ -464,26 +491,27 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _editForm(Palette p, String? notice, String? error) {
     return Panel(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
           Row(
             children: <Widget>[
-              Icon(Icons.edit_outlined, color: p.primary, size: 20),
+              Icon(Icons.person_outline_rounded, color: p.primary, size: 22),
               const SizedBox(width: 8),
               Text(
                 'تعديل البيانات',
-                style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w800),
+                style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w700),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           AppTextField(
             controller: _name,
             label: 'الاسم',
             icon: Icons.badge_outlined,
             maxLength: 100,
+            radius: 12,
             textInputAction: TextInputAction.next,
           ),
           const SizedBox(height: 14),
@@ -492,6 +520,7 @@ class _AccountScreenState extends State<AccountScreen> {
             value: _city,
             placeholder: 'اختر المحافظة',
             icon: Icons.location_on_outlined,
+            radius: 12,
             onTap: _pickCity,
           ),
           const SizedBox(height: 14),
@@ -499,6 +528,7 @@ class _AccountScreenState extends State<AccountScreen> {
             controller: _password,
             label: 'كلمة مرور جديدة (اختياري)',
             hint: 'اتركها فارغة دون تغيير',
+            radius: 12,
             textInputAction: TextInputAction.done,
             onSubmitted: (String value) => _save(),
           ),
@@ -514,6 +544,7 @@ class _AccountScreenState extends State<AccountScreen> {
           PrimaryButton(
             label: 'حفظ التعديلات',
             icon: Icons.save_outlined,
+            radius: 12,
             busy: _saving,
             onPressed: _save,
           ),
@@ -523,28 +554,86 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _themeSelector(AppState state) {
-    return SegmentedButton<ThemeMode>(
-      segments: const <ButtonSegment<ThemeMode>>[
-        ButtonSegment<ThemeMode>(
-          value: ThemeMode.dark,
-          label: Text('داكن'),
-          icon: Icon(Icons.dark_mode_outlined),
-        ),
-        ButtonSegment<ThemeMode>(
-          value: ThemeMode.light,
-          label: Text('فاتح'),
-          icon: Icon(Icons.light_mode_outlined),
-        ),
-        ButtonSegment<ThemeMode>(
-          value: ThemeMode.system,
-          label: Text('النظام'),
-          icon: Icon(Icons.brightness_auto_outlined),
-        ),
+    return SegmentedTrack<ThemeMode>(
+      selected: state.themeMode,
+      onChanged: state.setThemeMode,
+      options: const <SegmentOption<ThemeMode>>[
+        SegmentOption<ThemeMode>(value: ThemeMode.dark, label: 'داكن'),
+        SegmentOption<ThemeMode>(value: ThemeMode.light, label: 'فاتح'),
+        SegmentOption<ThemeMode>(value: ThemeMode.system, label: 'النظام'),
       ],
-      selected: <ThemeMode>{state.themeMode},
-      showSelectedIcon: false,
-      expandedInsets: EdgeInsets.zero,
-      onSelectionChanged: (Set<ThemeMode> selection) => state.setThemeMode(selection.first),
+    );
+  }
+}
+
+/// One line of the profile card: a small icon and a muted text (phone numbers stay left-to-right).
+class _ProfileLine extends StatelessWidget {
+  const _ProfileLine({required this.icon, required this.text, this.ltr = false, this.small = false});
+
+  final IconData icon;
+  final String text;
+  final bool ltr;
+  final bool small;
+
+  @override
+  Widget build(BuildContext context) {
+    final Palette p = Palette.of(context);
+    final Color ink = small ? p.placeholder : p.muted;
+    return Padding(
+      padding: const EdgeInsets.only(top: 3),
+      child: Row(
+        children: <Widget>[
+          Icon(icon, size: small ? 13 : 15, color: ink),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              text,
+              textDirection: ltr ? TextDirection.ltr : null,
+              textAlign: TextAlign.start,
+              style: TextStyle(color: ink, fontSize: small ? 12.5 : 14),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The web account page's sign-out button: a full-width rounded box tinted red.
+class _LogoutButton extends StatelessWidget {
+  const _LogoutButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final Palette p = Palette.of(context);
+    return PressScale(
+      child: Material(
+        color: p.err.withValues(alpha: 0.10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: p.err.withValues(alpha: 0.25)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onPressed,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Icon(Icons.logout_rounded, color: p.errText, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  'تسجيل الخروج',
+                  style: TextStyle(color: p.errText, fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -567,7 +656,7 @@ class _StatTile extends StatelessWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: p.primary, fontSize: 17, fontWeight: FontWeight.w900),
+            style: TextStyle(color: p.primary, fontSize: 17, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 4),
           Text(

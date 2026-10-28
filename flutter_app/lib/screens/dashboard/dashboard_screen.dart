@@ -1,6 +1,8 @@
 // Dashboard tab. A workshop sees cashback, debt, its tier estimate, its orders and the debt ledger
 // (GET /api/workshop/dashboard); a marketer sees the invitation link and commissions
 // (GET /api/marketer/dashboard).
+//
+// The cards, the blue progress bars and the hairline lists follow the web dashboards (workshop / marketer pages).
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -144,7 +146,8 @@ class DashboardScreen extends StatelessWidget {
         footer: balance > 0 && daysLeft != null
             ? ProgressBar(
                 value: (debtWindowDays - daysLeft) / debtWindowDays,
-                color: urgent ? p.err : p.primary,
+                color: urgent ? p.err : null,
+                height: 6,
               )
             : null,
       ),
@@ -163,12 +166,12 @@ class DashboardScreen extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                Icon(Icons.workspace_premium_outlined, color: p.primary),
+                Icon(Icons.workspace_premium_outlined, color: p.primary, size: 22),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'مرتبتك التقديرية حسب المشتريات المعتمدة',
-                    style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w800),
+                    style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w700),
                   ),
                 ),
               ],
@@ -176,17 +179,22 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               '${tier.name} · كاش باك ${tier.cashback}',
-              style: TextStyle(color: p.primary, fontSize: 20, fontWeight: FontWeight.w900),
+              style: TextStyle(
+                color: p.primary,
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+              ),
             ),
             if (next != null) ...<Widget>[
               const SizedBox(height: 2),
               Text(
                 'باقي ${formatUsd(next.minSpend - data.approvedSpend)} للوصول إلى ${next.name}',
-                style: TextStyle(color: p.muted, fontSize: 13),
+                style: TextStyle(color: p.muted, fontSize: 13.5),
               ),
             ],
             const SizedBox(height: 12),
-            ProgressBar(value: data.tierProgress, height: 10),
+            ProgressBar(value: data.tierProgress, height: 12),
             const SizedBox(height: 10),
             Row(
               children: <Widget>[
@@ -196,9 +204,9 @@ class DashboardScreen extends StatelessWidget {
                       estimatedTiers[i].name,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: i <= data.tierIndex ? p.primary : p.muted,
+                        color: i <= data.tierIndex ? p.primary : p.placeholder,
                         fontSize: 11,
-                        fontWeight: i <= data.tierIndex ? FontWeight.w800 : FontWeight.w500,
+                        fontWeight: i <= data.tierIndex ? FontWeight.w700 : FontWeight.w500,
                       ),
                     ),
                   ),
@@ -207,7 +215,7 @@ class DashboardScreen extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               'المرتبة محسوبة من الطلبات المعتمدة الظاهرة في آخر 100 طلب، وقد تختلف عن المرتبة المعتمدة في حساب الإدارة.',
-              style: TextStyle(color: p.muted, fontSize: 12, height: 1.6),
+              style: TextStyle(color: p.placeholder, fontSize: 12, height: 1.6),
             ),
           ],
         ),
@@ -248,30 +256,69 @@ class DashboardScreen extends StatelessWidget {
       _InvitationPanel(data: data),
       const SizedBox(height: 12),
       MetricCard(
-        icon: Icons.payments_outlined,
-        accent: p.ok,
+        compact: true,
         valueColor: p.ok,
         label: 'عمولات متاحة للدفع',
         value: formatUsd(c.available),
       ),
       const SizedBox(height: 12),
       MetricCard(
-        icon: Icons.hourglass_bottom_rounded,
-        accent: p.warn,
+        compact: true,
         label: 'عمولات معلّقة حتى تسديد الدين',
         value: formatUsd(c.held),
       ),
       const SizedBox(height: 12),
       MetricCard(
-        icon: Icons.groups_2_outlined,
+        compact: true,
         label: 'إجمالي الورشات المرتبطة',
         value: '${data.workshops}',
-        note: 'إجمالي العمولات المسجّلة: ${formatUsd(c.total)} · المدفوع منها: ${formatUsd(c.paid)}',
       ),
       const SizedBox(height: 12),
-      Text(
-        'تُسجّل العمولة بعد تسليم الطلب. عمولات طلبات الدين تبقى معلّقة حتى تسديد دين الورشة بالكامل.',
-        style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.6),
+      Panel(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: p.accent.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: p.line),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Icon(Icons.groups_2_outlined, color: p.primary, size: 24),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'شبكة ورشاتك',
+                    style: TextStyle(
+                      color: p.text,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'إجمالي العمولات المسجّلة: ${formatUsd(c.total)} · المدفوع منها: ${formatUsd(c.paid)}',
+                    style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.5),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'تُسجّل العمولة بعد تسليم الطلب. عمولات طلبات الدين تبقى معلّقة حتى تسديد دين الورشة بالكامل.',
+                    style: TextStyle(color: p.placeholder, fontSize: 12.5, height: 1.6),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     ];
   }
@@ -311,17 +358,12 @@ class _InvitationPanel extends StatelessWidget {
         children: <Widget>[
           Text(
             'رابط الدعوة الخاص بك',
-            style: TextStyle(color: p.text, fontSize: 15.5, fontWeight: FontWeight.w800),
+            style: TextStyle(color: p.muted, fontSize: 14),
           ),
-          const SizedBox(height: 10),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: p.panelAlt,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: p.line),
-            ),
+          const SizedBox(height: 8),
+          FieldShell(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
               child: hasLink
                   ? SelectableText(
                       link,
@@ -330,7 +372,7 @@ class _InvitationPanel extends StatelessWidget {
                     )
                   : Text(
                       'لا يوجد كود دعوة لحسابك',
-                      style: TextStyle(color: p.muted, fontSize: 14),
+                      style: TextStyle(color: p.placeholder, fontSize: 14),
                     ),
             ),
           ),
@@ -358,7 +400,7 @@ class _InvitationPanel extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               'كود الدعوة: ${data.code}',
-              style: TextStyle(color: p.muted, fontSize: 12.5),
+              style: TextStyle(color: p.placeholder, fontSize: 12.5),
             ),
           ],
         ],
@@ -378,34 +420,38 @@ class _LedgerPanel extends StatelessWidget {
     final Palette p = Palette.of(context);
     return Panel(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            'آخر حركات دفتر الدين',
-            style: TextStyle(color: p.text, fontSize: 15.5, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 6),
-          if (entries.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Text(
-                'لا توجد حركات دين مسجّلة.',
-                style: TextStyle(color: p.muted, fontSize: 13.5),
-              ),
-            )
-          else
-            for (final LedgerEntry entry in entries) _LedgerRow(entry: entry),
-        ],
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'آخر حركات دفتر الدين',
+              style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: -0.2),
+            ),
+            const SizedBox(height: 6),
+            if (entries.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Text(
+                  'لا توجد حركات دين مسجّلة.',
+                  style: TextStyle(color: p.placeholder, fontSize: 13.5),
+                ),
+              )
+            else
+              for (int i = 0; i < entries.length; i++) _LedgerRow(entry: entries[i], divider: i > 0),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _LedgerRow extends StatelessWidget {
-  const _LedgerRow({required this.entry});
+  const _LedgerRow({required this.entry, required this.divider});
 
   final LedgerEntry entry;
+  final bool divider;
 
   @override
   Widget build(BuildContext context) {
@@ -414,35 +460,12 @@ class _LedgerRow extends StatelessWidget {
     final String title = (note != null && note.isNotEmpty)
         ? note
         : (entry.isPayment ? 'تسديد دين' : 'قيد دين');
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 7),
-      child: Row(
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  style: TextStyle(color: p.text, fontSize: 14.5, fontWeight: FontWeight.w700),
-                ),
-                Text(
-                  '${formatDate(entry.createdAt)} · ${ledgerTxLabel(entry.type)}',
-                  style: TextStyle(color: p.muted, fontSize: 12.5),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            formatUsd(entry.amount),
-            style: TextStyle(
-              color: entry.isPayment ? p.ok : p.text,
-              fontSize: 14.5,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
+    return DashboardRow(
+      divider: divider,
+      title: title,
+      caption: '${formatDate(entry.createdAt)} · ${ledgerTxLabel(entry.type)}',
+      amount: formatUsd(entry.amount),
+      amountColor: entry.isPayment ? p.ok : null,
     );
   }
 }

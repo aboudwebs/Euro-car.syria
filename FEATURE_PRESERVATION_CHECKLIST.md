@@ -190,3 +190,96 @@ reported them (the logs themselves were not visible to the author). Nothing is c
 
 Not ported on purpose: the web account page's device-local e-mail field (not an API feature) and the avatar crop
 tool (replaced by the system picker plus a preview; the app resizes and sends a JPEG).
+
+## J. Design port from the web app (presentation layer only)
+
+Goal: the Flutter app wears the web app's "liquid glass" identity (`app/globals.css`, the login / account / cart /
+orders / dashboard / special pages) as **native widgets** — no WebView, no embedded site. Nothing below touches
+behaviour: the website folder was not modified and the Flutter changes are confined to `flutter_app/lib/` (UI files).
+
+### J-1 What did and did not change
+
+| Area | Files | State |
+|------|-------|-------|
+| API client, models, cart rules, search, formats, labels, session store, config | `lib/core/*` | **byte-identical** to the baseline |
+| State and auth/session logic, app entry, auth flow, pickers | `lib/state/app_state.dart`, `lib/main.dart`, `lib/screens/auth/auth_flow.dart`, `lib/widgets/pickers.dart` | **byte-identical** |
+| All tests and test support | `test/**` | **byte-identical** (the 193 baseline tests were not edited to fit the new UI) |
+| `pubspec.yaml`, `analysis_options.yaml`, `tool/`, `.github/workflows/` | — | **byte-identical** (no new dependency, no new asset, no font change) |
+| Colour tokens, theme | `lib/theme/palette.dart`, `lib/theme/app_theme.dart` | restyled (dark `#06080E` / `#0A84FF`, light `#EEF3F9` / `#007AFF`, `err-text`, glass bars, dialogs, sheets, snack bars) |
+| New shared widgets | `lib/widgets/backdrop.dart`, `pressable.dart`, `segmented.dart` | added (`AppBackdrop`, `PressScale`, `SegmentedTrack`, `ToggleChip`) |
+| Restyled shared widgets | `panel.dart`, `inputs.dart`, `feedback.dart`, `search_field.dart`, `select_field.dart`, `part_plate.dart`, `app_bar.dart` | glass card, gradient pill buttons, inset fields with focus ring, status chips, banners, brand mark |
+| Screens | auth (login, register), home shell, catalog, part card, part details, cart, orders, order cards, dashboard (workshop and marketer), special request, account | re-laid out like the website; every handler, state call and API call kept |
+
+### J-2 Web effect → native equivalent
+
+| Web | Flutter |
+|-----|---------|
+| `backdrop-filter` blur on cards and bars | translucent gradient fills (no `BackdropFilter`, so long lists scroll smoothly) |
+| Blurred ambient orbs behind the page | `AppBackdrop`: radial gradients painted once and cached (`RepaintBoundary`), nothing animates |
+| Gradient border / top highlight of `.card` | `EdgePainter` (1 px rounded edge with a vertical colour ramp) |
+| `.btn` gradient pill with glow, `active:scale-[0.97]` | `PrimaryButton` + `PressScale` (a `Listener`, so it never interferes with taps) |
+| `.input` inset field, blue focus ring | `FieldShell` / `AppTextField` (ring follows focus) |
+| Segmented tracks (brand filter, payment, theme, orders switch) | `SegmentedTrack` (equal / scroll / stacked / grid layouts) |
+| Dashed photo drop zone | `_DashedBorderPainter` plus the system image picker (kept) |
+| Hover states | dropped (touch device); pressed ripples kept |
+
+### J-3 App-only features kept although the website has no equivalent
+
+Pull-to-refresh and refresh on resume, the on-device cart, the session notice on the sign-in screen, the system photo picker with
+preview, long-press copy of part numbers, WhatsApp share of the invitation link, the secure token store, the
+"request from search" shortcut of the catalog, the Android back-button behaviour (back goes to the catalog tab first).
+The admin role stays web-only, as before.
+
+### J-4 Verification — what was run and what was NOT
+
+| Check | Result |
+|-------|--------|
+| Dart syntax parse (tree-sitter-dart) of all 60 files in `lib/` and `test/` | **0 problems** |
+| Static checker written for this job (identifiers, imports, named arguments against the Flutter SDK sources, `Icons.*` / `Colors.*` / `Curves.*` names, several analyzer lint patterns such as unused imports, `sort_child_properties_last`, `unnecessary_const`, deprecated colour APIs, `use_build_context_synchronously`); proven to catch injected mistakes | 4 findings, all reviewed and harmless: two `'$count'` / `'$quantity'` interpolations of `int`, one false alarm on a constructor with a positional parameter, one pattern inside the unchanged `app_state.dart` |
+| Baseline vs. new: every `AppState` member the baseline screens used is still used | none dropped |
+| `widget_test.dart` expectations read against the final widget tree (splash spinner count, each label once, role switch, empty-form message, server error text shown once, registration title, five navigation labels, no layout exception when opening every tab at phone size) | consistent by reading; **not executed** |
+| `flutter analyze` | **NOT RUN** — no Flutter / Dart / Android SDK and no package registry access in the sandbox where this was edited |
+| `flutter test` | **NOT RUN** (the baseline passed 193 tests in CI before this change) |
+| `flutter build apk --release` and `tool/verify_apk.sh` | **NOT RUN** (the baseline APK built in CI, 34.5 MB) |
+| Run on a phone or emulator, login / registration / navigation / server connection | **NOT RUN** |
+| Side-by-side look at the live website | **NOT DONE** — the site was read from its CSS / TSX source, not rendered |
+
+Required before release: push the working copy and let `.github/workflows/flutter-android.yml` run (analyze, 193
+tests, ARM32 + ARM64 release build, `verify_apk.sh`), then install the APK and walk through the acceptance steps in
+`flutter_app/README.md`. If `flutter analyze` reports an info or warning in a file listed in J-1 as restyled, it comes
+from this port and should be fixed there; the logic files cannot be the cause.
+
+### J-5 Finding outside the design port (not changed)
+
+`POST /api/auth` in the bundled website source now answers a registration with *"يرجى إدخال رمز التحقق المرسل إلى
+واتساب"* unless the request carries `otpCode` and `otpToken` (obtained with `mode: "send-otp"`, a WhatsApp message).
+Neither the website's own sign-up form nor this app sends those fields, and the app has no code-entry step. If the
+deployed server runs this version, creating a **new** account fails in both clients; signing in is not affected.
+Adding the step changes the sign-up flow, so it was left out of a design-only job; it is a small, separate task.
+
+### J-6 Launcher icon (separate request: "put this icon on the app, nothing else")
+
+The icon is the owner's artwork, `flutter_app/branding/source/euro_icon_source.jpg` (a navy rounded tile with a silver "E",
+a gold orbit and the word EURO). `flutter_app/tool/make_icons.py` (developer tool: Pillow + NumPy, **not** run by CI)
+cuts the tile out of its backdrop, fits the tile's blue-to-black gradient and recovers the logo as a transparent layer.
+The generated files are committed, so building the app needs neither Python package.
+
+| File (under `flutter_app/branding/`) | What it is |
+|-----|-----------|
+| `android/res/mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.png` (48–192 px) | the tile with its rounded corners, transparent outside; used by Android 7 and older (the app's minSdk is 23) |
+| `android/res/drawable-xxxhdpi/ic_launcher_foreground.png`, `ic_launcher_background.png` (648 px = 108 dp) and `android/res/mipmap-anydpi-v26/ic_launcher.xml` | adaptive icon, Android 8 and newer: the logo is scaled so its enclosing circle fills the 66 dp safe zone; the background layer is the tile's gradient continued past the tile, so every launcher mask (circle, squircle, rounded square) shows the same picture |
+| `icon_1024.png` | full-bleed square master for a store listing (not used by the build) |
+| `android/res/values/euro_colors.xml` | now only `euro_launch_background`; the old `euro_icon_background` colour is no longer referenced. The dark launch background itself is unchanged |
+
+Nothing else was touched: no Dart file, no `pubspec.yaml`, no manifest patch (the generated manifest already points to
+`@mipmap/ic_launcher` and `prepare_android.py` copies the `res` tree exactly as before).
+
+| Check | Result |
+|-------|--------|
+| Adaptive layers composited and looked at under circle, squircle and rounded-square masks | logo whole, centred, nothing cropped |
+| Legacy icons looked at on dark and light backdrops, corners enlarged 8x | clean rounded outline, no white halo |
+| Every logo pixel (opacity of 50 % or more) against the 33 dp safe radius | furthest pixel 32.98 dp |
+| Generator run with `-W error::DeprecationWarning` | clean; output is deterministic |
+| APK build with the new icon | **NOT RUN** (no Android SDK in the sandbox) |
+| Icon seen on a phone / in a launcher | **NOT DONE** |
+| Monochrome layer for Android 13 "themed icons" | not provided; the launcher then shows the normal icon |

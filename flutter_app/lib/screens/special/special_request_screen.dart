@@ -1,7 +1,11 @@
 // Special request: ask EURO CARS to source a part that is not in the catalog
 // (POST /api/special-requests, same fields and rules as the web page).
+//
+// The look follows the web form: one glass card, the brand picker as an inset segmented grid, inset fields and a
+// dashed photo box.
 
 import 'dart:typed_data';
+import 'dart:ui' show PathMetric;
 
 import 'package:flutter/material.dart';
 
@@ -11,10 +15,12 @@ import '../../core/models.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
 import '../../widgets/app_bar.dart';
+import '../../widgets/backdrop.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/inputs.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/pickers.dart';
+import '../../widgets/segmented.dart';
 
 /// Opens the special request form, optionally filled in from a part or a search the user just made.
 void openSpecialRequest(
@@ -219,13 +225,16 @@ class _SpecialRequestScreenState extends State<SpecialRequestScreen> {
   Widget build(BuildContext context) {
     final Palette p = Palette.of(context);
     final AppState state = AppScope.of(context);
-    return Scaffold(
-      appBar: buildScreenBar(context, 'طلب قطعة خاصة'),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          children: _sent ? _successView(p) : _formView(p, state),
+    return AppBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: buildScreenBar(context, 'طلب قطعة خاصة'),
+        body: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 28),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            children: _sent ? _successView(p) : _formView(p, state),
+          ),
         ),
       ),
     );
@@ -233,29 +242,49 @@ class _SpecialRequestScreenState extends State<SpecialRequestScreen> {
 
   List<Widget> _successView(Palette p) {
     return <Widget>[
-      const SizedBox(height: 36),
-      Icon(Icons.check_circle_rounded, color: p.ok, size: 68),
-      const SizedBox(height: 14),
-      Text(
-        'وصلنا طلبك',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: p.text, fontSize: 22, fontWeight: FontWeight.w900),
+      const SizedBox(height: 24),
+      Panel(
+        padding: const EdgeInsets.fromLTRB(20, 28, 20, 22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Center(child: Icon(Icons.check_circle_rounded, color: p.ok, size: 56)),
+            const SizedBox(height: 12),
+            Text(
+              'وصلنا طلبك',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: p.text,
+                fontSize: 21,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'سنؤمّن القطعة ونرسل لك السعر.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: p.muted, fontSize: 14.5, height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            PrimaryButton(
+              label: 'عرض طلباتي الخاصة',
+              icon: Icons.receipt_long_rounded,
+              onPressed: _showMyRequests,
+            ),
+            const SizedBox(height: 10),
+            SecondaryButton(label: 'طلب جديد', icon: Icons.add_rounded, onPressed: _reset),
+          ],
+        ),
       ),
-      const SizedBox(height: 6),
-      Text(
-        'سنؤمّن القطعة ونرسل لك السعر.',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: p.muted, fontSize: 15, height: 1.5),
-      ),
-      const SizedBox(height: 28),
-      PrimaryButton(
-        label: 'عرض طلباتي الخاصة',
-        icon: Icons.receipt_long_rounded,
-        onPressed: _showMyRequests,
-      ),
-      const SizedBox(height: 10),
-      SecondaryButton(label: 'طلب جديد', icon: Icons.add_rounded, onPressed: _reset),
     ];
+  }
+
+  Widget _label(Palette p, String text) {
+    return Text(
+      text,
+      style: TextStyle(color: p.muted, fontSize: 13, fontWeight: FontWeight.w700),
+    );
   }
 
   List<Widget> _formView(Palette p, AppState state) {
@@ -267,157 +296,232 @@ class _SpecialRequestScreenState extends State<SpecialRequestScreen> {
         'القطعة غير متوفرة؟ نؤمّنها لك ونسعّرها ونسلّمها، حتى من خارج البلد.',
         style: TextStyle(color: p.muted, fontSize: 14, height: 1.6),
       ),
-      const SizedBox(height: 18),
-      Text(
-        'ماركة السيارة',
-        style: TextStyle(color: p.muted, fontSize: 13, fontWeight: FontWeight.w700),
-      ),
-      const SizedBox(height: 8),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: <Widget>[
-          for (final String brand in <String>[...carBrands, otherLabel])
-            ChoiceChip(
-              label: Text(brand),
-              selected: _brand == brand,
-              showCheckmark: false,
-              onSelected: (bool on) {
-                if (on) {
-                  setState(() => _brand = brand);
-                }
-              },
-            ),
-        ],
-      ),
-      if (_brand == otherLabel) ...<Widget>[
-        const SizedBox(height: 14),
-        AppTextField(
-          controller: _otherBrand,
-          label: 'نوع السيارة',
-          hint: 'مثال: بورش، سكودا...',
-          icon: Icons.directions_car_outlined,
-          maxLength: 80,
-          textInputAction: TextInputAction.next,
-        ),
-      ],
       const SizedBox(height: 14),
-      AppTextField(
-        controller: _partName,
-        focusNode: _nameFocus,
-        label: 'اسم القطعة',
-        hint: 'اكتب للبحث عن اقتراحات...',
-        icon: Icons.build_circle_outlined,
-        maxLength: 120,
-        textInputAction: TextInputAction.next,
-        onChanged: (String _) => setState(() {}),
-      ),
-      if (suggestions.isNotEmpty) ...<Widget>[
-        const SizedBox(height: 6),
-        Panel(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: <Widget>[
-              for (final String name in suggestions)
-                InkWell(
-                  onTap: () {
-                    _partName.text = name;
-                    _nameFocus.unfocus();
-                    setState(() {});
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    child: Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: Text(name, style: TextStyle(color: p.text, fontSize: 14.5)),
+      Panel(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            _label(p, 'ماركة السيارة'),
+            const SizedBox(height: 8),
+            SegmentedTrack<String>(
+              layout: SegmentLayout.grid,
+              selected: _brand,
+              onChanged: (String brand) => setState(() => _brand = brand),
+              options: <SegmentOption<String>>[
+                for (final String brand in <String>[...carBrands, otherLabel])
+                  SegmentOption<String>(value: brand, label: brand),
+              ],
+            ),
+            if (_brand == otherLabel) ...<Widget>[
+              const SizedBox(height: 16),
+              AppTextField(
+                controller: _otherBrand,
+                label: 'نوع السيارة',
+                hint: 'مثال: بورش، سكودا...',
+                icon: Icons.directions_car_outlined,
+                maxLength: 80,
+                textInputAction: TextInputAction.next,
+              ),
+            ],
+            const SizedBox(height: 16),
+            AppTextField(
+              controller: _partName,
+              focusNode: _nameFocus,
+              label: 'اسم القطعة',
+              hint: 'اكتب للبحث عن اقتراحات...',
+              icon: Icons.build_circle_outlined,
+              maxLength: 120,
+              textInputAction: TextInputAction.next,
+              onChanged: (String _) => setState(() {}),
+            ),
+            if (suggestions.isNotEmpty) ...<Widget>[
+              const SizedBox(height: 6),
+              Panel(
+                color: p.menuBg,
+                radius: 16,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: <Widget>[
+                    for (int i = 0; i < suggestions.length; i++)
+                      InkWell(
+                        onTap: () {
+                          _partName.text = suggestions[i];
+                          _nameFocus.unfocus();
+                          setState(() {});
+                        },
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            border: i > 0 ? Border(top: BorderSide(color: p.line)) : null,
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: Text(
+                                suggestions[i],
+                                style: TextStyle(color: p.text.withValues(alpha: 0.85), fontSize: 14.5),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            AppTextField(
+              controller: _partNumber,
+              label: 'رقم القطعة أو رقم الشاصي (VIN)',
+              icon: Icons.pin_outlined,
+              ltr: true,
+              maxLength: 64,
+              textInputAction: TextInputAction.next,
+            ),
+            const SizedBox(height: 16),
+            AppTextField(
+              controller: _notes,
+              label: 'ملاحظات',
+              hint: 'الموديل، السنة، المحرك…',
+              maxLength: 1000,
+              maxLines: 4,
+            ),
+            const SizedBox(height: 16),
+            _label(p, 'صورة القطعة (اختياري)'),
+            const SizedBox(height: 8),
+            _PhotoBox(photo: photo, onTap: _pickImage),
+            if (photo != null) ...<Widget>[
+              const SizedBox(height: 10),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: SecondaryButton(
+                      label: 'تغيير الصورة',
+                      icon: Icons.swap_horiz_rounded,
+                      compact: true,
+                      onPressed: _pickImage,
                     ),
                   ),
-                ),
-            ],
-          ),
-        ),
-      ],
-      const SizedBox(height: 14),
-      AppTextField(
-        controller: _partNumber,
-        label: 'رقم القطعة أو رقم الشاصي (VIN)',
-        icon: Icons.pin_outlined,
-        ltr: true,
-        maxLength: 64,
-        textInputAction: TextInputAction.next,
-      ),
-      const SizedBox(height: 14),
-      AppTextField(
-        controller: _notes,
-        label: 'ملاحظات',
-        hint: 'الموديل، السنة، المحرك…',
-        maxLength: 1000,
-        maxLines: 4,
-      ),
-      const SizedBox(height: 14),
-      Text(
-        'صورة القطعة (اختياري)',
-        style: TextStyle(color: p.muted, fontSize: 13, fontWeight: FontWeight.w700),
-      ),
-      const SizedBox(height: 8),
-      if (photo == null)
-        Panel(
-          onTap: _pickImage,
-          padding: const EdgeInsets.symmetric(vertical: 26),
-          child: Column(
-            children: <Widget>[
-              Icon(Icons.photo_camera_outlined, color: p.primary, size: 32),
-              const SizedBox(height: 8),
-              Text(
-                'التقط صورة أو اختر صورة من المعرض',
-                style: TextStyle(color: p.muted, fontSize: 14),
-              ),
-            ],
-          ),
-        )
-      else
-        Panel(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            children: <Widget>[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: SizedBox(
-                  height: 190,
-                  width: double.infinity,
-                  child: Image.memory(photo, fit: BoxFit.contain),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: <Widget>[
-                  TextButton.icon(
-                    onPressed: _pickImage,
-                    icon: const Icon(Icons.swap_horiz_rounded),
-                    label: const Text('تغيير الصورة'),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => setState(() => _image = null),
-                    icon: Icon(Icons.delete_outline_rounded, color: p.err),
-                    label: Text('إزالة', style: TextStyle(color: p.err)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SecondaryButton(
+                      label: 'إزالة',
+                      icon: Icons.delete_outline_rounded,
+                      compact: true,
+                      color: p.errText,
+                      onPressed: () => setState(() => _image = null),
+                    ),
                   ),
                 ],
               ),
             ],
-          ),
+            const SizedBox(height: 8),
+            Text(
+              'يمكنك اختيار صورة محفوظة على الهاتف أو التقاط صورة جديدة من واجهة اختيار الصور.',
+              style: TextStyle(color: p.muted, fontSize: 12, height: 1.6),
+            ),
+            if (error != null) ...<Widget>[
+              const SizedBox(height: 14),
+              NoticeBanner(message: error, kind: NoticeKind.error),
+            ],
+            const SizedBox(height: 18),
+            PrimaryButton(
+              label: 'إرسال الطلب',
+              icon: Icons.send_rounded,
+              busy: _busy,
+              onPressed: _submit,
+            ),
+          ],
         ),
-      if (error != null) ...<Widget>[
-        const SizedBox(height: 16),
-        NoticeBanner(message: error, kind: NoticeKind.error),
-      ],
-      const SizedBox(height: 20),
-      PrimaryButton(
-        label: 'إرسال الطلب',
-        icon: Icons.send_rounded,
-        busy: _busy,
-        onPressed: _submit,
       ),
     ];
+  }
+}
+
+/// The web form's photo area: a dashed rounded box with a camera icon, or the chosen photo inside it.
+class _PhotoBox extends StatelessWidget {
+  const _PhotoBox({required this.photo, required this.onTap});
+
+  final Uint8List? photo;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final Palette p = Palette.of(context);
+    final Uint8List? bytes = photo;
+    return Semantics(
+      button: true,
+      label: bytes == null ? 'إضافة صورة للقطعة' : 'تغيير صورة القطعة',
+      child: Material(
+        color: p.fieldBg,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: CustomPaint(
+            foregroundPainter: _DashedBorderPainter(color: p.lineStrong, radius: 16),
+            child: SizedBox(
+              height: 176,
+              width: double.infinity,
+              child: bytes == null
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: <Widget>[
+                        Icon(Icons.photo_camera_outlined, color: p.primary, size: 30),
+                        const SizedBox(height: 8),
+                        Text(
+                          'التقط صورة أو اختر صورة من المعرض',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: p.muted, fontSize: 14),
+                        ),
+                      ],
+                    )
+                  : Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Image.memory(bytes, fit: BoxFit.contain),
+                    ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Paints the 2 px dashed outline of the photo box (Flutter has no dashed borders).
+class _DashedBorderPainter extends CustomPainter {
+  const _DashedBorderPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.isEmpty) {
+      return;
+    }
+    const double dash = 7;
+    const double gap = 5;
+    final Paint paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round
+      ..color = color;
+    final Path outline = Path()
+      ..addRRect(RRect.fromRectAndRadius((Offset.zero & size).deflate(1), Radius.circular(radius - 1)));
+    for (final PathMetric metric in outline.computeMetrics()) {
+      double start = 0;
+      while (start < metric.length) {
+        final double end = start + dash > metric.length ? metric.length : start + dash;
+        canvas.drawPath(metric.extractPath(start, end), paint);
+        start += dash + gap;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedBorderPainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.radius != radius;
   }
 }

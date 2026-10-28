@@ -68,12 +68,10 @@ class PartCard extends StatelessWidget {
                   part.brand,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: p.primary, fontSize: 13, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: p.primary, fontSize: 12.5, fontWeight: FontWeight.w500),
                 ),
               ),
-              if (!part.inStock)
-                const StatusChip(label: 'غير متوفرة', tone: StatusTone.waiting)
-              else if (part.lowStock)
+              if (part.inStock && part.lowStock)
                 const StatusChip(label: 'كمية محدودة', tone: StatusTone.waiting),
             ],
           ),
@@ -85,14 +83,15 @@ class PartCard extends StatelessWidget {
             style: TextStyle(
               color: p.text,
               fontSize: 16.5,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
               height: 1.35,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Wrap(
             spacing: 10,
-            runSpacing: 6,
+            runSpacing: 4,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: <Widget>[
               PartNumberPlate(number: part.pn),
@@ -105,11 +104,21 @@ class PartCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   formatUsd(part.price),
-                  style: TextStyle(color: p.text, fontSize: 21, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    color: p.text,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
                 ),
               ),
               _action(context, state, qty),
             ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'اضغط لعرض التفاصيل والتوافق',
+            style: TextStyle(color: p.muted.withValues(alpha: 0.9), fontSize: 12),
           ),
         ],
       ),
@@ -118,16 +127,18 @@ class PartCard extends StatelessWidget {
 
   Widget _action(BuildContext context, AppState state, int qty) {
     if (!part.inStock) {
-      return OutlinedButton(
+      return SecondaryButton(
+        label: 'غير متوفرة — اطلبها',
         onPressed: onRequest,
-        child: const Text('اطلبها'),
+        compact: true,
       );
     }
     if (qty <= 0) {
-      return FilledButton.icon(
+      return PrimaryButton(
+        label: 'أضف للسلة',
+        icon: Icons.add_rounded,
+        compact: true,
         onPressed: () => addPartToCart(context, part),
-        icon: const Icon(Icons.add_shopping_cart_rounded, size: 19),
-        label: const Text('أضف للسلة'),
       );
     }
     return QuantityStepper(

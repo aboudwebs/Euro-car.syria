@@ -26,8 +26,9 @@ lib/theme     palette and ThemeData (dark and light)
 lib/widgets   shared inputs, panels, pickers, feedback
 lib/screens   auth, home shell, catalog, cart, orders, special request, dashboard, account
 test          unit tests (core + AppState with a scripted server) and widget tests
-tool          prepare_android.py, verify_apk.sh, make_icons.py
-branding      launcher icons and launch background copied into the generated Android project
+tool          prepare_android.py, verify_apk.sh, make_icons.py (rebuilds the launcher icons from branding/source)
+branding      launcher icons (adaptive + legacy) and launch background copied into the generated Android project;
+              source/euro_icon_source.jpg is the logo artwork they are made from
 ```
 
 ## Build
@@ -76,7 +77,8 @@ next to the generated project; keep both files out of git.
 Nothing automatic installs and runs the APK, so try this once before handing the app over (the hosted API can take
 up to a minute to wake up on the first request):
 
-1. Install the APK, open it with the phone online, sign in as a workshop.
+1. Install the APK (the launcher icon must be the EURO logo: silver "E", gold orbit, "EURO" on the navy tile, in the
+   home-screen shape of the phone), open it with the phone online, sign in as a workshop.
 2. Catalog: search by name and by an OEM number, open a part, add it to the cart, change the quantity.
 3. Order: place one with cash on delivery, one with Sham Cash and a receipt photo, and (if the account has credit) one
    on the debt ledger. Check all of them under "طلباتي".

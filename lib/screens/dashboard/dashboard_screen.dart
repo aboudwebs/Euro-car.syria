@@ -175,6 +175,64 @@ class DashboardScreen extends StatelessWidget {
                     style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w700),
                   ),
                 ),
+                IconButton(
+                  tooltip: 'شرح نظام الولاء',
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(Icons.info_outline_rounded, color: p.primary, size: 22),
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (BuildContext dialogContext) => AlertDialog(
+                      title: const Text('كيف يعمل نظام الولاء؟'),
+                      content: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: <Widget>[
+                            const Text(
+                              'تبدأ دورة الولاء من أول عملية شراء، وتستمر 90 يوماً. تُحتسب المشتريات المعتمدة خلال الدورة، وكلما زاد مجموع مشترياتك انتقلت إلى المرتبة التالية وارتفعت نسبة الكاش باك.',
+                              style: TextStyle(height: 1.6),
+                            ),
+                            const SizedBox(height: 14),
+                            for (final TierStep step in estimatedTiers)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Row(
+                                  children: <Widget>[
+                                    Expanded(
+                                      child: Text(
+                                        step.minSpend == 0
+                                            ? step.name
+                                            : '${step.name} — بعد ${formatUsd(step.minSpend)}',
+                                        style: const TextStyle(fontWeight: FontWeight.w600),
+                                      ),
+                                    ),
+                                    Text(
+                                      step.cashback,
+                                      style: TextStyle(
+                                        color: Palette.of(dialogContext).primary,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'تُصفّر المشتريات المحتسبة عند انتهاء دورة الـ90 يوماً، وتبدأ دورة جديدة.',
+                              style: TextStyle(height: 1.6),
+                            ),
+                          ],
+                        ),
+                      ),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () => Navigator.of(dialogContext).pop(),
+                          child: const Text('فهمت'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),

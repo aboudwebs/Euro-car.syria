@@ -15,6 +15,7 @@ import '../../core/labels.dart';
 import '../../core/models.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
+import '../../widgets/backdrop.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/inputs.dart';
 import '../../widgets/panel.dart';
@@ -139,6 +140,16 @@ class _AccountScreenState extends State<AccountScreen> {
         _error = unexpectedMessage;
       });
     }
+  }
+
+  Future<void> _openAccountOrders({required bool active}) async {
+    await AppScope.read(context).loadOrders(silent: true);
+    if (!mounted) return;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (BuildContext routeContext) => AccountOrdersScreen(active: active),
+      ),
+    );
   }
 
   Future<void> _openSupport() async {
@@ -281,7 +292,29 @@ class _AccountScreenState extends State<AccountScreen> {
               _settingsPanel(p, state),
               const SectionTitle('الحساب والخدمات'),
               _linksPanel(p, state),
-              ..._ordersSections(p, state),
+              const SectionTitle('الطلبات'),
+              Panel(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Column(
+                  children: <Widget>[
+                    ListTile(
+                      leading: Icon(Icons.local_shipping_outlined, color: p.primary),
+                      title: const Text('طلباتي النشطة'),
+                      subtitle: Text('متابعة الطلبات قيد التنفيذ', style: TextStyle(color: p.muted, fontSize: 12)),
+                      trailing: Icon(Icons.chevron_left_rounded, color: p.muted),
+                      onTap: () => _openAccountOrders(active: true),
+                    ),
+                    Divider(height: 1, color: p.line),
+                    ListTile(
+                      leading: Icon(Icons.history_rounded, color: p.primary),
+                      title: const Text('طلباتي السابقة'),
+                      subtitle: Text('عرض الطلبات المكتملة والملغاة', style: TextStyle(color: p.muted, fontSize: 12)),
+                      trailing: Icon(Icons.chevron_left_rounded, color: p.muted),
+                      onTap: () => _openAccountOrders(active: false),
+                    ),
+                  ],
+                ),
+              ),
               const SectionTitle('المساعدة'),
               SecondaryButton(
                 label: 'التواصل مع الدعم عبر واتساب',
@@ -408,62 +441,6 @@ class _AccountScreenState extends State<AccountScreen> {
         ],
       ),
     );
-  }
-
-  /// Active orders (all of them, with status and tracking number) and previous orders (with the payment badge).
-  List<Widget> _ordersSections(Palette p, AppState state) {
-    final List<Order> active = state.activeOrders;
-    final List<Order> previous = state.previousOrders;
-    final String? ordersError = state.ordersError;
-    final List<Widget> out = <Widget>[];
-
-    out.add(const SectionTitle('طلباتي النشطة'));
-    if (!state.ordersLoaded && state.ordersLoading) {
-      out.add(const LoadingBlock(message: 'جارٍ تحميل الطلبات...'));
-      return out;
-    }
-    if (!state.ordersLoaded && ordersError != null) {
-      out.add(NoticeBanner(message: ordersError, kind: NoticeKind.error, onRetry: () => state.loadOrders()));
-      return out;
-    }
-    if (active.isEmpty) {
-      out.add(Panel(
-        child: Text(
-          'لا توجد طلبات نشطة حالياً.',
-          style: TextStyle(color: p.muted, fontSize: 14),
-        ),
-      ));
-    } else {
-      for (final Order order in active) {
-        out
-          ..add(OrderCard(order: order))
-          ..add(const SizedBox(height: 10));
-      }
-    }
-
-    out.add(const SectionTitle('طلباتي السابقة'));
-    if (previous.isEmpty) {
-      out.add(Panel(
-        child: Text(
-          'لا توجد طلبات سابقة.',
-          style: TextStyle(color: p.muted, fontSize: 14),
-        ),
-      ));
-    } else {
-      for (final Order order in previous.take(_previewCount)) {
-        out
-          ..add(OrderCard(order: order))
-          ..add(const SizedBox(height: 10));
-      }
-      if (previous.length > _previewCount) {
-        out.add(SecondaryButton(
-          label: 'عرض كل الطلبات',
-          icon: Icons.receipt_long_outlined,
-          onPressed: () => state.selectTab(tabOrders),
-        ));
-      }
-    }
-    return out;
   }
 
   /// The profile card: a blue wash fading to glass, the photo with its change badge, and the account details.
@@ -934,6 +911,93 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
               : const Text('تأكيد حذف الحساب'),
         ),
       ],
+    );
+  }
+}
+
+
+/// Orders opened from the profile as dedicated screens, keeping the profile uncluttered.
+class AccountOrdersScreen extends StatelessWidget {
+  const AccountOrdersScreen({super.key, required this.active});
+
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final Palette p = Palette.of(context);
+    final AppState state = AppScope.of(context);
+    final List<Order> orders = active ? state.activeOrders : state.previousOrders;
+    final String? error = state.ordersError;
+
+    Widget content;
+    if (!state.ordersLoaded && state.ordersLoading) {
+      content = const Center(child: LoadingBlock(message: 'جارٍ تحميل الطلبات...'));
+    } else if (!state.ordersLoaded && error != null) {
+      content = ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          NoticeBanner(message: error, kind: NoticeKind.error, onRetry: () => state.loadOrders()),
+        ],
+      );
+    } else if (orders.isEmpty) {
+      content = ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        children: <Widget>[
+          Panel(
+            padding: EdgeInsets.zero,
+            child: EmptyState(
+              icon: active ? Icons.local_shipping_outlined : Icons.history_rounded,
+              title: active ? 'لا توجد طلبات نشطة' : 'لا توجد طلبات سابقة',
+              message: active
+                  ? 'ستظهر هنا طلباتك التي ما زالت قيد التنفيذ.'
+                  : 'ستظهر هنا طلباتك المكتملة أو الملغاة.',
+            ),
+          ),
+          if (error != null) ...<Widget>[
+            const SizedBox(height: 12),
+            NoticeBanner(message: error, kind: NoticeKind.error, onRetry: () => state.loadOrders()),
+          ],
+        ],
+      );
+    } else {
+      content = ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+        itemCount: orders.length + (error == null ? 0 : 1),
+        itemBuilder: (BuildContext context, int index) {
+          if (error != null && index == 0) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: NoticeBanner(message: error, kind: NoticeKind.error, onRetry: () => state.loadOrders()),
+            );
+          }
+          final Order order = orders[index - (error == null ? 0 : 1)];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: OrderCard(key: ValueKey<String>(order.id), order: order),
+          );
+        },
+      );
+    }
+
+    return AppBackdrop(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          title: Text(active ? 'طلباتي النشطة' : 'طلباتي السابقة'),
+          backgroundColor: Colors.transparent,
+        ),
+        body: SafeArea(
+          child: RefreshIndicator(
+            color: p.primary,
+            backgroundColor: p.panel,
+            onRefresh: () => state.loadOrders(),
+            child: content,
+          ),
+        ),
+      ),
     );
   }
 }

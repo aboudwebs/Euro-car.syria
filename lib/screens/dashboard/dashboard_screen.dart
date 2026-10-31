@@ -273,7 +273,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'المرتبة محسوبة من الطلبات المعتمدة الظاهرة في آخر 100 طلب، وقد تختلف عن المرتبة المعتمدة في حساب الإدارة.',
+              'هذا المؤشر تقديري حسب الطلبات المتاحة في التطبيق؛ اعتماد المرتبة والكاش باك النهائي يكون وفق دورة الولاء المعتمدة لمدة 90 يوماً.',
               style: TextStyle(color: p.placeholder, fontSize: 12, height: 1.6),
             ),
           ],

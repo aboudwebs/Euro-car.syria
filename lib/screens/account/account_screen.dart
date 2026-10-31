@@ -42,9 +42,6 @@ class _AccountScreenState extends State<AccountScreen> {
   String? _notice;
   String? _error;
 
-  /// Previous orders shown on the profile before "show all".
-  static const int _previewCount = 3;
-
   @override
   void initState() {
     super.initState();

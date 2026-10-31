@@ -88,14 +88,6 @@ class AboutScreen extends StatelessWidget {
                     ),
                     Divider(height: 1, color: p.line),
                     _ContactRow(
-                      icon: Icons.public_rounded,
-                      label: 'الموقع الإلكتروني',
-                      value: companyWebsite.replaceFirst('https://', ''),
-                      ltr: true,
-                      onTap: () => _open(context, companyWebsite, 'تعذر فتح الرابط.'),
-                    ),
-                    Divider(height: 1, color: p.line),
-                    _ContactRow(
                       icon: Icons.chat_outlined,
                       iconColor: p.ok,
                       label: 'الدعم عبر واتساب',

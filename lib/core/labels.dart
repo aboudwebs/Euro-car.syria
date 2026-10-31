@@ -77,8 +77,8 @@ class TierStep {
 
 const List<TierStep> estimatedTiers = <TierStep>[
   TierStep('برونزية', 0, '2%'),
-  TierStep('فضية', 1000, '5–8%'),
-  TierStep('ذهبية', 3000, '10–12%'),
-  TierStep('بلاتينية', 6000, '15%'),
-  TierStep('النخبة VIP', 10000, 'حتى 20%'),
+  TierStep('فضية', 1000, '4%'),
+  TierStep('ذهبية', 2000, '6%'),
+  TierStep('بلاتينية', 3000, '8%'),
+  TierStep('النخبة VIP', 4000, '10%'),
 ];

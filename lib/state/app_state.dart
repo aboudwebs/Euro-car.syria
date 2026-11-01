@@ -520,6 +520,7 @@ class AppState extends ChangeNotifier {
     required String otpCode,
     required String otpToken,
   }) async {
+    final String? registrationPushToken = await PushNotifications.requestPermissionAndGetToken();
     final Map<String, dynamic> body = <String, dynamic>{
       'mode': 'register',
       'client': 'mobile',
@@ -529,6 +530,7 @@ class AppState extends ChangeNotifier {
       'password': password,
       'otpCode': toWesternDigits(otpCode).trim(),
       'otpToken': otpToken,
+      if (registrationPushToken != null && registrationPushToken.isNotEmpty) 'pushToken': registrationPushToken,
     };
     if (role == 'workshop') {
       body['license'] = license.trim();

@@ -113,11 +113,15 @@ class ApiClient {
     String path,
     Map<String, dynamic> body, {
     bool auth = true,
+    String? idempotencyKey,
   }) {
     return _request(
       () => _client.post(
         _uri(path),
-        headers: _headers(auth: auth, contentType: _jsonType),
+        headers: <String, String>{
+          ..._headers(auth: auth, contentType: _jsonType),
+          if (idempotencyKey != null && idempotencyKey.isNotEmpty) 'Idempotency-Key': idempotencyKey,
+        },
         body: utf8.encode(jsonEncode(body)),
       ),
       auth: auth,

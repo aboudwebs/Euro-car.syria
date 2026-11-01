@@ -108,6 +108,14 @@ class PushNotifications {
     );
   }
 
+  static Future<String?> currentToken() async {
+    try {
+      return await FirebaseMessaging.instance.getToken();
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<String?> requestPermissionAndGetToken() async {
     try {
       final FirebaseMessaging messaging = FirebaseMessaging.instance;

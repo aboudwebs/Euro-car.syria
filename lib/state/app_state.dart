@@ -995,21 +995,29 @@ class AppState extends ChangeNotifier {
         throw const ApiException('تعذر حفظ معرّف التأكيد بأمان. تحقق من مساحة التخزين وحاول مجدداً.');
       }
     }
-    await _guard(
-      () => api.postMultipart(
-        '/api/special-requests',
-        fields: <String, String>{
-          'brand': brand,
-          'otherBrand': otherBrand.trim(),
-          'partName': partName.trim(),
-          'partNumber': partNumber.trim(),
-          'notes': notes.trim(),
-        },
-        files: files,
-        idempotencyKey: idempotencyKey,
-      ),
-    );
-    await _safeDelete(keyName);
+    try {
+      await _guard(
+        () => api.postMultipart(
+          '/api/special-requests',
+          fields: <String, String>{
+            'brand': brand,
+            'otherBrand': otherBrand.trim(),
+            'partName': partName.trim(),
+            'partNumber': partNumber.trim(),
+            'notes': notes.trim(),
+          },
+          files: files,
+          idempotencyKey: idempotencyKey,
+        ),
+      );
+      await _safeDelete(keyName);
+    } on ApiException catch (error) {
+      // Preserve the key on network/server uncertainty; release it only for a definitive client rejection.
+      if (error.statusCode != null && error.statusCode! >= 400 && error.statusCode! < 500) {
+        await _safeDelete(keyName);
+      }
+      rethrow;
+    }
     unawaited(loadRequests(silent: true));
   }
 

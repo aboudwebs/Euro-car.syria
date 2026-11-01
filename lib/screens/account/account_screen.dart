@@ -52,7 +52,6 @@ class _AccountScreenState extends State<AccountScreen> {
       final AppState state = AppScope.read(context);
       state.loadOrders(silent: true);
       state.loadDeletion(silent: true);
-      state.loadNotifications(silent: true);
     });
   }
 
@@ -310,53 +309,6 @@ class _AccountScreenState extends State<AccountScreen> {
                       trailing: Icon(Icons.chevron_left_rounded, color: p.muted),
                       onTap: () => _openAccountOrders(active: false),
                     ),
-                  ],
-                ),
-              ),
-              const SectionTitle('الإشعارات'),
-              Panel(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                child: Column(
-                  children: <Widget>[
-                    if (state.unreadNotificationCount > 0)
-                      Align(
-                        alignment: AlignmentDirectional.centerEnd,
-                        child: TextButton.icon(
-                          onPressed: state.markNotificationsRead,
-                          icon: const Icon(Icons.done_all_rounded, size: 17),
-                          label: const Text('تحديد الكل كمقروء'),
-                        ),
-                      ),
-                    if (state.notifications.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          state.notificationsLoading ? 'جارٍ تحميل الإشعارات...' : 'لا توجد إشعارات حالياً.',
-                          style: TextStyle(color: p.muted, fontSize: 13),
-                        ),
-                      )
-                    else
-                      for (int i = 0; i < state.notifications.take(8).length; i++) ...<Widget>[
-                        if (i > 0) Divider(height: 1, color: p.line),
-                        Builder(builder: (context) {
-                          final UserNotification item = state.notifications[i];
-                          final IconData glyph = switch (item.type) {
-                            'cashback' => Icons.savings_outlined,
-                            'loyalty' => Icons.workspace_premium_outlined,
-                            'payment' => Icons.account_balance_wallet_outlined,
-                            'debt' => Icons.menu_book_outlined,
-                            'order' => Icons.receipt_long_outlined,
-                            _ => Icons.notifications_outlined,
-                          };
-                          return ListTile(
-                            dense: true,
-                            leading: Icon(glyph, color: item.isRead ? p.muted : p.primary),
-                            title: Text(item.title, style: TextStyle(color: p.text, fontWeight: item.isRead ? FontWeight.w500 : FontWeight.w700)),
-                            subtitle: Text(item.body, style: TextStyle(color: p.muted, height: 1.45)),
-                            trailing: item.isRead ? null : Icon(Icons.circle, color: p.primary, size: 8),
-                          );
-                        }),
-                      ],
                   ],
                 ),
               ),

@@ -177,18 +177,6 @@ class _OrderCardState extends State<OrderCard> {
               color: order.refundStatus == 'refunded' ? p.ok : p.warn,
             ),
           ],
-          if (order.isCancelled && order.payMethod == 'sham' && order.refundStatus != 'not_required') ...<Widget>[
-            const SizedBox(height: 8),
-            NoteBox(
-              text: switch (order.refundStatus) {
-                'pending_review' => 'استرداد شام كاش: طلبك بانتظار مراجعة الإدارة. إذا تم التحويل فعلياً، ستتابع الإدارة إعادة المبلغ.',
-                'refunded' => 'استرداد شام كاش: أكدت الإدارة إعادة المبلغ إليك.',
-                'not_refundable' => 'استرداد شام كاش: أفادت الإدارة بأنه لا يوجد مبلغ مستحق للاسترداد. ${order.refundNote ?? ''}',
-                _ => 'استرداد شام كاش قيد المراجعة.',
-              },
-              color: order.refundStatus == 'refunded' ? p.ok : p.warn,
-            ),
-          ],
           if (_open && address != null) ...<Widget>[
             const SizedBox(height: 8),
             _DetailLine(

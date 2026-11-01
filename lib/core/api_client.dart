@@ -120,7 +120,7 @@ class ApiClient {
         _uri(path),
         headers: <String, String>{
           ..._headers(auth: auth, contentType: _jsonType),
-          if (idempotencyKey != null && idempotencyKey.isNotEmpty) 'Idempotency-Key': idempotencyKey,
+          if (idempotencyKey != null && idempotencyKey.isNotEmpty) 'idempotency-key': idempotencyKey,
         },
         body: utf8.encode(jsonEncode(body)),
       ),
@@ -189,7 +189,7 @@ class ApiClient {
         final http.MultipartRequest request = http.MultipartRequest('POST', _uri(path));
         request.headers.addAll(_headers());
         if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
-          request.headers['Idempotency-Key'] = idempotencyKey;
+          request.headers['idempotency-key'] = idempotencyKey;
         }
         request.fields.addAll(fields);
         for (final UploadFile file in files) {

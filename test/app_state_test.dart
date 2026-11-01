@@ -256,13 +256,16 @@ void main() {
 
     test('a workshop registration waits for the admin and sends the cleaned fields', () async {
       final Harness h = Harness();
-      h.server.reply(
-        'POST',
-        '/api/auth',
-        <String, dynamic>{'pendingApproval': true, 'message': 'تم إرسال الطلب للإدارة'},
-      );
+      h.server.on('POST', '/api/auth', (http.Request request) {
+        final Map<String, dynamic> body = jsonDecode(request.body) as Map<String, dynamic>;
+        return jsonResponse(body['mode'] == 'send-otp'
+            ? <String, dynamic>{'ok': true, 'otpToken': 'signed-token'}
+            : <String, dynamic>{'pendingApproval': true, 'message': 'تم إرسال الطلب للإدارة'});
+      });
       await h.state.restore();
 
+      final String otpToken = await h.state.requestRegistrationOtp(phone: '٠٩٨٢ ٠٢٦ ١٣٤');
+      final String otpToken = await h.state.requestRegistrationOtp(phone: '0982026134');
       final AuthResult result = await h.state.register(
         role: 'workshop',
         name: '  ورشة الأمل ',
@@ -273,6 +276,8 @@ void main() {
         specs: 'BMW, Audi',
         refCode: ' MK-1A2B3C ',
         refSignature: ' sig123 ',
+        otpCode: '123456',
+        otpToken: otpToken,
       );
 
       expect(result.isPending, isTrue);
@@ -285,6 +290,8 @@ void main() {
         'name': 'ورشة الأمل',
         'phone': '0982026134',
         'password': 'secret',
+        'otpCode': '123456',
+        'otpToken': 'signed-token',
         'license': 'L-77',
         'city': 'حلب',
         'spec': 'BMW, Audi',
@@ -295,7 +302,12 @@ void main() {
 
     test('blank referral values are not sent and a missing server message gets a default', () async {
       final Harness h = Harness();
-      h.server.reply('POST', '/api/auth', <String, dynamic>{'pendingApproval': true});
+      h.server.on('POST', '/api/auth', (http.Request request) {
+        final Map<String, dynamic> body = jsonDecode(request.body) as Map<String, dynamic>;
+        return jsonResponse(body['mode'] == 'send-otp'
+            ? <String, dynamic>{'ok': true, 'otpToken': 'signed-token'}
+            : <String, dynamic>{'pendingApproval': true});
+      });
       await h.state.restore();
 
       final AuthResult result = await h.state.register(
@@ -307,19 +319,29 @@ void main() {
         city: 'حلب',
         specs: 'BMW',
         refCode: '  ',
+        otpCode: '123456',
+        otpToken: otpToken,
       );
 
       expect(result.isPending, isTrue);
       expect(result.message, isNotEmpty);
-      final Map<String, dynamic> body = bodyOf(h.server.requestsTo('POST', '/api/auth').single);
+      final Map<String, dynamic> body = bodyOf(h.server.requestsTo('POST', '/api/auth').last);
       expect(body.containsKey('refCode'), isFalse);
       expect(body.containsKey('refSignature'), isFalse);
     });
 
     test('a marketer registration signs in at once and sends no workshop fields', () async {
-      final Harness h = Harness()..serveLogin(marketerJson(), token: 'tok-m');
+      final Harness h = Harness();
+      h.server.on('POST', '/api/auth', (http.Request request) {
+        final Map<String, dynamic> body = jsonDecode(request.body) as Map<String, dynamic>;
+        return jsonResponse(body['mode'] == 'send-otp'
+            ? <String, dynamic>{'ok': true, 'otpToken': 'signed-token'}
+            : <String, dynamic>{'accessToken': 'tok-m', 'user': marketerJson()});
+      });
+      h.serveBackground(account: marketerJson());
       await h.state.restore();
 
+      final String otpToken = await h.state.requestRegistrationOtp(phone: '0933000111');
       final AuthResult result = await h.state.register(
         role: 'marketer',
         name: 'مسوّق الشمال',
@@ -329,6 +351,8 @@ void main() {
         city: 'ignored',
         specs: 'ignored',
         refCode: 'MK-1',
+        otpCode: '123456',
+        otpToken: otpToken,
       );
       await pumpEventQueue();
 
@@ -336,14 +360,19 @@ void main() {
       expect(h.state.user!.isMarketer, isTrue);
       expect(h.api.token, 'tok-m');
       expect(
-        bodyOf(h.server.requestsTo('POST', '/api/auth').single).keys,
+        bodyOf(h.server.requestsTo('POST', '/api/auth').last).keys,
         unorderedEquals(<String>['mode', 'client', 'role', 'name', 'phone', 'password']),
       );
     });
 
     test('a refused registration shows the server message', () async {
       final Harness h = Harness();
-      h.server.reply('POST', '/api/auth', <String, dynamic>{'error': 'رقم الهاتف مسجل مسبقاً'}, 400);
+      h.server.on('POST', '/api/auth', (http.Request request) {
+        final Map<String, dynamic> body = jsonDecode(request.body) as Map<String, dynamic>;
+        return body['mode'] == 'send-otp'
+            ? jsonResponse(<String, dynamic>{'ok': true, 'otpToken': 'signed-token'})
+            : jsonResponse(<String, dynamic>{'error': 'رقم الهاتف مسجل مسبقاً'}, 400);
+      });
       await h.state.restore();
 
       final AuthResult result = await h.state.register(
@@ -351,6 +380,8 @@ void main() {
         name: 'م',
         phone: '0933000111',
         password: 'secret',
+        otpCode: '123456',
+        otpToken: otpToken,
       );
 
       expect(result.kind, AuthResultKind.failed);

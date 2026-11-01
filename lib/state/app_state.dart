@@ -1052,6 +1052,9 @@ class AppState extends ChangeNotifier {
     if (current == null) {
       throw const ApiException('يرجى تسجيل الدخول لإتمام الطلب');
     }
+    if (addressId == null || addressId.trim().isEmpty) {
+      throw const ApiException('يجب إضافة عنوان شحن محفوظ قبل تأكيد الطلب.');
+    }
     final List<CartLine> lines = cartLines;
     if (lines.isEmpty) {
       throw const ApiException('السلة فارغة.');

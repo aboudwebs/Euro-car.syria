@@ -30,6 +30,7 @@ APP_LABEL = "EURO CARS"
 MIN_SDK = 23
 
 INTERNET = '<uses-permission android:name="android.permission.INTERNET"/>'
+POST_NOTIFICATIONS = '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>'
 QUERY_HTTPS = (
     "        <intent>\n"
     '            <action android:name="android.intent.action.VIEW"/>\n'
@@ -94,6 +95,11 @@ def write_if_changed(path: pathlib.Path, text: str) -> bool:
 
 def patch_manifest(path: pathlib.Path) -> bool:
     text = read(path)
+
+    if "android.permission.POST_NOTIFICATIONS" not in text:
+        text, count = re.subn(r"(<manifest\\b[^>]*>)", r"\\1\\n    " + POST_NOTIFICATIONS, text, count=1)
+        if count != 1:
+            raise PatchError("no <manifest> element found for notification permission")
 
     if "android.permission.INTERNET" not in text:
         text, count = re.subn(r"(<manifest\b[^>]*>)", r"\1\n    " + INTERNET, text, count=1)

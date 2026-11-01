@@ -60,6 +60,9 @@ class AppState extends ChangeNotifier {
   Future<void> _cartWrites = Future<void>.value();
 
   List<Order> _orders = const <Order>[];
+  List<UserNotification> _notifications = const <UserNotification>[];
+  bool _notificationsLoading = false;
+  String? _notificationsError;
   bool _ordersLoading = false;
   bool _ordersLoaded = false;
   String? _ordersError;
@@ -148,6 +151,10 @@ class AppState extends ChangeNotifier {
   }
 
   List<Order> get orders => _orders;
+  List<UserNotification> get notifications => _notifications;
+  int get unreadNotificationCount => _notifications.where((n) => !n.isRead).length;
+  bool get notificationsLoading => _notificationsLoading;
+  String? get notificationsError => _notificationsError;
   bool get ordersLoading => _ordersLoading;
   bool get ordersLoaded => _ordersLoaded;
   String? get ordersError => _ordersError;
@@ -840,6 +847,48 @@ class AppState extends ChangeNotifier {
     );
   }
 
+  Future<void> loadNotifications({bool silent = false}) async {
+    if (_user == null) return;
+    final int epoch = _epoch;
+    if (!silent) {
+      _notificationsLoading = true;
+      _notificationsError = null;
+      notifyListeners();
+    }
+    try {
+      final Map<String, dynamic> data = await api.getJson('/api/notifications');
+      if (epoch != _epoch) return;
+      _notifications = asList(data['notifications'])
+          .map((Object? e) => UserNotification.fromJson(asMap(e))).toList();
+      _notificationsError = null;
+    } on ApiException catch (error) {
+      if (epoch == _epoch && !silent) _notificationsError = error.message;
+    } catch (_) {
+      if (epoch == _epoch && !silent) _notificationsError = unexpectedMessage;
+    }
+    if (epoch == _epoch) {
+      _notificationsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> markNotificationsRead() async {
+    await _guard(() => api.postJson('/api/notifications', <String, dynamic>{'action': 'read_all'}));
+    await loadNotifications(silent: true);
+  }
+
+  Future<void> cancelOrder(String orderId) async {
+    await _guard(() => api.postJson('/api/orders/$orderId/cancel', <String, dynamic>{}));
+    await loadOrders(silent: true);
+    unawaited(loadDashboard(silent: true));
+    unawaited(refreshProfile());
+  }
+
+  Future<void> requestMarketerPayout(String payoutDetails) async {
+    await _guard(() => api.postJson('/api/marketer/payout', <String, dynamic>{'payoutDetails': payoutDetails}));
+    await loadDashboard(silent: true);
+  }
+
   Future<void> loadRequests({bool silent = false}) {
     return _runLoad<List<SpecialRequest>>(
       silent: silent,
@@ -1469,6 +1518,7 @@ class AppState extends ChangeNotifier {
     if (dashboardLoaded) {
       unawaited(loadDashboard(silent: true));
     }
+    unawaited(loadNotifications(silent: true));
   }
 
   // ---------------------------------------------------------------- storage guards

@@ -17,9 +17,10 @@ import 'auth_widgets.dart';
 import '../../widgets/tx.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key, required this.onBack});
+  const RegisterScreen({super.key, required this.onBack, this.initialReferral});
 
   final VoidCallback onBack;
+  final ReferralInput? initialReferral;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -43,6 +44,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _otpToken;
   String? _error;
   String? _pendingMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final ReferralInput? referral = widget.initialReferral;
+    if (referral != null && referral.isSigned) {
+      _signedReferral = referral;
+      _referral.text = referral.code;
+    }
+  }
 
   @override
   void dispose() {

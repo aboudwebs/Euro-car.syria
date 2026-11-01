@@ -33,7 +33,7 @@ void main() {
       expect(payMethodLabel('crypto'), 'crypto');
       expect(specialStatusLabel('x'), 'x');
       expect(ledgerTxLabel('y'), 'y');
-      expect(tierLabel('Platinum'), 'Platinum');
+      expect(tierLabel('Diamond'), 'Diamond');
       expect(roleLabel('guest'), 'guest');
     });
   });

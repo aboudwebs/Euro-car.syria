@@ -1180,11 +1180,24 @@ class AppState extends ChangeNotifier {
       'phone': phone.trim(),
       if (makeDefault) 'isDefault': true,
     };
-    await _guard(
-      () => id == null
-          ? api.postJson('/api/account/addresses', body)
-          : api.putJson('/api/account/addresses/$id', body),
-    );
+    if (id == null) {
+      final AppUser? current = _user;
+      if (current == null) throw const ApiException('يرجى تسجيل الدخول أولاً.');
+      final String keyName = 'pending_address_key_${current.id}';
+      String? key = await _safeRead(keyName);
+      if (key == null || key.isEmpty) {
+        key = _newIdempotencyKey();
+        try {
+          await store.write(keyName, key);
+        } catch (_) {
+          throw const ApiException('تعذر حفظ معرّف التأكيد بأمان. حاول مجدداً.');
+        }
+      }
+      await _guard(() => api.postJson('/api/account/addresses', body, idempotencyKey: key));
+      await _safeDelete(keyName);
+    } else {
+      await _guard(() => api.putJson('/api/account/addresses/$id', body));
+    }
     await loadAddresses(silent: true);
   }
 
@@ -1256,11 +1269,24 @@ class AppState extends ChangeNotifier {
       'year': year,
       'notes': notes.trim(),
     };
-    await _guard(
-      () => id == null
-          ? api.postJson('/api/account/vehicles', body)
-          : api.putJson('/api/account/vehicles/$id', body),
-    );
+    if (id == null) {
+      final AppUser? current = _user;
+      if (current == null) throw const ApiException('يرجى تسجيل الدخول أولاً.');
+      final String keyName = 'pending_vehicle_key_${current.id}';
+      String? key = await _safeRead(keyName);
+      if (key == null || key.isEmpty) {
+        key = _newIdempotencyKey();
+        try {
+          await store.write(keyName, key);
+        } catch (_) {
+          throw const ApiException('تعذر حفظ معرّف التأكيد بأمان. حاول مجدداً.');
+        }
+      }
+      await _guard(() => api.postJson('/api/account/vehicles', body, idempotencyKey: key));
+      await _safeDelete(keyName);
+    } else {
+      await _guard(() => api.putJson('/api/account/vehicles/$id', body));
+    }
     await loadVehicles(silent: true);
   }
 

@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 
+import '../../core/api_client.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
 import '../../core/labels.dart';
@@ -171,7 +172,7 @@ class DashboardScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'مرتبتك التقديرية حسب المشتريات المعتمدة',
+                    'مرتبتك الحالية حسب سجل الولاء',
                     style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -273,7 +274,7 @@ class DashboardScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'هذا المؤشر تقديري حسب الطلبات المتاحة في التطبيق؛ اعتماد المرتبة والكاش باك النهائي يكون وفق دورة الولاء المعتمدة لمدة 90 يوماً.',
+              'المشتريات المحتسبة في الموسم الحالي: ${formatUsd(data.seasonSpend)}. تعتمد المرتبة ونسبة الكاش باك من قاعدة البيانات.',
               style: TextStyle(color: p.placeholder, fontSize: 12, height: 1.6),
             ),
           ],
@@ -314,6 +315,8 @@ class DashboardScreen extends StatelessWidget {
     return <Widget>[
       _InvitationPanel(data: data),
       const SizedBox(height: 12),
+      _PayoutRequestPanel(data: data),
+      const SizedBox(height: 12),
       MetricCard(
         compact: true,
         valueColor: p.ok,
@@ -325,6 +328,12 @@ class DashboardScreen extends StatelessWidget {
         compact: true,
         label: 'عمولات معلّقة حتى تسديد الدين',
         value: formatUsd(c.held),
+      ),
+      const SizedBox(height: 12),
+      MetricCard(
+        compact: true,
+        label: 'عمولات بطلب تحويل',
+        value: formatUsd(c.requested),
       ),
       const SizedBox(height: 12),
       MetricCard(
@@ -380,6 +389,86 @@ class DashboardScreen extends StatelessWidget {
         ),
       ),
     ];
+  }
+}
+
+
+class _PayoutRequestPanel extends StatefulWidget {
+  const _PayoutRequestPanel({required this.data});
+  final MarketerDashboard data;
+  @override
+  State<_PayoutRequestPanel> createState() => _PayoutRequestPanelState();
+}
+
+class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
+  final TextEditingController _details = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _details.dispose();
+    super.dispose();
+  }
+
+  Future<void> _request() async {
+    if (_busy || widget.data.commissions.available <= 0) return;
+    final String details = _details.text.trim();
+    if (details.length < 6) {
+      showSnack(context, 'اكتب بيانات استلام التحويل بشكل واضح.');
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      await AppScope.read(context).requestMarketerPayout(details);
+      if (!mounted) return;
+      _details.clear();
+      showSnack(context, 'تم إرسال طلب سحب العمولات للإدارة.');
+    } on ApiException catch (error) {
+      if (mounted) showSnack(context, error.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Palette p = Palette.of(context);
+    final MarketerPayoutRequest? request = widget.data.payoutRequest;
+    final bool pending = request?.status == 'pending';
+    return Panel(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text('طلب تحويل العمولات', style: TextStyle(color: p.text, fontSize: 15.5, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 5),
+          Text('المتاح للتحويل: \${formatUsd(widget.data.commissions.available)}. اكتب بيانات الحساب أو المحفظة التي تريد استلام المبلغ عليها.', style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.6)),
+          if (pending) ...<Widget>[
+            const SizedBox(height: 10),
+            StatusChip(label: 'طلب تحويل قيد المراجعة · \${formatUsd(request!.amount)}', tone: StatusTone.waiting),
+          ] else ...<Widget>[
+            const SizedBox(height: 12),
+            TextField(
+              controller: _details,
+              minLines: 2,
+              maxLines: 4,
+              maxLength: 1000,
+              textDirection: TextDirection.rtl,
+              decoration: const InputDecoration(
+                hintText: 'مثال: اسم المحفظة ورقم الحساب أو بيانات الاستلام',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            PrimaryButton(
+              label: _busy ? 'جارٍ إرسال الطلب...' : 'طلب تحويل \${formatUsd(widget.data.commissions.available)}',
+              icon: Icons.account_balance_wallet_outlined,
+              onPressed: _busy || widget.data.commissions.available <= 0 ? null : _request,
+            ),
+          ],
+        ],
+      ),
+    );
   }
 }
 

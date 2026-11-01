@@ -514,10 +514,6 @@ class _CartScreenState extends State<CartScreen> {
                       'المتاح من سقفك: ${debt.available == null ? 'غير محدد' : formatUsd(debt.available ?? 0)}',
                 ),
               ],
-              if (error != null) ...<Widget>[
-                const SizedBox(height: 14),
-                NoticeBanner(message: error, kind: NoticeKind.error),
-              ],
               const SizedBox(height: 16),
               PrimaryButton(
                 label: 'تأكيد الطلب · ${formatUsd(amountDue)}',
@@ -564,6 +560,10 @@ class _CartScreenState extends State<CartScreen> {
               ],
             ),
           ),
+        ],
+        if (error != null) ...<Widget>[
+          const SizedBox(height: 14),
+          NoticeBanner(message: error, kind: NoticeKind.error),
         ],
       ],
     );

@@ -299,7 +299,7 @@ void main() {
         order('o3', 900, 'sham', 'cancelled'),
         order('o4', 50, 'sham', 'pending'),
         order('o5', 30, 'cod', 'shipped'),
-      ]);
+      ], null, 'Bronze', 1130);
       expect(d.approvedSpend, 1130.0);
     });
 
@@ -321,7 +321,7 @@ void main() {
 
       final WorkshopDashboard silver = dashboard(<Map<String, dynamic>>[
         order('o1', 1100, 'cod', 'delivered'),
-      ]);
+      ], null, 'Silver', 1100);
       expect(silver.tierIndex, 1);
       expect(silver.currentTier.name, 'فضية');
       expect(silver.nextTier?.name, 'ذهبية');
@@ -329,7 +329,7 @@ void main() {
 
       final WorkshopDashboard top = dashboard(<Map<String, dynamic>>[
         order('o1', 12000, 'cod', 'shipped'),
-      ]);
+      ], null, 'VIP', 12000);
       expect(top.tierIndex, 4);
       expect(top.nextTier, isNull);
       expect(top.tierProgress, 1.0);

@@ -23,6 +23,13 @@ void main() {
       expect(input.isSigned, isTrue);
     });
 
+    test('reads the signed referral from the Android deep link', () {
+      final ReferralInput input = parseReferral('eurocars://referral?ref=MK-1A2B3C&sig=abcDEF123');
+      expect(input.code, 'MK-1A2B3C');
+      expect(input.signature, 'abcDEF123');
+      expect(input.isSigned, isTrue);
+    });
+
     test('ignores a fragment after the query', () {
       final ReferralInput input = parseReferral('https://euro.example/login?ref=MK-1&sig=ab#section');
       expect(input.code, 'MK-1');

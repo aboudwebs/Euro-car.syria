@@ -195,6 +195,8 @@ class Order {
     required this.payMethod,
     required this.status,
     this.orderNumber,
+    this.cashbackUsed = 0,
+    this.amountDue,
     this.statusNote,
     this.createdAt,
     this.items = const <OrderLine>[],
@@ -207,6 +209,8 @@ class Order {
       id: asString(json['id']),
       orderNumber: asInt(json['order_number']),
       total: asDouble(json['total_amount']) ?? 0.0,
+      cashbackUsed: asDouble(json['cashback_used']) ?? 0.0,
+      amountDue: asDouble(json['amount_due']),
       payMethod: asString(json['pay_method']),
       status: asString(json['status']),
       statusNote: asOptionalString(json['status_note']),
@@ -224,6 +228,8 @@ class Order {
   final String id;
   final int? orderNumber;
   final double total;
+  final double cashbackUsed;
+  final double? amountDue;
   final String payMethod;
   final String status;
 

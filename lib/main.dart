@@ -1,11 +1,11 @@
 // EURO CARS - native app for workshops and marketers.
 
+export 'app.dart' show EuroApp;
+
 import 'package:flutter/material.dart';
 
 import 'app.dart';
 import 'core/push_notifications.dart';
-
-export 'app.dart' show EuroApp;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

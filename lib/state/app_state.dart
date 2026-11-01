@@ -1112,7 +1112,7 @@ class AppState extends ChangeNotifier {
             'pay': effectivePay,
             'invoiceCurrency': invoiceCurrency,
             'cashbackUsed': cashbackUsed.toStringAsFixed(2),
-            if (addressId != null && addressId.isNotEmpty) 'addressId': addressId,
+            'addressId': addressId.trim(),
           },
           files: files,
           idempotencyKey: idempotencyKey,

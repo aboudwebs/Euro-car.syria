@@ -1,12 +1,19 @@
 // EURO CARS - native app for workshops and marketers.
-//
-// The application itself lives in app.dart; EuroApp is re-exported here so that `package:euro_cars/main.dart`
-// keeps providing it (the widget test and any tooling that imported it before keep working).
 
 import 'package:flutter/material.dart';
 
 import 'app.dart';
+import 'core/push_notifications.dart';
 
 export 'app.dart' show EuroApp;
 
-void main() => runApp(const EuroApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await PushNotifications.initialize();
+  } catch (error) {
+    // Push is optional; Firebase setup must never prevent sign-in or offline app use.
+    debugPrint('EURO CARS push initialization failed: $error');
+  }
+  runApp(const EuroApp());
+}

@@ -21,6 +21,9 @@ dependencies:
   google_mlkit_text_recognition: ^0.15.0
   # Original Instagram / TikTok brand icons for the About page.
   font_awesome_flutter: ^11.0.0
+  firebase_core: ^4.2.1
+  firebase_messaging: ^16.0.3
+  flutter_local_notifications: ^19.5.0
 
 dev_dependencies:
   flutter_test:

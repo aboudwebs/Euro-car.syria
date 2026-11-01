@@ -1,0 +1,28 @@
+{
+  "project_info": {
+    "project_number": "189528496462",
+    "project_id": "euro-cars-9455f",
+    "storage_bucket": "euro-cars-9455f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:189528496462:android:f3e665fab0ed0fa273a61f",
+        "android_client_info": {
+          "package_name": "com.eurocars.euro_cars"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "AIzaSyD2RrwTUlKjMLmq73yAABhX67a5AJGudIo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

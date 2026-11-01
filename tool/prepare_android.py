@@ -30,6 +30,7 @@ APP_LABEL = "EURO CARS"
 MIN_SDK = 23
 
 INTERNET = '<uses-permission android:name="android.permission.INTERNET"/>'
+POST_NOTIFICATIONS = '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>'
 QUERY_HTTPS = (
     "        <intent>\n"
     '            <action android:name="android.intent.action.VIEW"/>\n'
@@ -94,6 +95,11 @@ def write_if_changed(path: pathlib.Path, text: str) -> bool:
 
 def patch_manifest(path: pathlib.Path) -> bool:
     text = read(path)
+
+    if "android.permission.POST_NOTIFICATIONS" not in text:
+        text, count = re.subn(r"(<manifest\b[^>]*>)", r"\1\n    " + POST_NOTIFICATIONS, text, count=1)
+        if count != 1:
+            raise PatchError("no <manifest> element found for notification permission")
 
     if "android.permission.INTERNET" not in text:
         text, count = re.subn(r"(<manifest\b[^>]*>)", r"\1\n    " + INTERNET, text, count=1)
@@ -160,6 +166,39 @@ def patch_gradle(path: pathlib.Path) -> bool:
     return write_if_changed(path, text)
 
 
+
+def patch_firebase(project: pathlib.Path) -> bool:
+    import json
+    source = project / "firebase" / "google-services.json"
+    if not source.is_file():
+        raise PatchError(f"{source} is missing; Firebase Android config is required")
+    config = json.loads(source.read_text(encoding="utf-8"))
+    package = config.get("client", [{}])[0].get("client_info", {}).get("android_client_info", {}).get("package_name")
+    if package != "com.eurocars.euro_cars":
+        raise PatchError(f"Firebase package mismatch: expected com.eurocars.euro_cars, got {package!r}")
+    target = project / "android" / "app" / "google-services.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    copied = not target.exists() or target.read_bytes() != source.read_bytes()
+    if copied:
+        shutil.copyfile(source, target)
+    settings = project / "android" / "settings.gradle.kts"
+    settings_text = read(settings)
+    settings_line = '    id("com.google.gms.google-services") version "4.4.2" apply false'
+    if settings_line not in settings_text:
+        if "plugins {\n" not in settings_text:
+            raise PatchError("settings.gradle.kts plugins block not found")
+        settings_text = settings_text.replace("plugins {\n", "plugins {\n" + settings_line + "\n", 1)
+        write_if_changed(settings, settings_text)
+    app_gradle = project / "android" / "app" / "build.gradle.kts"
+    app_text = read(app_gradle)
+    app_line = '    id("com.google.gms.google-services")'
+    if app_line not in app_text:
+        if "plugins {\n" not in app_text:
+            raise PatchError("app/build.gradle.kts plugins block not found")
+        app_text = app_text.replace("plugins {\n", "plugins {\n" + app_line + "\n", 1)
+        write_if_changed(app_gradle, app_text)
+    return copied
+
 def copy_resources(source: pathlib.Path, target: pathlib.Path) -> int:
     if not source.is_dir():
         raise PatchError(f"{source} does not exist (the committed launcher icons are missing)")
@@ -190,6 +229,7 @@ def main() -> int:
         if not gradle_file.is_file() and (android / "app" / "build.gradle").is_file():
             raise PatchError("android/app/build.gradle (Groovy) found, but this script expects the Kotlin DSL of Flutter 3.29+")
         gradle_changed = patch_gradle(gradle_file)
+        firebase_copied = patch_firebase(project)
         copied = copy_resources(project / "branding" / "android" / "res", android / "app" / "src" / "main" / "res")
     except PatchError as error:
         print(f"prepare_android.py: {error}", file=sys.stderr)

@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - feature/firebase-push-notifications
     paths:
       - '**.dart'
       - 'test/**'
@@ -14,12 +15,22 @@ on:
       - 'branding/**'
       - 'tool/**'
       - '.github/workflows/build-design-apk.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**.dart'
+      - 'test/**'
+      - 'pubspec.yaml'
+      - 'assets/**'
+      - 'branding/**'
+      - 'tool/**'
 
 permissions:
   contents: read
 
 concurrency:
-  group: euro-cars-main-apk-${{ github.ref }}
+  group: euro-cars-apk-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -31,7 +42,7 @@ jobs:
       - name: Checkout main branch
         uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.ref }}
 
       - name: Set up Java
         uses: actions/setup-java@v4

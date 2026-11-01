@@ -17,6 +17,7 @@ import '../core/display.dart';
 import '../core/images.dart';
 import '../core/json_utils.dart';
 import '../core/models.dart';
+import '../core/push_notifications.dart';
 import '../core/session_store.dart';
 import '../core/text_utils.dart';
 
@@ -35,6 +36,8 @@ enum OrdersView { orders, requests }
 class AppState extends ChangeNotifier {
   AppState({required this.api, required this.store}) {
     api.onUnauthorized = _handleUnauthorized;
+    PushNotifications.setTapHandler(_handlePushTap);
+    PushNotifications.setTokenRefreshHandler(_registerRefreshedPushToken);
   }
 
   final ApiClient api;
@@ -80,6 +83,7 @@ class AppState extends ChangeNotifier {
 
   Uint8List? _avatarBytes;
   DateTime? _lastResumeRefresh;
+  Map<String, String>? _pendingPushTap;
 
   // Display preferences (device-wide, kept across sign-outs) and what makes the whole UI rebuild when they change.
   String _language = languageArabic;
@@ -287,6 +291,8 @@ class AppState extends ChangeNotifier {
     _disposed = true;
     _notificationsTimer?.cancel();
     _notificationsTimer = null;
+    PushNotifications.setTapHandler(null);
+    PushNotifications.setTokenRefreshHandler(null);
     api.onUnauthorized = null;
     super.dispose();
   }
@@ -389,6 +395,12 @@ class AppState extends ChangeNotifier {
   }
 
   void _loadAfterSignIn() {
+    final pendingTap = _pendingPushTap;
+    if (pendingTap != null) {
+      _pendingPushTap = null;
+      _handlePushTap(pendingTap);
+    }
+    unawaited(_registerPushToken());
     _notificationsTimer?.cancel();
     _notificationsTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (_user != null) unawaited(loadNotifications(silent: true));
@@ -401,6 +413,48 @@ class AppState extends ChangeNotifier {
     unawaited(loadVehicles(silent: true));
     unawaited(loadDeletion(silent: true));
     unawaited(loadNotifications(silent: true));
+  }
+
+  Future<void> _registerPushToken() async {
+    final int epoch = _epoch;
+    final String? pushToken = await PushNotifications.requestPermissionAndGetToken();
+    if (pushToken == null || pushToken.isEmpty || epoch != _epoch || !isSignedIn) return;
+    await _registerRefreshedPushToken(pushToken);
+  }
+
+  Future<void> _registerRefreshedPushToken(String pushToken) async {
+    if (pushToken.isEmpty || !isSignedIn) return;
+    try {
+      await api.postJson('/api/push/register', <String, dynamic>{'token': pushToken});
+    } catch (_) {
+      // Push registration is best-effort; it must never block sign-in or app startup.
+    }
+  }
+
+  Future<void> _unregisterPushToken(String pushToken) async {
+    try {
+      await api.deleteJson('/api/push/register?token=${Uri.encodeQueryComponent(pushToken)}');
+    } catch (_) {
+      // Sign-out must complete even if the server is offline.
+    }
+  }
+
+  void _handlePushTap(Map<String, String> data) {
+    if (!isSignedIn) {
+      _pendingPushTap = data;
+      return;
+    }
+    final String screen = data['screen'] ?? '';
+    if (screen == 'orders' || screen == 'requests') {
+      if (screen == 'requests') _ordersView = OrdersView.requests;
+      selectTab(tabOrders);
+    } else if (screen == 'dashboard') {
+      selectTab(tabDashboard);
+    } else if (screen == 'account') {
+      selectTab(tabAccount);
+    } else {
+      selectTab(tabAccount);
+    }
   }
 
   // ---------------------------------------------------------------- sign in / register / sign out
@@ -466,6 +520,7 @@ class AppState extends ChangeNotifier {
     required String otpCode,
     required String otpToken,
   }) async {
+    final String? registrationPushToken = await PushNotifications.requestPermissionAndGetToken();
     final Map<String, dynamic> body = <String, dynamic>{
       'mode': 'register',
       'client': 'mobile',
@@ -475,6 +530,7 @@ class AppState extends ChangeNotifier {
       'password': password,
       'otpCode': toWesternDigits(otpCode).trim(),
       'otpToken': otpToken,
+      if (registrationPushToken != null && registrationPushToken.isNotEmpty) 'pushToken': registrationPushToken,
     };
     if (role == 'workshop') {
       body['license'] = license.trim();
@@ -544,6 +600,10 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _endSession({required bool clearCart, String? notice}) async {
+    final String? pushToken = await PushNotifications.currentToken();
+    if (pushToken != null && pushToken.isNotEmpty && api.token != null) {
+      unawaited(_unregisterPushToken(pushToken));
+    }
     _notificationsTimer?.cancel();
     _notificationsTimer = null;
     _epoch++;

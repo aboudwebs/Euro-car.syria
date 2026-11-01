@@ -431,6 +431,14 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  Future<void> _unregisterPushToken(String pushToken) async {
+    try {
+      await api.deleteJson('/api/push/register?token=${Uri.encodeQueryComponent(pushToken)}');
+    } catch (_) {
+      // Sign-out must complete even if the server is offline.
+    }
+  }
+
   void _handlePushTap(Map<String, String> data) {
     if (!isSignedIn) {
       _pendingPushTap = data;
@@ -592,7 +600,7 @@ class AppState extends ChangeNotifier {
   Future<void> _endSession({required bool clearCart, String? notice}) async {
     final String? pushToken = await PushNotifications.currentToken();
     if (pushToken != null && pushToken.isNotEmpty && api.token != null) {
-      unawaited(api.deleteJson('/api/push/register?token=${Uri.encodeQueryComponent(pushToken)}'));
+      unawaited(_unregisterPushToken(pushToken));
     }
     _notificationsTimer?.cancel();
     _notificationsTimer = null;

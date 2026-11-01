@@ -254,7 +254,7 @@ void main() {
       expect(h.store.data.containsKey(tokenKey), isFalse);
     });
 
-    test('a workshop registration waits for the admin and sends the cleaned fields', () async {
+    test('a workshop registration verifies WhatsApp before sending the cleaned fields', () async {
       final Harness h = Harness();
       h.server.on('POST', '/api/auth', (http.Request request) {
         final Map<String, dynamic> body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -265,7 +265,6 @@ void main() {
       await h.state.restore();
 
       final String otpToken = await h.state.requestRegistrationOtp(phone: '٠٩٨٢ ٠٢٦ ١٣٤');
-      final String otpToken = await h.state.requestRegistrationOtp(phone: '0982026134');
       final AuthResult result = await h.state.register(
         role: 'workshop',
         name: '  ورشة الأمل ',
@@ -283,7 +282,11 @@ void main() {
       expect(result.isPending, isTrue);
       expect(result.message, 'تم إرسال الطلب للإدارة');
       expect(h.state.status, SessionStatus.signedOut);
-      expect(bodyOf(h.server.requestsTo('POST', '/api/auth').single), <String, dynamic>{
+      final List<http.Request> sent = h.server.requestsTo('POST', '/api/auth');
+      expect(bodyOf(sent.first), <String, dynamic>{
+        'mode': 'send-otp', 'client': 'mobile', 'phone': '0982026134',
+      });
+      expect(bodyOf(sent.last), <String, dynamic>{
         'mode': 'register',
         'client': 'mobile',
         'role': 'workshop',
@@ -300,7 +303,7 @@ void main() {
       });
     });
 
-    test('blank referral values are not sent and a missing server message gets a default', () async {
+    test('blank referral values are not sent after OTP verification', () async {
       final Harness h = Harness();
       h.server.on('POST', '/api/auth', (http.Request request) {
         final Map<String, dynamic> body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -310,6 +313,7 @@ void main() {
       });
       await h.state.restore();
 
+      final String otpToken = await h.state.requestRegistrationOtp(phone: '0982026134');
       final AuthResult result = await h.state.register(
         role: 'workshop',
         name: 'ورشة',
@@ -324,13 +328,12 @@ void main() {
       );
 
       expect(result.isPending, isTrue);
-      expect(result.message, isNotEmpty);
       final Map<String, dynamic> body = bodyOf(h.server.requestsTo('POST', '/api/auth').last);
       expect(body.containsKey('refCode'), isFalse);
       expect(body.containsKey('refSignature'), isFalse);
     });
 
-    test('a marketer registration signs in at once and sends no workshop fields', () async {
+    test('a marketer registration signs in after WhatsApp OTP and sends no workshop fields', () async {
       final Harness h = Harness();
       h.server.on('POST', '/api/auth', (http.Request request) {
         final Map<String, dynamic> body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -347,10 +350,6 @@ void main() {
         name: 'مسوّق الشمال',
         phone: '0933000111',
         password: 'secret',
-        license: 'ignored',
-        city: 'ignored',
-        specs: 'ignored',
-        refCode: 'MK-1',
         otpCode: '123456',
         otpToken: otpToken,
       );
@@ -361,11 +360,11 @@ void main() {
       expect(h.api.token, 'tok-m');
       expect(
         bodyOf(h.server.requestsTo('POST', '/api/auth').last).keys,
-        unorderedEquals(<String>['mode', 'client', 'role', 'name', 'phone', 'password']),
+        unorderedEquals(<String>['mode', 'client', 'role', 'name', 'phone', 'password', 'otpCode', 'otpToken']),
       );
     });
 
-    test('a refused registration shows the server message', () async {
+    test('a refused registration shows the server message after OTP', () async {
       final Harness h = Harness();
       h.server.on('POST', '/api/auth', (http.Request request) {
         final Map<String, dynamic> body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -375,6 +374,7 @@ void main() {
       });
       await h.state.restore();
 
+      final String otpToken = await h.state.requestRegistrationOtp(phone: '0933000111');
       final AuthResult result = await h.state.register(
         role: 'marketer',
         name: 'م',

@@ -449,7 +449,7 @@ class _CartScreenState extends State<CartScreen> {
                   }),
                   title: Text('استخدام رصيد الكاش باك', style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
                   subtitle: Text(
-                    'الرصيد المتاح: ${formatUsd(cashbackBalance)}',
+                    'الرصيد المتاح: ${formatInvoiceAmount(cashbackBalance, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate)}',
                     style: TextStyle(color: p.muted, fontSize: 12.5),
                   ),
                   activeTrackColor: p.primary,
@@ -469,7 +469,7 @@ class _CartScreenState extends State<CartScreen> {
                       decoration: InputDecoration(
                         labelText: 'المبلغ المراد استخدامه',
                         prefixText: '\$ ',
-                        helperText: 'يمكنك استخدام كامل الرصيد أو تحديد جزء منه',
+                        helperText: 'أدخل المبلغ بالدولار؛ سيظهر في ملخص الفاتورة بعملتها المعتمدة',
                         filled: true,
                         fillColor: p.fieldBg,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -487,9 +487,9 @@ class _CartScreenState extends State<CartScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Column(
               children: <Widget>[
-                InfoRow(label: 'الكاش باك المستخدم', value: '-${formatUsd(cashbackUsed)}'),
+                InfoRow(label: 'الكاش باك المستخدم', value: '-${formatInvoiceAmount(cashbackUsed, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate)}'),
                 const SizedBox(height: 5),
-                InfoRow(label: 'المتبقي للدفع', value: formatUsd(amountDue), bold: true),
+                InfoRow(label: 'المتبقي للدفع', value: formatInvoiceAmount(amountDue, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate), bold: true),
               ],
             ),
           ),
@@ -545,7 +545,7 @@ class _CartScreenState extends State<CartScreen> {
                   kind: NoticeKind.warning,
                   message: 'عدّاد 30 يومًا يبدأ من أول قطعة دين. عند تجاوزه يتوقف السحب الآجل حتى التسديد. '
                       'الكاش باك والعمولة يُصرفان بعد التسديد.\n'
-                      'المتاح من سقفك: ${debt.available == null ? 'غير محدد' : formatUsd(debt.available ?? 0)}',
+                      'المتاح من سقفك: ${debt.available == null ? 'غير محدد' : formatInvoiceAmount(debt.available ?? 0, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate)}',
                 ),
               ],
               const SizedBox(height: 16),

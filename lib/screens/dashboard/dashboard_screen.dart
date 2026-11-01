@@ -442,10 +442,10 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
         children: <Widget>[
           Text('طلب تحويل العمولات', style: TextStyle(color: p.text, fontSize: 15.5, fontWeight: FontWeight.w700)),
           const SizedBox(height: 5),
-          Text('المتاح للتحويل: \${formatUsd(widget.data.commissions.available)}. اكتب بيانات الحساب أو المحفظة التي تريد استلام المبلغ عليها.', style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.6)),
+          Text('المتاح للتحويل: ${formatUsd(widget.data.commissions.available)}. اكتب بيانات الحساب أو المحفظة التي تريد استلام المبلغ عليها.', style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.6)),
           if (pending) ...<Widget>[
             const SizedBox(height: 10),
-            StatusChip(label: 'طلب تحويل قيد المراجعة · \${formatUsd(request!.amount)}', tone: StatusTone.waiting),
+            StatusChip(label: 'طلب تحويل قيد المراجعة · ${formatUsd(request!.amount)}', tone: StatusTone.waiting),
           ] else ...<Widget>[
             const SizedBox(height: 12),
             TextField(
@@ -461,7 +461,7 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
             ),
             const SizedBox(height: 8),
             PrimaryButton(
-              label: _busy ? 'جارٍ إرسال الطلب...' : 'طلب تحويل \${formatUsd(widget.data.commissions.available)}',
+              label: _busy ? 'جارٍ إرسال الطلب...' : 'طلب تحويل ${formatUsd(widget.data.commissions.available)}',
               icon: Icons.account_balance_wallet_outlined,
               onPressed: _busy || widget.data.commissions.available <= 0 ? null : _request,
             ),

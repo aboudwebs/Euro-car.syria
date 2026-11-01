@@ -91,6 +91,9 @@ class PushNotifications {
   /// Displays data-only FCM messages while the app is backgrounded or terminated.
   /// Notification-payload messages are displayed by Android itself and are not duplicated here.
   static Future<void> showBackgroundNotification(RemoteMessage message) async {
+    // Android displays notification-payload messages automatically in the background.
+    // Only data-only messages need a local notification here.
+    if (message.notification != null) return;
     final RemoteNotification? notification = message.notification;
     final String title = notification?.title ?? message.data['title']?.toString() ?? 'EURO CARS';
     final String body = notification?.body ?? message.data['body']?.toString() ?? '';

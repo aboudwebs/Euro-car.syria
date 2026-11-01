@@ -344,6 +344,7 @@ class _AccountScreenState extends State<AccountScreen> {
                             'cashback' => Icons.savings_outlined,
                             'loyalty' => Icons.workspace_premium_outlined,
                             'payment' => Icons.account_balance_wallet_outlined,
+                            'debt' => Icons.menu_book_outlined,
                             'order' => Icons.receipt_long_outlined,
                             _ => Icons.notifications_outlined,
                           };

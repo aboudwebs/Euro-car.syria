@@ -15,6 +15,7 @@ import '../../theme/palette.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/part_plate.dart';
+import '../../widgets/pickers.dart';
 import '../../widgets/tx.dart';
 
 class OrderCard extends StatefulWidget {

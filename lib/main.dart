@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'app.dart';
 import 'core/push_notifications.dart';
 
+export 'app.dart' show EuroApp;
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
@@ -15,5 +17,3 @@ Future<void> main() async {
   }
   runApp(const EuroApp());
 }
-
-export 'app.dart' show EuroApp;

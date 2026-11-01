@@ -42,6 +42,8 @@ class AppUser {
       license: asOptionalString(json['license']),
       specs: specs,
       tier: asOptionalString(json['tier']),
+      seasonSpend: asDouble(json['loyalty_season_spend']) ?? 0.0,
+      seasonStartedAt: asDate(json['loyalty_season_started_at']),
       debtLimit: asDouble(json['debt_limit']),
       debtBalance: asDouble(json['debt_balance']),
       cashbackBalance: asDouble(json['cashback_balance']),
@@ -206,6 +208,9 @@ class Order {
     this.items = const <OrderLine>[],
     this.trackingNumber,
     this.deliveryAddress,
+    this.refundStatus = 'not_required',
+    this.refundNote,
+    this.refundedAt,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -226,6 +231,9 @@ class Order {
       deliveryAddress: json['delivery_address'] is Map
           ? SavedAddress.fromJson(asMap(json['delivery_address']))
           : null,
+      refundStatus: asString(json['refund_status'], 'not_required'),
+      refundNote: asOptionalString(json['refund_note']),
+      refundedAt: asDate(json['refunded_at']),
     );
   }
 
@@ -247,6 +255,9 @@ class Order {
 
   /// Copy of the delivery address chosen at checkout (null when none was chosen).
   final SavedAddress? deliveryAddress;
+  final String refundStatus;
+  final String? refundNote;
+  final DateTime? refundedAt;
 
   /// "#123", or the first characters of the id when the order has no number yet.
   String get label {
@@ -596,6 +607,7 @@ class MarketerDashboard {
     this.workshops = 0,
     this.commissions = const Commissions(),
     this.payoutRequest,
+    this.payoutRequests = const <MarketerPayoutRequest>[],
   });
 
   factory MarketerDashboard.fromJson(Map<String, dynamic> json) {
@@ -607,6 +619,7 @@ class MarketerDashboard {
       workshops: asInt(json['workshops']) ?? 0,
       commissions: Commissions.fromJson(asMap(json['commissions'])),
       payoutRequest: json['payoutRequest'] is Map ? MarketerPayoutRequest.fromJson(asMap(json['payoutRequest'])) : null,
+      payoutRequests: asList(json['payoutRequests']).map((Object? e) => MarketerPayoutRequest.fromJson(asMap(e))).toList(),
     );
   }
 
@@ -616,19 +629,35 @@ class MarketerDashboard {
   final int workshops;
   final Commissions commissions;
   final MarketerPayoutRequest? payoutRequest;
+  final List<MarketerPayoutRequest> payoutRequests;
 }
 
 class MarketerPayoutRequest {
-  const MarketerPayoutRequest({required this.id, required this.amount, required this.status, this.payoutDetails, this.createdAt});
+  const MarketerPayoutRequest({
+    required this.id,
+    required this.amount,
+    required this.status,
+    this.payoutDetails,
+    this.adminNote,
+    this.createdAt,
+    this.processedAt,
+  });
   factory MarketerPayoutRequest.fromJson(Map<String, dynamic> json) => MarketerPayoutRequest(
-    id: asString(json['id']), amount: asDouble(json['amount']) ?? 0, status: asString(json['status']),
-    payoutDetails: asOptionalString(json['payout_details']), createdAt: asDate(json['created_at']),
+    id: asString(json['id']),
+    amount: asDouble(json['amount']) ?? 0,
+    status: asString(json['status']),
+    payoutDetails: asOptionalString(json['payout_details']),
+    adminNote: asOptionalString(json['admin_note']),
+    createdAt: asDate(json['created_at']),
+    processedAt: asDate(json['processed_at']),
   );
   final String id;
   final double amount;
   final String status;
   final String? payoutDetails;
+  final String? adminNote;
   final DateTime? createdAt;
+  final DateTime? processedAt;
 }
 
 class UserNotification {

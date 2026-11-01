@@ -942,8 +942,12 @@ class AppState extends ChangeNotifier {
       return placed;
     } on ApiException catch (error) {
       if (error.statusCode == 400) {
+        // A definitive rejection did not create the order; a changed checkout may use a fresh key.
+        await _safeDelete(keyName);
         // Stock or availability changed: refresh the catalog so the cart reflects it.
         unawaited(loadParts(silent: true));
+      } else if (error.statusCode != null && error.statusCode! >= 400 && error.statusCode! < 500) {
+        await _safeDelete(keyName);
       }
       if (error.network) {
         // The request may have reached the server before the connection dropped; never silently resend it.

@@ -10,10 +10,10 @@ storage. It never connects to Supabase directly. The admin role is web only: an 
 |------|----------|----------|
 | Sign-in / registration | sign-in; registration waits for admin approval; optional signed referral link | sign-in; registration is instant |
 | Catalog | search by name, brand, OEM number (any separators), model, years, branch; brand chips; stock badges | same |
-| Cart and orders | quantity limits (stock, 100 per line, 50 lines); pay by cash on delivery, Sham Cash (receipt photo) or the debt ledger (credit checked against the limit) | cash on delivery and Sham Cash only |
-| Orders | status, payment, items, rejection reason; special requests with a photo | same |
-| Dashboard | tier estimate and progress, debt balance and 30-day window, cashback, ledger | referral code and share link, workshops, commissions (available / held / paid) |
-| Account | profile photo; currency (USD / SYP) and language (Arabic / English); account data (name, governorate, phone by WhatsApp code, password); saved addresses and vehicles (VIN); active and previous orders with payment badge and tracking number; About EURO; support (WhatsApp); sign-out; account deletion with a 30-day grace period | same |
+| Cart and orders | quantity limits (stock, 100 per line, 50 lines); cash on delivery, Sham Cash (receipt photo), full/partial cashback and debt ledger (server-checked limit) | cash on delivery and Sham Cash only |
+| Orders | status, payment, items and rejection reason; cancel pending orders; Sham Cash refund status; special requests with a photo | same |
+| Dashboard | server-authoritative loyalty tier and 90-day season progress, cashback, debt balance and 30-day window, ledger | referral code/share link, workshops, 2% commissions, payout requests and payout history |
+| Account | profile photo; currency (USD / SYP using the admin-published rate) and language; account data; saved addresses and vehicles (VIN); active/previous orders, tracking and Sham Cash refund status; in-app notifications for orders, debt, cashback, loyalty and payouts; About EURO; support; sign-out; account deletion | same |
 | Catalog extras | sections (categories), VIN search by camera (on-device text reading) or from a saved vehicle | same |
 | Sign-in | forgot password by WhatsApp code | same |
 
@@ -55,8 +55,8 @@ without it a release APK cannot reach the server.
 
 ## Continuous integration
 
-`.github/workflows/flutter-android.yml` runs the steps above on every push to `improve/flutter-complete` and
-`feat/flutter-native-app`, on pull requests and manually (Actions → "Build EURO CARS Flutter Android" → Run workflow).
+`.github/workflows/build-design-apk.yml` runs the steps above on every relevant push to `main` and manually
+(Actions → "Build EURO CARS APK (main)" → Run workflow).
 
 * `flutter analyze` and `flutter test` are gates: the last step fails the run if either failed, but they do not stop
   the build, so the APK and its report can still be inspected.

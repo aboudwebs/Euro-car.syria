@@ -397,49 +397,54 @@ class _CartScreenState extends State<CartScreen> {
           const SizedBox(height: 12),
           Panel(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              value: _useCashback,
-              onChanged: _busy ? null : (bool value) => setState(() {
-                _useCashback = value;
-                _error = null;
-                if (value) {
-                  final double full = cashbackBalance < total ? cashbackBalance : total;
-                  _cashbackController.text = full.toStringAsFixed(2);
-                } else {
-                  _cashbackController.clear();
-                }
-              }),
-              title: Text('استخدام رصيد الكاش باك', style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
-              subtitle: Text(
-                'الرصيد المتاح: ${formatUsd(cashbackBalance)}',
-                style: TextStyle(color: p.muted, fontSize: 12.5),
-              ),
-              activeTrackColor: p.primary,
-            ),
-            if (_useCashback) ...<Widget>[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: TextFormField(
-                  controller: _cashbackController,
-                  enabled: !_busy,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  inputFormatters: <TextInputFormatter>[
-                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-                  ],
-                  onChanged: (_) => setState(() => _error = null),
-                  style: TextStyle(color: p.text, fontWeight: FontWeight.w600),
-                  decoration: InputDecoration(
-                    labelText: 'المبلغ المراد استخدامه',
-                    prefixText: '\$ ',
-                    helperText: 'يمكنك استخدام كامل الرصيد أو تحديد جزء منه',
-                    filled: true,
-                    fillColor: p.fieldBg,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  value: _useCashback,
+                  onChanged: _busy ? null : (bool value) => setState(() {
+                    _useCashback = value;
+                    _error = null;
+                    if (value) {
+                      final double full = cashbackBalance < total ? cashbackBalance : total;
+                      _cashbackController.text = full.toStringAsFixed(2);
+                    } else {
+                      _cashbackController.clear();
+                    }
+                  }),
+                  title: Text('استخدام رصيد الكاش باك', style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
+                  subtitle: Text(
+                    'الرصيد المتاح: ${formatUsd(cashbackBalance)}',
+                    style: TextStyle(color: p.muted, fontSize: 12.5),
                   ),
+                  activeTrackColor: p.primary,
                 ),
-              ),
-            ],
+                if (_useCashback) ...<Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: TextFormField(
+                      controller: _cashbackController,
+                      enabled: !_busy,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      inputFormatters: <TextInputFormatter>[
+                        FilteringTextInputFormatter.allow(RegExp(r'^\\d*\\.?\\d{0,2}')),
+                      ],
+                      onChanged: (_) => setState(() => _error = null),
+                      style: TextStyle(color: p.text, fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
+                        labelText: 'المبلغ المراد استخدامه',
+                        prefixText: '\$ ',
+                        helperText: 'يمكنك استخدام كامل الرصيد أو تحديد جزء منه',
+                        filled: true,
+                        fillColor: p.fieldBg,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
         if (cashbackUsed > 0) ...<Widget>[

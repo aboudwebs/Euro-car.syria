@@ -689,6 +689,34 @@ void main() {
       expect(parts.any((MultipartPart part) => part.name == 'receipt'), isFalse);
     });
 
+    test('partial cashback keeps the selected external payment method', () async {
+      final Map<String, dynamic> account = <String, dynamic>{
+        ...workshopJson(),
+        'cashback_balance': 50,
+      };
+      final Harness h = await signedInHarness(account: account);
+      h.server.reply(
+        'POST',
+        '/api/orders',
+        <String, dynamic>{
+          'orderId': 'partial-cashback-order',
+          'orderNumber': 13,
+          'pay': 'cod',
+          'total': 10.5,
+          'cashbackUsed': 5,
+          'amountDue': 5.5,
+        },
+      );
+      h.state.addToCart(catalogPart(h, 'p1'));
+
+      await h.state.placeOrder(pay: 'cod', cashbackUsed: 5);
+
+      final List<MultipartPart> parts =
+          parseMultipart(h.server.requestsTo('POST', '/api/orders').single);
+      expect(partNamed(parts, 'pay').text, 'cod');
+      expect(partNamed(parts, 'cashbackUsed').text, '5.00');
+    });
+
     test('a Sham Cash order attaches the receipt, named after its real format', () async {
       final Harness h = await signedInHarness();
       h.server.reply('POST', '/api/orders', <String, dynamic>{'orderId': 'o2', 'pay': 'sham', 'total': 10.5});

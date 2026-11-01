@@ -162,6 +162,13 @@ class _CartScreenState extends State<CartScreen> {
       setState(() => _error = 'المبلغ المحدد أكبر من رصيد الكاش باك أو من قيمة الطلب.');
       return;
     }
+    await state.loadAddresses(silent: true);
+    if (!mounted) return;
+    if (state.checkoutAddress == null) {
+      setState(() => _error = 'أضف عنوان شحن محفوظاً قبل إرسال الطلب.');
+      await _pickAddress();
+      if (!mounted || state.checkoutAddress == null) return;
+    }
     final String invoiceCurrency = state.canUseSypInvoices ? 'SYP' : 'USD';
     if (invoiceCurrency == 'USD') {
       final bool? continueInUsd = await showDialog<bool>(
@@ -232,7 +239,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _showSuccess(PlacedOrder placed, String pay, double cashbackUsed) async {
-    final int? number = placed.orderNumber;
+    final int? number = placed.customerOrderNumber ?? placed.orderNumber;
     await showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {

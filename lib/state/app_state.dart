@@ -18,6 +18,7 @@ import '../core/images.dart';
 import '../core/json_utils.dart';
 import '../core/models.dart';
 import '../core/push_notifications.dart';
+import '../core/referral.dart';
 import '../core/session_store.dart';
 import '../core/text_utils.dart';
 
@@ -84,6 +85,7 @@ class AppState extends ChangeNotifier {
   Uint8List? _avatarBytes;
   DateTime? _lastResumeRefresh;
   Map<String, String>? _pendingPushTap;
+  ReferralInput? _pendingReferral;
 
   // Display preferences (device-wide, kept across sign-outs) and what makes the whole UI rebuild when they change.
   String _language = languageArabic;
@@ -120,6 +122,18 @@ class AppState extends ChangeNotifier {
   AppUser? get user => _user;
   bool get isSignedIn => _status == SessionStatus.signedIn && _user != null;
   String? get sessionNotice => _sessionNotice;
+
+  void setPendingReferral(ReferralInput referral) {
+    if (referral.isEmpty) return;
+    _pendingReferral = referral;
+    notifyListeners();
+  }
+
+  ReferralInput? takePendingReferral() {
+    final ReferralInput? referral = _pendingReferral;
+    _pendingReferral = null;
+    return referral;
+  }
   ThemeMode get themeMode => _themeMode;
 
   List<Part> get parts => _parts;
@@ -1060,6 +1074,9 @@ class AppState extends ChangeNotifier {
     if (receipt != null && receipt.length > maxImageBytes) {
       throw const ApiException('حجم الصورة يجب ألا يتجاوز 5 ميغابايت.');
     }
+    if (addressId == null || addressId.trim().isEmpty) {
+      throw const ApiException('يجب إضافة عنوان شحن محفوظ قبل تأكيد الطلب.');
+    }
 
     final Map<String, int> items = <String, int>{
       for (final CartLine line in lines) line.part.id: line.qty,
@@ -1095,7 +1112,7 @@ class AppState extends ChangeNotifier {
             'pay': effectivePay,
             'invoiceCurrency': invoiceCurrency,
             'cashbackUsed': cashbackUsed.toStringAsFixed(2),
-            if (addressId != null && addressId.isNotEmpty) 'addressId': addressId,
+            'addressId': addressId.trim(),
           },
           files: files,
           idempotencyKey: idempotencyKey,

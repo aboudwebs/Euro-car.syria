@@ -665,6 +665,13 @@ void main() {
       final Harness empty = await signedInHarness();
       await expectLater(empty.state.placeOrder(pay: 'cod'), throwsA(apiError(message: 'السلة فارغة.')));
 
+      final Harness missingAddress = await signedInHarness();
+      missingAddress.state.addToCart(catalogPart(missingAddress, 'p1'));
+      await expectLater(
+        missingAddress.state.placeOrder(pay: 'cod'),
+        throwsA(apiError(message: 'يجب إضافة عنوان شحن محفوظ قبل تأكيد الطلب.')),
+      );
+
       final Harness sham = await signedInHarness();
       sham.state.addToCart(catalogPart(sham, 'p1'));
       const String needReceipt = 'يرجى إرفاق إشعار تحويل شام كاش.';
@@ -678,7 +685,7 @@ void main() {
         throwsA(apiError(message: 'حجم الصورة يجب ألا يتجاوز 5 ميغابايت.')),
       );
 
-      for (final Harness h in <Harness>[signedOut, marketer, empty, sham]) {
+      for (final Harness h in <Harness>[signedOut, marketer, empty, sham, missingAddress]) {
         expect(h.server.requestsTo('POST', '/api/orders'), isEmpty);
       }
     });
@@ -694,7 +701,7 @@ void main() {
       h.state.addToCart(catalogPart(h, 'p1'));
       h.state.addToCart(catalogPart(h, 'p2'));
 
-      final PlacedOrder placed = await h.state.placeOrder(pay: 'cod');
+      final PlacedOrder placed = await h.state.placeOrder(pay: 'cod', addressId: 'address-1');
       await pumpEventQueue();
 
       expect(placed.orderId, 'o1');
@@ -707,12 +714,13 @@ void main() {
       final http.Request request = h.server.requestsTo('POST', '/api/orders').single;
       expect(request.headers['authorization'], 'Bearer tok-1');
       final List<MultipartPart> parts = parseMultipart(request);
-      expect(parts.map((MultipartPart p) => p.name), unorderedEquals(<String>['items', 'pay', 'invoiceCurrency', 'cashbackUsed']));
+      expect(parts.map((MultipartPart p) => p.name), unorderedEquals(<String>['items', 'pay', 'invoiceCurrency', 'cashbackUsed', 'addressId']));
       expect(partNamed(parts, 'cashbackUsed').text, '0.00');
       expect(partNamed(parts, 'invoiceCurrency').text, 'USD');
       expect(request.headers['idempotency-key'], isNotEmpty);
       expect(jsonDecode(partNamed(parts, 'items').text), <String, dynamic>{'p1': 2, 'p2': 1});
       expect(partNamed(parts, 'pay').text, 'cod');
+      expect(partNamed(parts, 'addressId').text, 'address-1');
     });
 
     test('a fully redeemed cashback order uses the cashback payment method', () async {
@@ -735,7 +743,7 @@ void main() {
       );
       h.state.addToCart(catalogPart(h, 'p1'));
 
-      await h.state.placeOrder(pay: 'cod', cashbackUsed: 10.5);
+      await h.state.placeOrder(pay: 'cod', cashbackUsed: 10.5, addressId: 'address-1');
 
       final List<MultipartPart> parts =
           parseMultipart(h.server.requestsTo('POST', '/api/orders').single);
@@ -764,7 +772,7 @@ void main() {
       );
       h.state.addToCart(catalogPart(h, 'p1'));
 
-      await h.state.placeOrder(pay: 'cod', cashbackUsed: 5);
+      await h.state.placeOrder(pay: 'cod', cashbackUsed: 5, addressId: 'address-1');
 
       final List<MultipartPart> parts =
           parseMultipart(h.server.requestsTo('POST', '/api/orders').single);
@@ -779,9 +787,9 @@ void main() {
       final Uint8List png = Uint8List.fromList(<int>[0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x01]);
 
       h.state.addToCart(catalogPart(h, 'p1'));
-      await h.state.placeOrder(pay: 'sham', receipt: jpeg);
+      await h.state.placeOrder(pay: 'sham', receipt: jpeg, addressId: 'address-1');
       h.state.addToCart(catalogPart(h, 'p1'));
-      await h.state.placeOrder(pay: 'sham', receipt: png);
+      await h.state.placeOrder(pay: 'sham', receipt: png, addressId: 'address-1');
       await pumpEventQueue();
 
       final List<http.Request> sent = h.server.requestsTo('POST', '/api/orders');
@@ -799,7 +807,7 @@ void main() {
       h.server.reply('POST', '/api/orders', <String, dynamic>{'orderId': 'o3', 'pay': 'debt', 'total': 10.5});
       h.state.addToCart(catalogPart(h, 'p1'));
 
-      await h.state.placeOrder(pay: 'debt');
+      await h.state.placeOrder(pay: 'debt', addressId: 'address-1');
 
       final List<MultipartPart> parts = parseMultipart(h.server.requestsTo('POST', '/api/orders').single);
       expect(partNamed(parts, 'pay').text, 'debt');
@@ -813,7 +821,7 @@ void main() {
       final int before = h.server.requestsTo('GET', '/api/parts').length;
 
       await expectLater(
-        h.state.placeOrder(pay: 'cod'),
+        h.state.placeOrder(pay: 'cod', addressId: 'address-1'),
         throwsA(apiError(status: 400, message: 'الكمية المطلوبة غير متوفرة')),
       );
       await pumpEventQueue();
@@ -828,7 +836,7 @@ void main() {
       h.state.addToCart(catalogPart(h, 'p1'));
 
       await expectLater(
-        h.state.placeOrder(pay: 'cod'),
+        h.state.placeOrder(pay: 'cod', addressId: 'address-1'),
         throwsA(
           apiError(network: true, message: '$networkErrorMessage\nقد يكون الطلب وصل رغم ذلك، راجع «طلباتي» قبل إعادة المحاولة لتجنّب تكراره.'),
         ),

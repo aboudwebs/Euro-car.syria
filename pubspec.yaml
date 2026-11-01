@@ -1,7 +1,7 @@
 name: euro_cars
 description: EURO CARS native spare-parts app for workshops and marketers
 publish_to: "none"
-version: 1.1.1+67
+version: 1.1.1+68
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -17,6 +17,7 @@ dependencies:
   flutter_secure_storage: ^9.2.2
   image_picker: ^1.1.2
   url_launcher: ^6.3.1
+  app_links: ^6.4.1
   # On-device text recognition for the VIN camera search (no network, no account; Latin script).
   google_mlkit_text_recognition: ^0.15.0
   # Original Instagram / TikTok brand icons for the About page.

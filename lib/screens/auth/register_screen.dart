@@ -17,9 +17,10 @@ import 'auth_widgets.dart';
 import '../../widgets/tx.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key, required this.onBack});
+  const RegisterScreen({super.key, required this.onBack, this.initialReferral});
 
   final VoidCallback onBack;
+  final ReferralInput? initialReferral;
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -43,6 +44,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _otpToken;
   String? _error;
   String? _pendingMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final ReferralInput? referral = widget.initialReferral;
+    if (referral != null && referral.isSigned) {
+      _signedReferral = referral;
+      _referral.text = referral.code;
+    }
+  }
 
   @override
   void dispose() {
@@ -69,15 +80,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _clearReferral() {
-    setState(() {
-      _signedReferral = null;
-      _referral.clear();
-      _otpSent = false;
-      _otpToken = null;
-      _otpCode.clear();
-    });
-  }
 
   Future<void> _pickCity() async {
     final String? picked = await showChoiceSheet<String>(
@@ -334,10 +336,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ltr: true,
             readOnly: true,
             radius: 10,
-            suffix: IconButton(
-              onPressed: _busy ? null : _clearReferral,
-              tooltip: 'إزالة رابط الدعوة',
-              icon: Icon(Icons.link_off_rounded, color: p.muted),
+            suffix: Padding(
+              padding: const EdgeInsetsDirectional.only(end: 12),
+              child: Icon(Icons.lock_outline_rounded, color: p.ok, size: 19),
             ),
           ),
           const SizedBox(height: 6),

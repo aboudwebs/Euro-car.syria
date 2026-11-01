@@ -44,6 +44,14 @@ QUERY_HTTP = (
     "        </intent>\n"
 )
 
+APP_LINK_FILTER = """        <intent-filter>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.DEFAULT"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="eurocars" android:host="referral"/>
+        </intent-filter>
+"""
+
 GRADLE_IMPORTS = "import java.io.FileInputStream\nimport java.util.Properties\n\n"
 
 GRADLE_KEYSTORE = """// Release signing is optional. With android/key.properties (keyAlias, keyPassword, storeFile, storePassword) the
@@ -127,11 +135,22 @@ def patch_manifest(path: pathlib.Path) -> bool:
         else:
             text = text.replace("</manifest>", "    <queries>\n" + QUERY_HTTPS + QUERY_HTTP + "    </queries>\n</manifest>", 1)
 
+    if 'android:scheme="eurocars"' not in text:
+        pattern = r'(<activity\b(?=[^>]*android:name="\.MainActivity")[\s\S]*?</activity>)'
+        text, count = re.subn(
+            pattern,
+            lambda match: match.group(1).replace("</activity>", APP_LINK_FILTER + "    </activity>", 1),
+            text,
+            count=1,
+        )
+        if count != 1:
+            raise PatchError("Flutter MainActivity block not found for EURO referral deep links")
+
     changed = write_if_changed(path, text)
 
     # Fail loudly if anything the app depends on is still missing.
     final = path.read_text(encoding="utf-8")
-    for needle in (INTERNET, f'android:label="{APP_LABEL}"', 'android:allowBackup="false"', 'android:scheme="https"'):
+    for needle in (INTERNET, f'android:label="{APP_LABEL}"', 'android:allowBackup="false"', 'android:scheme="https"', 'android:scheme="eurocars"'):
         if needle not in final:
             raise PatchError(f"AndroidManifest.xml is missing {needle!r} after patching")
     return changed

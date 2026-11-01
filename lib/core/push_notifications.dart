@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' as ui;
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -6,7 +7,9 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  ui.DartPluginRegistrant.ensureInitialized();
   if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+  await PushNotifications.showBackgroundNotification(message);
 }
 
 class PushNotifications {
@@ -83,6 +86,42 @@ class PushNotifications {
     final initial = await FirebaseMessaging.instance.getInitialMessage();
     if (initial != null) _dispatchTap(initial.data);
     _initialized = true;
+  }
+
+  /// Displays data-only FCM messages while the app is backgrounded or terminated.
+  /// Notification-payload messages are displayed by Android itself and are not duplicated here.
+  static Future<void> showBackgroundNotification(RemoteMessage message) async {
+    // Android displays notification-payload messages automatically in the background.
+    // Only data-only messages need a local notification here.
+    if (message.notification != null) return;
+    final RemoteNotification? notification = message.notification;
+    final String title = notification?.title ?? message.data['title']?.toString() ?? 'EURO CARS';
+    final String body = notification?.body ?? message.data['body']?.toString() ?? '';
+    if (body.trim().isEmpty) return;
+
+    const settings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    );
+    await _local.initialize(settings);
+    await _local
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(_channel);
+    await _local.show(
+      message.messageId?.hashCode ?? DateTime.now().millisecondsSinceEpoch,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          'إشعارات EURO CARS',
+          channelDescription: 'تحديثات الطلبات والحساب والأمان',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+        ),
+      ),
+      payload: jsonEncode(message.data),
+    );
   }
 
   static Future<void> _showForegroundNotification(RemoteMessage message) async {

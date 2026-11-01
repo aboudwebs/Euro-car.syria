@@ -97,7 +97,7 @@ def patch_manifest(path: pathlib.Path) -> bool:
     text = read(path)
 
     if "android.permission.POST_NOTIFICATIONS" not in text:
-        text, count = re.subn(r"(<manifest\\b[^>]*>)", r"\\1\\n    " + POST_NOTIFICATIONS, text, count=1)
+        text, count = re.subn(r"(<manifest\b[^>]*>)", r"\1\n    " + POST_NOTIFICATIONS, text, count=1)
         if count != 1:
             raise PatchError("no <manifest> element found for notification permission")
 

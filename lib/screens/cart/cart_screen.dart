@@ -176,6 +176,7 @@ class _CartScreenState extends State<CartScreen> {
         _busy = false;
         _receipt = null;
         _pay = 'cod';
+        _useCashback = false;
       });
       await _showSuccess(placed, pay, cashbackUsed);
     } on ApiException catch (error) {

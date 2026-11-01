@@ -554,6 +554,15 @@ class WorkshopDashboard {
     return value.clamp(0.0, 1.0).toDouble();
   }
 
+  /// Remaining calendar days in the current 90-day season; null until the first delivered order.
+  int? seasonDaysLeft(DateTime now) {
+    final DateTime? started = seasonStartedAt;
+    if (started == null) return null;
+    final Duration remaining = started.add(const Duration(days: 90)).difference(now);
+    if (remaining.isNegative || remaining == Duration.zero) return 0;
+    return (remaining.inSeconds + 86399) ~/ 86400;
+  }
+
   /// Days left of the 30-day repayment window, counted from the latest debit entry that left a balance.
   /// Null when there is no such entry.
   int? debtDaysLeft(DateTime now) {

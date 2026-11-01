@@ -13,6 +13,7 @@ const Map<String, String> payMethodLabels = <String, String>{
   'sham': 'شام كاش',
   'cod': 'كاش عند الاستلام',
   'debt': 'دفتر الدين',
+  'cashback': 'الكاش باك',
 };
 
 const Map<String, String> specialStatusLabels = <String, String>{

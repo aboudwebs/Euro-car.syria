@@ -26,7 +26,7 @@ void main() {
       expect(user.specs, <String>['BMW']);
       expect(user.tier, 'Bronze');
       expect(user.seasonSpend, 1250.5);
-      expect(user.seasonStartedAt, DateTime.parse('2026-01-01T00:00:00Z'));
+      expect(user.seasonStartedAt!.isAtSameMomentAs(DateTime.utc(2026, 1, 1)), isTrue);
       expect(user.debtLimit, 500.0);
       expect(user.debtBalance, 120.5);
       expect(user.cashbackBalance, 7.25);
@@ -250,11 +250,17 @@ void main() {
       };
     }
 
-    WorkshopDashboard dashboard(List<Map<String, dynamic>> orders, [List<Map<String, dynamic>>? ledger]) {
+    WorkshopDashboard dashboard(
+      List<Map<String, dynamic>> orders, [
+      List<Map<String, dynamic>>? ledger,
+      String tier = 'Bronze',
+      num seasonSpend = 0,
+    ]) {
       return WorkshopDashboard.fromJson(<String, dynamic>{
         'user': <String, dynamic>{
           'name': 'ورشة',
-          'tier': 'Gold',
+          'tier': tier,
+          'loyalty_season_spend': seasonSpend,
           'debt_limit': 1000,
           'debt_balance': '250',
           'cashback_balance': 12,
@@ -267,7 +273,7 @@ void main() {
     test('reads the account block and the lists', () {
       final WorkshopDashboard d = dashboard(<Map<String, dynamic>>[order('o1', 400, 'cod', 'delivered')]);
       expect(d.name, 'ورشة');
-      expect(d.tier, 'Gold');
+      expect(d.tier, 'Bronze');
       expect(d.debtLimit, 1000.0);
       expect(d.debtBalance, 250.0);
       expect(d.cashbackBalance, 12.0);

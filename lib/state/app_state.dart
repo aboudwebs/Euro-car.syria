@@ -1508,6 +1508,7 @@ class AppState extends ChangeNotifier {
       return;
     }
     _lastResumeRefresh = now;
+    unawaited(loadSettings());
     unawaited(loadParts(silent: true));
     if (_ordersLoaded) {
       unawaited(loadOrders(silent: true));

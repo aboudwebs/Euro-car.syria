@@ -8,8 +8,7 @@ import 'package:euro_cars/core/models.dart';
 import 'package:euro_cars/core/session_store.dart';
 import 'package:euro_cars/state/app_state.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test/flutter_test.dart' as ft;
+import 'package:flutter_test/flutter_test.dart' as flutter_testing;
 import 'package:http/http.dart' as http;
 
 import 'support/fake_server.dart';
@@ -81,60 +80,60 @@ void main() {
   group('restoring a session', () {
     test('without a saved session it leads to the sign-in screen', () async {
       final Harness h = Harness();
-      ft.expect(h.state.status, SessionStatus.restoring);
+      flutter_testing.expect(h.state.status, SessionStatus.restoring);
 
       await h.state.restore();
 
-      ft.expect(h.state.status, SessionStatus.signedOut);
-      ft.expect(h.state.user, isNull);
-      ft.expect(h.state.isSignedIn, isFalse);
-      ft.expect(h.server.requests, isEmpty);
+      flutter_testing.expect(h.state.status, SessionStatus.signedOut);
+      flutter_testing.expect(h.state.user, isNull);
+      flutter_testing.expect(h.state.isSignedIn, isFalse);
+      flutter_testing.expect(h.server.requests, isEmpty);
     });
 
     test('a saved session is restored and the catalog loads', () async {
       final Harness h = await signedInHarness();
 
-      ft.expect(h.state.status, SessionStatus.signedIn);
-      ft.expect(h.state.isSignedIn, isTrue);
-      ft.expect(h.state.user!.id, 'w1');
-      ft.expect(h.api.token, 'tok-1');
-      ft.expect(h.state.partsLoaded, isTrue);
-      ft.expect(h.state.parts.map((Part p) => p.id), <String>['p1', 'p2', 'p3']);
-      ft.expect(h.state.partsError, isNull);
+      flutter_testing.expect(h.state.status, SessionStatus.signedIn);
+      flutter_testing.expect(h.state.isSignedIn, isTrue);
+      flutter_testing.expect(h.state.user!.id, 'w1');
+      flutter_testing.expect(h.api.token, 'tok-1');
+      flutter_testing.expect(h.state.partsLoaded, isTrue);
+      flutter_testing.expect(h.state.parts.map((Part p) => p.id), <String>['p1', 'p2', 'p3']);
+      flutter_testing.expect(h.state.partsError, isNull);
 
       final http.Request parts = h.server.requestsTo('GET', '/api/parts').single;
-      ft.expect(parts.headers['authorization'], 'Bearer tok-1');
+      flutter_testing.expect(parts.headers['authorization'], 'Bearer tok-1');
       final http.Request profile = h.server.requestsTo('GET', '/api/auth').single;
-      ft.expect(profile.headers['cookie'], 'euro_session=tok-1');
-      ft.expect(h.server.requestsTo('GET', '/api/account/avatar'), hasLength(1));
+      flutter_testing.expect(profile.headers['cookie'], 'euro_session=tok-1');
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/account/avatar'), hasLength(1));
     });
 
     test('a damaged or incomplete saved session is cleaned up', () async {
       final Harness damaged = Harness(stored: <String, String>{tokenKey: 'tok', userKey: 'not json'});
       await damaged.state.restore();
-      ft.expect(damaged.state.status, SessionStatus.signedOut);
-      ft.expect(damaged.store.data, isEmpty);
+      flutter_testing.expect(damaged.state.status, SessionStatus.signedOut);
+      flutter_testing.expect(damaged.store.data, isEmpty);
 
       final Harness partial = Harness(stored: <String, String>{tokenKey: 'tok'});
       await partial.state.restore();
-      ft.expect(partial.state.status, SessionStatus.signedOut);
-      ft.expect(partial.store.data, isEmpty);
-      ft.expect(partial.server.requests, isEmpty);
+      flutter_testing.expect(partial.state.status, SessionStatus.signedOut);
+      flutter_testing.expect(partial.store.data, isEmpty);
+      flutter_testing.expect(partial.server.requests, isEmpty);
     });
 
     test('an admin session found on the device is not accepted (admin is web only)', () async {
       final Harness h = Harness(stored: savedSession(adminJson()));
       await h.state.restore();
-      ft.expect(h.state.status, SessionStatus.signedOut);
-      ft.expect(h.store.data.containsKey(tokenKey), isFalse);
+      flutter_testing.expect(h.state.status, SessionStatus.signedOut);
+      flutter_testing.expect(h.store.data.containsKey(tokenKey), isFalse);
     });
 
     test('a keystore that refuses to read leads to the sign-in screen', () async {
       final Harness h = Harness(stored: savedSession(workshopJson()));
       h.store.failReads = true;
       await h.state.restore();
-      ft.expect(h.state.status, SessionStatus.signedOut);
-      ft.expect(h.state.themeMode, ThemeMode.dark);
+      flutter_testing.expect(h.state.status, SessionStatus.signedOut);
+      flutter_testing.expect(h.state.themeMode, ThemeMode.dark);
     });
 
     test('the saved theme is restored', () async {
@@ -146,7 +145,7 @@ void main() {
       }.entries) {
         final Harness h = Harness(stored: <String, String>{themeKey: entry.key});
         await h.state.restore();
-        ft.expect(h.state.themeMode, entry.value, reason: entry.key);
+        flutter_testing.expect(h.state.themeMode, entry.value, reason: entry.key);
       }
     });
   });
@@ -159,17 +158,17 @@ void main() {
       final AuthResult result = await h.state.login(role: 'workshop', phone: ' 0982026134 ', password: 'secret');
       await pumpEventQueue();
 
-      ft.expect(result.isSignedIn, isTrue);
-      ft.expect(h.state.status, SessionStatus.signedIn);
-      ft.expect(h.state.user!.name, 'ورشة النور');
-      ft.expect(h.api.token, 'tok-9');
-      ft.expect(h.store.data[tokenKey], 'tok-9');
-      ft.expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['id'], 'w1');
-      ft.expect(h.state.partsLoaded, isTrue);
+      flutter_testing.expect(result.isSignedIn, isTrue);
+      flutter_testing.expect(h.state.status, SessionStatus.signedIn);
+      flutter_testing.expect(h.state.user!.name, 'ورشة النور');
+      flutter_testing.expect(h.api.token, 'tok-9');
+      flutter_testing.expect(h.store.data[tokenKey], 'tok-9');
+      flutter_testing.expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['id'], 'w1');
+      flutter_testing.expect(h.state.partsLoaded, isTrue);
 
       final http.Request request = h.server.requestsTo('POST', '/api/auth').single;
-      ft.expect(request.headers.containsKey('authorization'), isFalse);
-      ft.expect(bodyOf(request), <String, dynamic>{
+      flutter_testing.expect(request.headers.containsKey('authorization'), isFalse);
+      flutter_testing.expect(bodyOf(request), <String, dynamic>{
         'mode': 'login',
         'client': 'mobile',
         'role': 'workshop',
@@ -185,7 +184,7 @@ void main() {
       await h.state.login(role: 'workshop', phone: ' ٠٩٨٢٠٢٦١٣٤ ', password: 'secret');
       await pumpEventQueue();
 
-      ft.expect(bodyOf(h.server.requestsTo('POST', '/api/auth').single)['phone'], '٠٩٨٢٠٢٦١٣٤');
+      flutter_testing.expect(bodyOf(h.server.requestsTo('POST', '/api/auth').single)['phone'], '٠٩٨٢٠٢٦١٣٤');
     });
 
     test('a workshop that is not approved yet gets the pending result', () async {
@@ -200,10 +199,10 @@ void main() {
 
       final AuthResult result = await h.state.login(role: 'workshop', phone: '0982026134', password: 'secret');
 
-      ft.expect(result.isPending, isTrue);
-      ft.expect(result.message, 'حسابك قيد المراجعة من الإدارة');
-      ft.expect(h.state.status, SessionStatus.signedOut);
-      ft.expect(h.store.data.containsKey(tokenKey), isFalse);
+      flutter_testing.expect(result.isPending, isTrue);
+      flutter_testing.expect(result.message, 'حسابك قيد المراجعة من الإدارة');
+      flutter_testing.expect(h.state.status, SessionStatus.signedOut);
+      flutter_testing.expect(h.store.data.containsKey(tokenKey), isFalse);
     });
 
     test('a wrong password shows the server message and is not a session expiry', () async {
@@ -213,9 +212,9 @@ void main() {
 
       final AuthResult result = await h.state.login(role: 'workshop', phone: '0982026134', password: 'wrong');
 
-      ft.expect(result.kind, AuthResultKind.failed);
-      ft.expect(result.message, 'بيانات الدخول غير صحيحة');
-      ft.expect(h.state.sessionNotice, isNull);
+      flutter_testing.expect(result.kind, AuthResultKind.failed);
+      flutter_testing.expect(result.message, 'بيانات الدخول غير صحيحة');
+      flutter_testing.expect(h.state.sessionNotice, isNull);
     });
 
     test('an answer without a session, an admin account or a dead network all fail cleanly', () async {
@@ -223,23 +222,23 @@ void main() {
       noSession.server.reply('POST', '/api/auth', <String, dynamic>{'user': workshopJson()});
       await noSession.state.restore();
       final AuthResult a = await noSession.state.login(role: 'workshop', phone: '1', password: 'secret');
-      ft.expect(a.kind, AuthResultKind.failed);
-      ft.expect(a.message, 'الخادم لم يرجع جلسة تطبيق صالحة');
+      flutter_testing.expect(a.kind, AuthResultKind.failed);
+      flutter_testing.expect(a.message, 'الخادم لم يرجع جلسة تطبيق صالحة');
 
       final Harness admin = Harness();
       admin.server.reply('POST', '/api/auth', <String, dynamic>{'accessToken': 't', 'user': adminJson()});
       await admin.state.restore();
       final AuthResult b = await admin.state.login(role: 'workshop', phone: '1', password: 'secret');
-      ft.expect(b.kind, AuthResultKind.failed);
-      ft.expect(b.message, 'هذا النوع من الحسابات غير متاح في التطبيق.');
-      ft.expect(admin.store.data.containsKey(tokenKey), isFalse);
+      flutter_testing.expect(b.kind, AuthResultKind.failed);
+      flutter_testing.expect(b.message, 'هذا النوع من الحسابات غير متاح في التطبيق.');
+      flutter_testing.expect(admin.store.data.containsKey(tokenKey), isFalse);
 
       final Harness offline = Harness();
       offline.server.on('POST', '/api/auth', (http.Request _) => throw http.ClientException('offline'));
       await offline.state.restore();
       final AuthResult c = await offline.state.login(role: 'workshop', phone: '1', password: 'secret');
-      ft.expect(c.kind, AuthResultKind.failed);
-      ft.expect(c.message, networkErrorMessage);
+      flutter_testing.expect(c.kind, AuthResultKind.failed);
+      flutter_testing.expect(c.message, networkErrorMessage);
     });
 
     test('a keystore that refuses to write does not block signing in', () async {
@@ -250,9 +249,9 @@ void main() {
       final AuthResult result = await h.state.login(role: 'workshop', phone: '0982026134', password: 'secret');
       await pumpEventQueue();
 
-      ft.expect(result.isSignedIn, isTrue);
-      ft.expect(h.state.isSignedIn, isTrue);
-      ft.expect(h.store.data.containsKey(tokenKey), isFalse);
+      flutter_testing.expect(result.isSignedIn, isTrue);
+      flutter_testing.expect(h.state.isSignedIn, isTrue);
+      flutter_testing.expect(h.store.data.containsKey(tokenKey), isFalse);
     });
 
     test('a workshop registration waits for the admin and sends the cleaned fields', () async {
@@ -276,10 +275,10 @@ void main() {
         refSignature: ' sig123 ',
       );
 
-      ft.expect(result.isPending, isTrue);
-      ft.expect(result.message, 'تم إرسال الطلب للإدارة');
-      ft.expect(h.state.status, SessionStatus.signedOut);
-      ft.expect(bodyOf(h.server.requestsTo('POST', '/api/auth').single), <String, dynamic>{
+      flutter_testing.expect(result.isPending, isTrue);
+      flutter_testing.expect(result.message, 'تم إرسال الطلب للإدارة');
+      flutter_testing.expect(h.state.status, SessionStatus.signedOut);
+      flutter_testing.expect(bodyOf(h.server.requestsTo('POST', '/api/auth').single), <String, dynamic>{
         'mode': 'register',
         'client': 'mobile',
         'role': 'workshop',
@@ -310,11 +309,11 @@ void main() {
         refCode: '  ',
       );
 
-      ft.expect(result.isPending, isTrue);
-      ft.expect(result.message, isNotEmpty);
+      flutter_testing.expect(result.isPending, isTrue);
+      flutter_testing.expect(result.message, isNotEmpty);
       final Map<String, dynamic> body = bodyOf(h.server.requestsTo('POST', '/api/auth').single);
-      ft.expect(body.containsKey('refCode'), isFalse);
-      ft.expect(body.containsKey('refSignature'), isFalse);
+      flutter_testing.expect(body.containsKey('refCode'), isFalse);
+      flutter_testing.expect(body.containsKey('refSignature'), isFalse);
     });
 
     test('a marketer registration signs in at once and sends no workshop fields', () async {
@@ -333,10 +332,10 @@ void main() {
       );
       await pumpEventQueue();
 
-      ft.expect(result.isSignedIn, isTrue);
-      ft.expect(h.state.user!.isMarketer, isTrue);
-      ft.expect(h.api.token, 'tok-m');
-      ft.expect(
+      flutter_testing.expect(result.isSignedIn, isTrue);
+      flutter_testing.expect(h.state.user!.isMarketer, isTrue);
+      flutter_testing.expect(h.api.token, 'tok-m');
+      flutter_testing.expect(
         bodyOf(h.server.requestsTo('POST', '/api/auth').single).keys,
         unorderedEquals(<String>['mode', 'client', 'role', 'name', 'phone', 'password']),
       );
@@ -354,8 +353,8 @@ void main() {
         password: 'secret',
       );
 
-      ft.expect(result.kind, AuthResultKind.failed);
-      ft.expect(result.message, 'رقم الهاتف مسجل مسبقاً');
+      flutter_testing.expect(result.kind, AuthResultKind.failed);
+      flutter_testing.expect(result.message, 'رقم الهاتف مسجل مسبقاً');
     });
   });
 
@@ -364,19 +363,19 @@ void main() {
       final Harness h = await signedInHarness(
         extraStore: <String, String>{cartKey: cartJson('w1', <String, Object?>{'p1': 2})},
       );
-      ft.expect(h.state.qtyInCart('p1'), 2);
+      flutter_testing.expect(h.state.qtyInCart('p1'), 2);
 
       await h.state.logout();
 
-      ft.expect(h.state.status, SessionStatus.signedOut);
-      ft.expect(h.state.user, isNull);
-      ft.expect(h.api.token, isNull);
-      ft.expect(h.state.cartItems, isEmpty);
-      ft.expect(h.state.parts, isEmpty);
-      ft.expect(h.state.sessionNotice, isNull);
-      ft.expect(h.store.data.containsKey(tokenKey), isFalse);
-      ft.expect(h.store.data.containsKey(userKey), isFalse);
-      ft.expect(h.store.data.containsKey(cartKey), isFalse);
+      flutter_testing.expect(h.state.status, SessionStatus.signedOut);
+      flutter_testing.expect(h.state.user, isNull);
+      flutter_testing.expect(h.api.token, isNull);
+      flutter_testing.expect(h.state.cartItems, isEmpty);
+      flutter_testing.expect(h.state.parts, isEmpty);
+      flutter_testing.expect(h.state.sessionNotice, isNull);
+      flutter_testing.expect(h.store.data.containsKey(tokenKey), isFalse);
+      flutter_testing.expect(h.store.data.containsKey(userKey), isFalse);
+      flutter_testing.expect(h.store.data.containsKey(cartKey), isFalse);
     });
 
     test('a 401 on an authenticated call ends the session but keeps the saved cart', () async {
@@ -388,38 +387,38 @@ void main() {
       await h.state.loadOrders();
       await pumpEventQueue();
 
-      ft.expect(h.state.status, SessionStatus.signedOut);
-      ft.expect(h.state.user, isNull);
-      ft.expect(h.api.token, isNull);
-      ft.expect(h.state.sessionNotice, 'انتهت جلسة الدخول. سجّل الدخول مجدداً للمتابعة.');
-      ft.expect(h.state.ordersError, isNull);
-      ft.expect(h.store.data.containsKey(tokenKey), isFalse);
-      ft.expect(h.store.data.containsKey(userKey), isFalse);
-      ft.expect(h.store.data.containsKey(cartKey), isTrue);
+      flutter_testing.expect(h.state.status, SessionStatus.signedOut);
+      flutter_testing.expect(h.state.user, isNull);
+      flutter_testing.expect(h.api.token, isNull);
+      flutter_testing.expect(h.state.sessionNotice, 'انتهت جلسة الدخول. سجّل الدخول مجدداً للمتابعة.');
+      flutter_testing.expect(h.state.ordersError, isNull);
+      flutter_testing.expect(h.store.data.containsKey(tokenKey), isFalse);
+      flutter_testing.expect(h.store.data.containsKey(userKey), isFalse);
+      flutter_testing.expect(h.store.data.containsKey(cartKey), isTrue);
 
       int notified = 0;
       h.state.addListener(() => notified++);
       h.state.dismissSessionNotice();
       h.state.dismissSessionNotice();
-      ft.expect(h.state.sessionNotice, isNull);
-      ft.expect(notified, 1);
+      flutter_testing.expect(h.state.sessionNotice, isNull);
+      flutter_testing.expect(notified, 1);
 
       // The same account gets its saved cart back after signing in again.
       h.serveLogin(workshopJson());
       await h.state.login(role: 'workshop', phone: '0982026134', password: 'secret');
       await pumpEventQueue();
-      ft.expect(h.state.qtyInCart('p1'), 2);
+      flutter_testing.expect(h.state.qtyInCart('p1'), 2);
     });
 
     test('a saved cart of another account is not shown, and a damaged one is ignored', () async {
       final Harness other = await signedInHarness(
         extraStore: <String, String>{cartKey: cartJson('someone-else', <String, Object?>{'p1': 2})},
       );
-      ft.expect(other.state.cartItems, isEmpty);
+      flutter_testing.expect(other.state.cartItems, isEmpty);
 
       for (final String broken in <String>['{broken', '[1,2]', '']) {
         final Harness h = await signedInHarness(extraStore: <String, String>{cartKey: broken});
-        ft.expect(h.state.cartItems, isEmpty, reason: 'saved cart "$broken"');
+        flutter_testing.expect(h.state.cartItems, isEmpty, reason: 'saved cart "$broken"');
       }
     });
 
@@ -429,15 +428,15 @@ void main() {
       h.serveBackground();
       h.server.on('GET', '/api/parts', (http.Request _) => gate.future);
       await h.state.restore();
-      ft.expect(h.state.partsLoading, isTrue);
+      flutter_testing.expect(h.state.partsLoading, isTrue);
 
       await h.state.logout();
       gate.complete(jsonResponse(<String, dynamic>{'parts': catalogJson()}));
       await pumpEventQueue();
 
-      ft.expect(h.state.parts, isEmpty);
-      ft.expect(h.state.partsLoaded, isFalse);
-      ft.expect(h.state.status, SessionStatus.signedOut);
+      flutter_testing.expect(h.state.parts, isEmpty);
+      flutter_testing.expect(h.state.partsLoaded, isFalse);
+      flutter_testing.expect(h.state.status, SessionStatus.signedOut);
     });
 
     test('notifications after dispose are harmless', () async {
@@ -446,7 +445,7 @@ void main() {
 
       await h.state.loadOrders();
 
-      ft.expect(h.api.onUnauthorized, isNull);
+      flutter_testing.expect(h.api.onUnauthorized, isNull);
     });
   });
 
@@ -458,15 +457,15 @@ void main() {
       await h.state.restore();
       await pumpEventQueue();
 
-      ft.expect(h.state.partsLoaded, isFalse);
-      ft.expect(h.state.partsLoading, isFalse);
-      ft.expect(h.state.partsError, 'خطأ في قاعدة البيانات');
+      flutter_testing.expect(h.state.partsLoaded, isFalse);
+      flutter_testing.expect(h.state.partsLoading, isFalse);
+      flutter_testing.expect(h.state.partsError, 'خطأ في قاعدة البيانات');
 
       h.server.reply('GET', '/api/parts', <String, dynamic>{'parts': catalogJson()});
       await h.state.loadParts();
 
-      ft.expect(h.state.partsError, isNull);
-      ft.expect(h.state.partsLoaded, isTrue);
+      flutter_testing.expect(h.state.partsError, isNull);
+      flutter_testing.expect(h.state.partsLoaded, isTrue);
     });
 
     test('a quiet refresh that fails keeps what is on screen, a visible one reports it', () async {
@@ -474,30 +473,30 @@ void main() {
       h.server.reply('GET', '/api/parts', <String, dynamic>{'error': 'boom'}, 500);
 
       await h.state.loadParts(silent: true);
-      ft.expect(h.state.partsError, isNull);
-      ft.expect(h.state.parts, hasLength(3));
+      flutter_testing.expect(h.state.partsError, isNull);
+      flutter_testing.expect(h.state.parts, hasLength(3));
 
       h.server.on('GET', '/api/parts', (http.Request _) => http.Response.bytes(utf8.encode('<html>'), 200));
       await h.state.loadParts();
-      ft.expect(h.state.partsError, badResponseMessage);
-      ft.expect(h.state.parts, hasLength(3));
+      flutter_testing.expect(h.state.partsError, badResponseMessage);
+      flutter_testing.expect(h.state.parts, hasLength(3));
     });
 
     test('only parts in stock can be added, up to the stock on hand', () async {
       final Harness h = await signedInHarness();
       final Part inStock = catalogPart(h, 'p2');
 
-      ft.expect(h.state.addToCart(catalogPart(h, 'p3')), 'هذه القطعة غير متوفرة حالياً.');
-      ft.expect(h.state.addToCart(inStock), isNull);
-      ft.expect(h.state.addToCart(inStock), isNull);
-      ft.expect(h.state.addToCart(inStock), isNull);
-      ft.expect(h.state.addToCart(inStock), 'وصلت إلى أقصى كمية متاحة من هذه القطعة.');
+      flutter_testing.expect(h.state.addToCart(catalogPart(h, 'p3')), 'هذه القطعة غير متوفرة حالياً.');
+      flutter_testing.expect(h.state.addToCart(inStock), isNull);
+      flutter_testing.expect(h.state.addToCart(inStock), isNull);
+      flutter_testing.expect(h.state.addToCart(inStock), isNull);
+      flutter_testing.expect(h.state.addToCart(inStock), 'وصلت إلى أقصى كمية متاحة من هذه القطعة.');
 
-      ft.expect(h.state.qtyInCart('p2'), 3);
-      ft.expect(h.state.qtyInCart('p3'), 0);
-      ft.expect(h.state.cartItemCount, 3);
-      ft.expect(h.state.cartTotalAmount, 120.0);
-      ft.expect(h.state.cartLines.single.part.id, 'p2');
+      flutter_testing.expect(h.state.qtyInCart('p2'), 3);
+      flutter_testing.expect(h.state.qtyInCart('p3'), 0);
+      flutter_testing.expect(h.state.cartItemCount, 3);
+      flutter_testing.expect(h.state.cartTotalAmount, 120.0);
+      flutter_testing.expect(h.state.cartLines.single.part.id, 'p2');
     });
 
     test('quantities can be lowered, removed and cleared', () async {
@@ -507,21 +506,21 @@ void main() {
       h.state.addToCart(p1);
       h.state.addToCart(p1);
       h.state.addToCart(p2);
-      ft.expect(h.state.cartItemCount, 3);
+      flutter_testing.expect(h.state.cartItemCount, 3);
 
       h.state.decrementCart('p1');
-      ft.expect(h.state.qtyInCart('p1'), 1);
+      flutter_testing.expect(h.state.qtyInCart('p1'), 1);
       h.state.decrementCart('p1');
-      ft.expect(h.state.cartItems.containsKey('p1'), isFalse);
+      flutter_testing.expect(h.state.cartItems.containsKey('p1'), isFalse);
 
       h.state.removeFromCart('p2');
-      ft.expect(h.state.cartItems, isEmpty);
+      flutter_testing.expect(h.state.cartItems, isEmpty);
 
       h.state.addToCart(p1);
       h.state.clearCart();
-      ft.expect(h.state.cartItems, isEmpty);
+      flutter_testing.expect(h.state.cartItems, isEmpty);
       h.state.decrementCart('unknown');
-      ft.expect(h.state.cartItemCount, 0);
+      flutter_testing.expect(h.state.cartItemCount, 0);
     });
 
     test('an order holds at most 50 different parts', () async {
@@ -532,11 +531,11 @@ void main() {
       final Harness h = await signedInHarness(catalog: many);
 
       for (int i = 0; i < 50; i++) {
-        ft.expect(h.state.addToCart(h.state.parts[i]), isNull, reason: 'line $i');
+        flutter_testing.expect(h.state.addToCart(h.state.parts[i]), isNull, reason: 'line $i');
       }
-      ft.expect(h.state.addToCart(h.state.parts[50]), 'لا يمكن إضافة أكثر من 50 صنفاً في الطلب الواحد.');
-      ft.expect(h.state.cartItems, hasLength(50));
-      ft.expect(h.state.addToCart(h.state.parts[0]), isNull);
+      flutter_testing.expect(h.state.addToCart(h.state.parts[50]), 'لا يمكن إضافة أكثر من 50 صنفاً في الطلب الواحد.');
+      flutter_testing.expect(h.state.cartItems, hasLength(50));
+      flutter_testing.expect(h.state.addToCart(h.state.parts[0]), isNull);
     });
 
     test('the cart is saved on the device and removed when it empties', () async {
@@ -545,14 +544,14 @@ void main() {
       h.state.addToCart(catalogPart(h, 'p2'));
       await pumpEventQueue();
 
-      ft.expect(jsonDecode(h.store.data[cartKey]!), <String, dynamic>{
+      flutter_testing.expect(jsonDecode(h.store.data[cartKey]!), <String, dynamic>{
         'uid': 'w1',
         'items': <String, dynamic>{'p2': 2},
       });
 
       h.state.clearCart();
       await pumpEventQueue();
-      ft.expect(h.store.data.containsKey(cartKey), isFalse);
+      flutter_testing.expect(h.store.data.containsKey(cartKey), isFalse);
     });
 
     test('a saved cart is trimmed to the stock on hand once the catalog loads', () async {
@@ -574,22 +573,22 @@ void main() {
       h.server.on('GET', '/api/parts', (http.Request _) => gate.future);
 
       await h.state.restore();
-      ft.expect(h.state.cartItems, <String, int>{'p1': 100, 'p2': 2, 'p3': 1, 'ghost': 4});
-      ft.expect(h.state.cartItemCount, 107);
-      ft.expect(h.state.cartNotice, isNull);
+      flutter_testing.expect(h.state.cartItems, <String, int>{'p1': 100, 'p2': 2, 'p3': 1, 'ghost': 4});
+      flutter_testing.expect(h.state.cartItemCount, 107);
+      flutter_testing.expect(h.state.cartNotice, isNull);
 
       gate.complete(jsonResponse(<String, dynamic>{'parts': catalogJson()}));
       await pumpEventQueue();
 
-      ft.expect(h.state.cartItems, <String, int>{'p1': 10, 'p2': 2});
-      ft.expect(h.state.cartNotice, 'تم تحديث السلة حسب القطع المتوفرة حالياً في المخزون.');
-      ft.expect(jsonDecode(h.store.data[cartKey]!), <String, dynamic>{
+      flutter_testing.expect(h.state.cartItems, <String, int>{'p1': 10, 'p2': 2});
+      flutter_testing.expect(h.state.cartNotice, 'تم تحديث السلة حسب القطع المتوفرة حالياً في المخزون.');
+      flutter_testing.expect(jsonDecode(h.store.data[cartKey]!), <String, dynamic>{
         'uid': 'w1',
         'items': <String, dynamic>{'p1': 10, 'p2': 2},
       });
 
       h.state.dismissCartNotice();
-      ft.expect(h.state.cartNotice, isNull);
+      flutter_testing.expect(h.state.cartNotice, isNull);
     });
   });
 
@@ -597,36 +596,36 @@ void main() {
     test('an order that cannot succeed is refused before any request is sent', () async {
       final Harness signedOut = Harness();
       await signedOut.state.restore();
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         signedOut.state.placeOrder(pay: 'cod'),
         throwsA(apiError(message: 'يرجى تسجيل الدخول لإتمام الطلب')),
       );
 
       final Harness marketer = await signedInHarness(account: marketerJson());
       marketer.state.addToCart(catalogPart(marketer, 'p1'));
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         marketer.state.placeOrder(pay: 'debt'),
         throwsA(apiError(message: 'طريقة الدفع هذه غير متاحة لحسابك.')),
       );
 
       final Harness empty = await signedInHarness();
-      await ft.expectLater(empty.state.placeOrder(pay: 'cod'), throwsA(apiError(message: 'السلة فارغة.')));
+      await flutter_testing.expectLater(empty.state.placeOrder(pay: 'cod'), throwsA(apiError(message: 'السلة فارغة.')));
 
       final Harness sham = await signedInHarness();
       sham.state.addToCart(catalogPart(sham, 'p1'));
       const String needReceipt = 'يرجى إرفاق إشعار تحويل شام كاش.';
-      await ft.expectLater(sham.state.placeOrder(pay: 'sham'), throwsA(apiError(message: needReceipt)));
-      await ft.expectLater(
+      await flutter_testing.expectLater(sham.state.placeOrder(pay: 'sham'), throwsA(apiError(message: needReceipt)));
+      await flutter_testing.expectLater(
         sham.state.placeOrder(pay: 'sham', receipt: Uint8List(0)),
         throwsA(apiError(message: needReceipt)),
       );
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         sham.state.placeOrder(pay: 'sham', receipt: Uint8List(maxImageBytes + 1)),
         throwsA(apiError(message: 'حجم الصورة يجب ألا يتجاوز 5 ميغابايت.')),
       );
 
       for (final Harness h in <Harness>[signedOut, marketer, empty, sham]) {
-        ft.expect(h.server.requestsTo('POST', '/api/orders'), isEmpty);
+        flutter_testing.expect(h.server.requestsTo('POST', '/api/orders'), isEmpty);
       }
     });
 
@@ -644,21 +643,21 @@ void main() {
       final PlacedOrder placed = await h.state.placeOrder(pay: 'cod');
       await pumpEventQueue();
 
-      ft.expect(placed.orderId, 'o1');
-      ft.expect(placed.orderNumber, 7);
-      ft.expect(placed.total, 61.0);
-      ft.expect(h.state.cartItems, isEmpty);
-      ft.expect(h.store.data.containsKey(cartKey), isFalse);
-      ft.expect(h.state.ordersLoaded, isTrue);
+      flutter_testing.expect(placed.orderId, 'o1');
+      flutter_testing.expect(placed.orderNumber, 7);
+      flutter_testing.expect(placed.total, 61.0);
+      flutter_testing.expect(h.state.cartItems, isEmpty);
+      flutter_testing.expect(h.store.data.containsKey(cartKey), isFalse);
+      flutter_testing.expect(h.state.ordersLoaded, isTrue);
 
       final http.Request request = h.server.requestsTo('POST', '/api/orders').single;
-      ft.expect(request.headers['authorization'], 'Bearer tok-1');
+      flutter_testing.expect(request.headers['authorization'], 'Bearer tok-1');
       final List<MultipartPart> parts = parseMultipart(request);
-      ft.expect(parts.map((MultipartPart p) => p.name), unorderedEquals(<String>['items', 'pay', 'cashbackUsed']));
-      ft.expect(partNamed(parts, 'cashbackUsed').text, '0.00');
-      ft.expect(request.headers['idempotency-key'], isNotEmpty);
-      ft.expect(jsonDecode(partNamed(parts, 'items').text), <String, dynamic>{'p1': 2, 'p2': 1});
-      ft.expect(partNamed(parts, 'pay').text, 'cod');
+      flutter_testing.expect(parts.map((MultipartPart p) => p.name), unorderedEquals(<String>['items', 'pay', 'cashbackUsed']));
+      flutter_testing.expect(partNamed(parts, 'cashbackUsed').text, '0.00');
+      flutter_testing.expect(request.headers['idempotency-key'], isNotEmpty);
+      flutter_testing.expect(jsonDecode(partNamed(parts, 'items').text), <String, dynamic>{'p1': 2, 'p2': 1});
+      flutter_testing.expect(partNamed(parts, 'pay').text, 'cod');
     });
 
     test('a Sham Cash order attaches the receipt, named after its real format', () async {
@@ -674,13 +673,13 @@ void main() {
       await pumpEventQueue();
 
       final List<http.Request> sent = h.server.requestsTo('POST', '/api/orders');
-      ft.expect(sent, hasLength(2));
+      flutter_testing.expect(sent, hasLength(2));
       final MultipartPart first = partNamed(parseMultipart(sent[0]), 'receipt');
-      ft.expect(first.filename, 'receipt.jpg');
-      ft.expect(first.bytes, orderedEquals(jpeg));
+      flutter_testing.expect(first.filename, 'receipt.jpg');
+      flutter_testing.expect(first.bytes, orderedEquals(jpeg));
       final MultipartPart second = partNamed(parseMultipart(sent[1]), 'receipt');
-      ft.expect(second.filename, 'receipt.png');
-      ft.expect(second.bytes, orderedEquals(png));
+      flutter_testing.expect(second.filename, 'receipt.png');
+      flutter_testing.expect(second.bytes, orderedEquals(png));
     });
 
     test('a workshop may put an order on the debt ledger', () async {
@@ -691,8 +690,8 @@ void main() {
       await h.state.placeOrder(pay: 'debt');
 
       final List<MultipartPart> parts = parseMultipart(h.server.requestsTo('POST', '/api/orders').single);
-      ft.expect(partNamed(parts, 'pay').text, 'debt');
-      ft.expect(parts.any((MultipartPart p) => p.filename != null), isFalse);
+      flutter_testing.expect(partNamed(parts, 'pay').text, 'debt');
+      flutter_testing.expect(parts.any((MultipartPart p) => p.filename != null), isFalse);
     });
 
     test('a refused order keeps the cart and refreshes the catalog', () async {
@@ -701,14 +700,14 @@ void main() {
       h.state.addToCart(catalogPart(h, 'p1'));
       final int before = h.server.requestsTo('GET', '/api/parts').length;
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.placeOrder(pay: 'cod'),
         throwsA(apiError(status: 400, message: 'الكمية المطلوبة غير متوفرة')),
       );
       await pumpEventQueue();
 
-      ft.expect(h.state.qtyInCart('p1'), 1);
-      ft.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(before + 1));
+      flutter_testing.expect(h.state.qtyInCart('p1'), 1);
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(before + 1));
     });
 
     test('a dropped connection warns that the order may have arrived and is never resent', () async {
@@ -716,15 +715,15 @@ void main() {
       h.server.on('POST', '/api/orders', (http.Request _) => throw http.ClientException('connection reset'));
       h.state.addToCart(catalogPart(h, 'p1'));
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.placeOrder(pay: 'cod'),
         throwsA(
           apiError(network: true, message: '$networkErrorMessage\nقد يكون الطلب وصل رغم ذلك، راجع «طلباتي» قبل إعادة المحاولة لتجنّب تكراره.'),
         ),
       );
 
-      ft.expect(h.server.requestsTo('POST', '/api/orders'), hasLength(1));
-      ft.expect(h.state.qtyInCart('p1'), 1);
+      flutter_testing.expect(h.server.requestsTo('POST', '/api/orders'), hasLength(1));
+      flutter_testing.expect(h.state.qtyInCart('p1'), 1);
     });
 
     test('orders and special requests are listed from the API', () async {
@@ -749,10 +748,10 @@ void main() {
       await h.state.loadOrders();
       await h.state.loadRequests();
 
-      ft.expect(h.state.ordersLoaded, isTrue);
-      ft.expect(h.state.orders.single.label, '#3');
-      ft.expect(h.state.requestsLoaded, isTrue);
-      ft.expect(h.state.requests.single.partName, 'مرآة');
+      flutter_testing.expect(h.state.ordersLoaded, isTrue);
+      flutter_testing.expect(h.state.orders.single.label, '#3');
+      flutter_testing.expect(h.state.requestsLoaded, isTrue);
+      flutter_testing.expect(h.state.requests.single.partName, 'مرآة');
     });
   });
 
@@ -773,15 +772,15 @@ void main() {
       await pumpEventQueue();
 
       final List<MultipartPart> parts = parseMultipart(h.server.requestsTo('POST', '/api/special-requests').single);
-      ft.expect(partNamed(parts, 'brand').text, 'أخرى');
-      ft.expect(partNamed(parts, 'otherBrand').text, 'Toyota');
-      ft.expect(partNamed(parts, 'partName').text, 'مرآة جانبية');
-      ft.expect(partNamed(parts, 'partNumber').text, '87910');
-      ft.expect(partNamed(parts, 'notes').text, 'للجهة اليمنى');
+      flutter_testing.expect(partNamed(parts, 'brand').text, 'أخرى');
+      flutter_testing.expect(partNamed(parts, 'otherBrand').text, 'Toyota');
+      flutter_testing.expect(partNamed(parts, 'partName').text, 'مرآة جانبية');
+      flutter_testing.expect(partNamed(parts, 'partNumber').text, '87910');
+      flutter_testing.expect(partNamed(parts, 'notes').text, 'للجهة اليمنى');
       final MultipartPart image = partNamed(parts, 'image');
-      ft.expect(image.filename, 'part.png');
-      ft.expect(image.bytes, orderedEquals(photo));
-      ft.expect(h.state.requestsLoaded, isTrue);
+      flutter_testing.expect(image.filename, 'part.png');
+      flutter_testing.expect(image.bytes, orderedEquals(photo));
+      flutter_testing.expect(h.state.requestsLoaded, isTrue);
     });
 
     test('work without a photo, and refuse a photo above 5 MB', () async {
@@ -790,20 +789,20 @@ void main() {
 
       await h.state.submitSpecialRequest(brand: 'BMW', partName: 'مرآة');
       final List<MultipartPart> parts = parseMultipart(h.server.requestsTo('POST', '/api/special-requests').single);
-      ft.expect(parts.any((MultipartPart p) => p.name == 'image'), isFalse);
+      flutter_testing.expect(parts.any((MultipartPart p) => p.name == 'image'), isFalse);
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.submitSpecialRequest(brand: 'BMW', partName: 'مرآة', image: Uint8List(maxImageBytes + 1)),
         throwsA(apiError(message: 'حجم الصورة يجب ألا يتجاوز 5 ميغابايت.')),
       );
-      ft.expect(h.server.requestsTo('POST', '/api/special-requests'), hasLength(1));
+      flutter_testing.expect(h.server.requestsTo('POST', '/api/special-requests'), hasLength(1));
     });
 
     test('a refusal from the server is passed on', () async {
       final Harness h = await signedInHarness();
       h.server.reply('POST', '/api/special-requests', <String, dynamic>{'error': 'اسم القطعة مطلوب'}, 400);
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.submitSpecialRequest(brand: 'BMW', partName: ' '),
         throwsA(apiError(status: 400, message: 'اسم القطعة مطلوب')),
       );
@@ -822,12 +821,12 @@ void main() {
       await h.state.loadDashboard();
       await pumpEventQueue();
 
-      ft.expect(h.state.dashboardLoaded, isTrue);
-      ft.expect(h.state.workshopDashboard!.debtBalance, 300.0);
-      ft.expect(h.state.marketerDashboard, isNull);
-      ft.expect(h.state.user!.debtBalance, 300.0);
-      ft.expect(h.state.user!.cashbackBalance, 15.0);
-      ft.expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['debt_balance'], 300.0);
+      flutter_testing.expect(h.state.dashboardLoaded, isTrue);
+      flutter_testing.expect(h.state.workshopDashboard!.debtBalance, 300.0);
+      flutter_testing.expect(h.state.marketerDashboard, isNull);
+      flutter_testing.expect(h.state.user!.debtBalance, 300.0);
+      flutter_testing.expect(h.state.user!.cashbackBalance, 15.0);
+      flutter_testing.expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['debt_balance'], 300.0);
     });
 
     test('the marketer dashboard shows the code and commissions', () async {
@@ -840,10 +839,10 @@ void main() {
 
       await h.state.loadDashboard();
 
-      ft.expect(h.state.marketerDashboard!.code, 'MK-1A2B3C');
-      ft.expect(h.state.marketerDashboard!.workshops, 3);
-      ft.expect(h.state.marketerDashboard!.commissions.available, 12.5);
-      ft.expect(h.state.workshopDashboard, isNull);
+      flutter_testing.expect(h.state.marketerDashboard!.code, 'MK-1A2B3C');
+      flutter_testing.expect(h.state.marketerDashboard!.workshops, 3);
+      flutter_testing.expect(h.state.marketerDashboard!.commissions.available, 12.5);
+      flutter_testing.expect(h.state.workshopDashboard, isNull);
     });
 
     test('a dashboard error is reported and nothing is shown', () async {
@@ -852,8 +851,8 @@ void main() {
 
       await h.state.loadDashboard();
 
-      ft.expect(h.state.dashboardLoaded, isFalse);
-      ft.expect(h.state.dashboardError, 'تعذر تحميل اللوحة');
+      flutter_testing.expect(h.state.dashboardLoaded, isFalse);
+      flutter_testing.expect(h.state.dashboardError, 'تعذر تحميل اللوحة');
     });
 
     test('opening a tab refreshes the data that tab shows', () async {
@@ -866,20 +865,20 @@ void main() {
 
       h.state.selectTab(tabOrders);
       await pumpEventQueue();
-      ft.expect(h.state.selectedTab, tabOrders);
-      ft.expect(h.state.ordersLoaded, isTrue);
-      ft.expect(h.state.requestsLoaded, isTrue);
+      flutter_testing.expect(h.state.selectedTab, tabOrders);
+      flutter_testing.expect(h.state.ordersLoaded, isTrue);
+      flutter_testing.expect(h.state.requestsLoaded, isTrue);
 
       h.state.selectTab(tabDashboard);
       await pumpEventQueue();
-      ft.expect(h.state.dashboardLoaded, isTrue);
+      flutter_testing.expect(h.state.dashboardLoaded, isTrue);
 
       final int partsBefore = h.server.requestsTo('GET', '/api/parts').length;
       final int dashboardBefore = h.server.requestsTo('GET', '/api/workshop/dashboard').length;
       h.state.selectTab(tabCart);
       await pumpEventQueue();
-      ft.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(partsBefore + 1));
-      ft.expect(h.server.requestsTo('GET', '/api/workshop/dashboard'), hasLength(dashboardBefore + 1));
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(partsBefore + 1));
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/workshop/dashboard'), hasLength(dashboardBefore + 1));
     });
 
     test('a marketer opening the cart only refreshes the catalog', () async {
@@ -888,20 +887,20 @@ void main() {
       h.state.selectTab(tabCart);
       await pumpEventQueue();
 
-      ft.expect(h.server.requestsTo('GET', '/api/workshop/dashboard'), isEmpty);
-      ft.expect(h.server.requestsTo('GET', '/api/marketer/dashboard'), isEmpty);
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/workshop/dashboard'), isEmpty);
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/marketer/dashboard'), isEmpty);
     });
 
     test('tabs outside the range, or while signed out, are ignored', () async {
       final Harness out = Harness();
       await out.state.restore();
       out.state.selectTab(tabOrders);
-      ft.expect(out.state.selectedTab, tabCatalog);
+      flutter_testing.expect(out.state.selectedTab, tabCatalog);
 
       final Harness h = await signedInHarness();
       h.state.selectTab(9);
       h.state.selectTab(-1);
-      ft.expect(h.state.selectedTab, tabCatalog);
+      flutter_testing.expect(h.state.selectedTab, tabCatalog);
     });
 
     test('the special requests shortcut opens the orders tab on that list', () async {
@@ -909,24 +908,24 @@ void main() {
 
       h.state.showSpecialRequests();
       await pumpEventQueue();
-      ft.expect(h.state.ordersView, OrdersView.requests);
-      ft.expect(h.state.selectedTab, tabOrders);
+      flutter_testing.expect(h.state.ordersView, OrdersView.requests);
+      flutter_testing.expect(h.state.selectedTab, tabOrders);
 
       h.state.setOrdersView(OrdersView.orders);
-      ft.expect(h.state.ordersView, OrdersView.orders);
+      flutter_testing.expect(h.state.ordersView, OrdersView.orders);
     });
 
     test('returning to the app refreshes the catalog at most every 30 seconds', () async {
       final Harness h = await signedInHarness();
-      ft.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(1));
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(1));
 
       h.state.refreshOnResume();
       await pumpEventQueue();
-      ft.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(2));
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(2));
 
       h.state.refreshOnResume();
       await pumpEventQueue();
-      ft.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(2));
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(2));
     });
   });
 
@@ -940,15 +939,15 @@ void main() {
       await h.state.updateProfile(name: '  اسم جديد ', city: ' دمشق ');
       await pumpEventQueue();
 
-      ft.expect(bodyOf(h.server.requestsTo('PUT', '/api/auth').single), <String, dynamic>{
+      flutter_testing.expect(bodyOf(h.server.requestsTo('PUT', '/api/auth').single), <String, dynamic>{
         'name': 'اسم جديد',
         'city': 'دمشق',
       });
-      ft.expect(h.state.user!.name, 'اسم جديد');
-      ft.expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['name'], 'اسم جديد');
+      flutter_testing.expect(h.state.user!.name, 'اسم جديد');
+      flutter_testing.expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['name'], 'اسم جديد');
 
       await h.state.updateProfile(name: 'اسم جديد', city: '', newPassword: 'abcd1234');
-      ft.expect(bodyOf(h.server.requestsTo('PUT', '/api/auth').last), <String, dynamic>{
+      flutter_testing.expect(bodyOf(h.server.requestsTo('PUT', '/api/auth').last), <String, dynamic>{
         'name': 'اسم جديد',
         'newPassword': 'abcd1234',
       });
@@ -958,12 +957,12 @@ void main() {
       final Harness h = await signedInHarness();
       h.server.reply('PUT', '/api/auth', <String, dynamic>{'error': 'كلمة المرور قصيرة'}, 400);
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.updateProfile(name: 'x', city: 'حلب', newPassword: 'ab'),
         throwsA(apiError(status: 400, message: 'كلمة المرور قصيرة')),
       );
 
-      ft.expect(h.state.user!.name, 'ورشة النور');
+      flutter_testing.expect(h.state.user!.name, 'ورشة النور');
     });
 
     test('a profile refresh that answers "no user" or another account is ignored', () async {
@@ -971,13 +970,13 @@ void main() {
 
       h.server.reply('GET', '/api/auth', <String, dynamic>{'user': null});
       await h.state.refreshProfile();
-      ft.expect(h.state.isSignedIn, isTrue);
-      ft.expect(h.state.user!.id, 'w1');
+      flutter_testing.expect(h.state.isSignedIn, isTrue);
+      flutter_testing.expect(h.state.user!.id, 'w1');
 
       h.server.reply('GET', '/api/auth', <String, dynamic>{'user': marketerJson()});
       await h.state.refreshProfile();
-      ft.expect(h.state.user!.id, 'w1');
-      ft.expect(h.state.user!.isWorkshop, isTrue);
+      flutter_testing.expect(h.state.user!.id, 'w1');
+      flutter_testing.expect(h.state.user!.isWorkshop, isTrue);
     });
 
     test('the profile photo is loaded, validated and uploaded', () async {
@@ -991,23 +990,23 @@ void main() {
       h.server.reply('PUT', '/api/account/avatar', <String, dynamic>{'ok': true});
       await h.state.restore();
       await pumpEventQueue();
-      ft.expect(h.state.avatarBytes, orderedEquals(<int>[1, 2, 3]));
+      flutter_testing.expect(h.state.avatarBytes, orderedEquals(<int>[1, 2, 3]));
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.uploadAvatar(Uint8List.fromList(<int>[1, 2, 3, 4])),
         throwsA(apiError(message: 'صيغة الصورة غير مدعومة، اختر صورة بصيغة JPG.')),
       );
       final Uint8List tooBig = Uint8List(maxAvatarBytes + 1)..setRange(0, 3, <int>[0xFF, 0xD8, 0xFF]);
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.uploadAvatar(tooBig),
         throwsA(apiError(message: 'حجم الصورة كبير جداً. اختر صورة أصغر.')),
       );
-      ft.expect(h.server.requestsTo('PUT', '/api/account/avatar'), isEmpty);
+      flutter_testing.expect(h.server.requestsTo('PUT', '/api/account/avatar'), isEmpty);
 
       final Uint8List jpeg = Uint8List.fromList(<int>[0xFF, 0xD8, 0xFF, 0xE0, 9, 9]);
       await h.state.uploadAvatar(jpeg);
-      ft.expect(h.state.avatarBytes, orderedEquals(jpeg));
-      ft.expect(h.server.requestsTo('PUT', '/api/account/avatar').single.bodyBytes, orderedEquals(jpeg));
+      flutter_testing.expect(h.state.avatarBytes, orderedEquals(jpeg));
+      flutter_testing.expect(h.server.requestsTo('PUT', '/api/account/avatar').single.bodyBytes, orderedEquals(jpeg));
     });
   });
 
@@ -1022,19 +1021,19 @@ void main() {
       h.state.setThemeMode(ThemeMode.light);
       await pumpEventQueue();
 
-      ft.expect(notified, 1);
-      ft.expect(h.state.themeMode, ThemeMode.light);
-      ft.expect(h.store.data[themeKey], 'light');
+      flutter_testing.expect(notified, 1);
+      flutter_testing.expect(h.state.themeMode, ThemeMode.light);
+      flutter_testing.expect(h.store.data[themeKey], 'light');
 
       final Harness again = Harness(stored: h.store.data);
       await again.state.restore();
-      ft.expect(again.state.themeMode, ThemeMode.light);
+      flutter_testing.expect(again.state.themeMode, ThemeMode.light);
     });
   });
 }
 )));
-      ft.expect(jsonDecode(partNamed(parts, 'items').text), <String, dynamic>{'p1': 2, 'p2': 1});
-      ft.expect(partNamed(parts, 'pay').text, 'cod');
+      flutter_testing.expect(jsonDecode(partNamed(parts, 'items').text), <String, dynamic>{'p1': 2, 'p2': 1});
+      flutter_testing.expect(partNamed(parts, 'pay').text, 'cod');
     });
 
     test('a Sham Cash order attaches the receipt, named after its real format', () async {
@@ -1050,13 +1049,13 @@ void main() {
       await pumpEventQueue();
 
       final List<http.Request> sent = h.server.requestsTo('POST', '/api/orders');
-      ft.expect(sent, hasLength(2));
+      flutter_testing.expect(sent, hasLength(2));
       final MultipartPart first = partNamed(parseMultipart(sent[0]), 'receipt');
-      ft.expect(first.filename, 'receipt.jpg');
-      ft.expect(first.bytes, orderedEquals(jpeg));
+      flutter_testing.expect(first.filename, 'receipt.jpg');
+      flutter_testing.expect(first.bytes, orderedEquals(jpeg));
       final MultipartPart second = partNamed(parseMultipart(sent[1]), 'receipt');
-      ft.expect(second.filename, 'receipt.png');
-      ft.expect(second.bytes, orderedEquals(png));
+      flutter_testing.expect(second.filename, 'receipt.png');
+      flutter_testing.expect(second.bytes, orderedEquals(png));
     });
 
     test('a workshop may put an order on the debt ledger', () async {
@@ -1067,8 +1066,8 @@ void main() {
       await h.state.placeOrder(pay: 'debt');
 
       final List<MultipartPart> parts = parseMultipart(h.server.requestsTo('POST', '/api/orders').single);
-      ft.expect(partNamed(parts, 'pay').text, 'debt');
-      ft.expect(parts.any((MultipartPart p) => p.filename != null), isFalse);
+      flutter_testing.expect(partNamed(parts, 'pay').text, 'debt');
+      flutter_testing.expect(parts.any((MultipartPart p) => p.filename != null), isFalse);
     });
 
     test('a refused order keeps the cart and refreshes the catalog', () async {
@@ -1077,14 +1076,14 @@ void main() {
       h.state.addToCart(catalogPart(h, 'p1'));
       final int before = h.server.requestsTo('GET', '/api/parts').length;
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.placeOrder(pay: 'cod'),
         throwsA(apiError(status: 400, message: 'الكمية المطلوبة غير متوفرة')),
       );
       await pumpEventQueue();
 
-      ft.expect(h.state.qtyInCart('p1'), 1);
-      ft.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(before + 1));
+      flutter_testing.expect(h.state.qtyInCart('p1'), 1);
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(before + 1));
     });
 
     test('a dropped connection warns that the order may have arrived and is never resent', () async {
@@ -1092,15 +1091,15 @@ void main() {
       h.server.on('POST', '/api/orders', (http.Request _) => throw http.ClientException('connection reset'));
       h.state.addToCart(catalogPart(h, 'p1'));
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.placeOrder(pay: 'cod'),
         throwsA(
           apiError(network: true, message: '$networkErrorMessage\nقد يكون الطلب وصل رغم ذلك، راجع «طلباتي» قبل إعادة المحاولة لتجنّب تكراره.'),
         ),
       );
 
-      ft.expect(h.server.requestsTo('POST', '/api/orders'), hasLength(1));
-      ft.expect(h.state.qtyInCart('p1'), 1);
+      flutter_testing.expect(h.server.requestsTo('POST', '/api/orders'), hasLength(1));
+      flutter_testing.expect(h.state.qtyInCart('p1'), 1);
     });
 
     test('orders and special requests are listed from the API', () async {
@@ -1125,10 +1124,10 @@ void main() {
       await h.state.loadOrders();
       await h.state.loadRequests();
 
-      ft.expect(h.state.ordersLoaded, isTrue);
-      ft.expect(h.state.orders.single.label, '#3');
-      ft.expect(h.state.requestsLoaded, isTrue);
-      ft.expect(h.state.requests.single.partName, 'مرآة');
+      flutter_testing.expect(h.state.ordersLoaded, isTrue);
+      flutter_testing.expect(h.state.orders.single.label, '#3');
+      flutter_testing.expect(h.state.requestsLoaded, isTrue);
+      flutter_testing.expect(h.state.requests.single.partName, 'مرآة');
     });
   });
 
@@ -1149,15 +1148,15 @@ void main() {
       await pumpEventQueue();
 
       final List<MultipartPart> parts = parseMultipart(h.server.requestsTo('POST', '/api/special-requests').single);
-      ft.expect(partNamed(parts, 'brand').text, 'أخرى');
-      ft.expect(partNamed(parts, 'otherBrand').text, 'Toyota');
-      ft.expect(partNamed(parts, 'partName').text, 'مرآة جانبية');
-      ft.expect(partNamed(parts, 'partNumber').text, '87910');
-      ft.expect(partNamed(parts, 'notes').text, 'للجهة اليمنى');
+      flutter_testing.expect(partNamed(parts, 'brand').text, 'أخرى');
+      flutter_testing.expect(partNamed(parts, 'otherBrand').text, 'Toyota');
+      flutter_testing.expect(partNamed(parts, 'partName').text, 'مرآة جانبية');
+      flutter_testing.expect(partNamed(parts, 'partNumber').text, '87910');
+      flutter_testing.expect(partNamed(parts, 'notes').text, 'للجهة اليمنى');
       final MultipartPart image = partNamed(parts, 'image');
-      ft.expect(image.filename, 'part.png');
-      ft.expect(image.bytes, orderedEquals(photo));
-      ft.expect(h.state.requestsLoaded, isTrue);
+      flutter_testing.expect(image.filename, 'part.png');
+      flutter_testing.expect(image.bytes, orderedEquals(photo));
+      flutter_testing.expect(h.state.requestsLoaded, isTrue);
     });
 
     test('work without a photo, and refuse a photo above 5 MB', () async {
@@ -1166,20 +1165,20 @@ void main() {
 
       await h.state.submitSpecialRequest(brand: 'BMW', partName: 'مرآة');
       final List<MultipartPart> parts = parseMultipart(h.server.requestsTo('POST', '/api/special-requests').single);
-      ft.expect(parts.any((MultipartPart p) => p.name == 'image'), isFalse);
+      flutter_testing.expect(parts.any((MultipartPart p) => p.name == 'image'), isFalse);
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.submitSpecialRequest(brand: 'BMW', partName: 'مرآة', image: Uint8List(maxImageBytes + 1)),
         throwsA(apiError(message: 'حجم الصورة يجب ألا يتجاوز 5 ميغابايت.')),
       );
-      ft.expect(h.server.requestsTo('POST', '/api/special-requests'), hasLength(1));
+      flutter_testing.expect(h.server.requestsTo('POST', '/api/special-requests'), hasLength(1));
     });
 
     test('a refusal from the server is passed on', () async {
       final Harness h = await signedInHarness();
       h.server.reply('POST', '/api/special-requests', <String, dynamic>{'error': 'اسم القطعة مطلوب'}, 400);
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.submitSpecialRequest(brand: 'BMW', partName: ' '),
         throwsA(apiError(status: 400, message: 'اسم القطعة مطلوب')),
       );
@@ -1198,12 +1197,12 @@ void main() {
       await h.state.loadDashboard();
       await pumpEventQueue();
 
-      ft.expect(h.state.dashboardLoaded, isTrue);
-      ft.expect(h.state.workshopDashboard!.debtBalance, 300.0);
-      ft.expect(h.state.marketerDashboard, isNull);
-      ft.expect(h.state.user!.debtBalance, 300.0);
-      ft.expect(h.state.user!.cashbackBalance, 15.0);
-      ft.expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['debt_balance'], 300.0);
+      flutter_testing.expect(h.state.dashboardLoaded, isTrue);
+      flutter_testing.expect(h.state.workshopDashboard!.debtBalance, 300.0);
+      flutter_testing.expect(h.state.marketerDashboard, isNull);
+      flutter_testing.expect(h.state.user!.debtBalance, 300.0);
+      flutter_testing.expect(h.state.user!.cashbackBalance, 15.0);
+      flutter_testing.expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['debt_balance'], 300.0);
     });
 
     test('the marketer dashboard shows the code and commissions', () async {
@@ -1216,10 +1215,10 @@ void main() {
 
       await h.state.loadDashboard();
 
-      ft.expect(h.state.marketerDashboard!.code, 'MK-1A2B3C');
-      ft.expect(h.state.marketerDashboard!.workshops, 3);
-      ft.expect(h.state.marketerDashboard!.commissions.available, 12.5);
-      ft.expect(h.state.workshopDashboard, isNull);
+      flutter_testing.expect(h.state.marketerDashboard!.code, 'MK-1A2B3C');
+      flutter_testing.expect(h.state.marketerDashboard!.workshops, 3);
+      flutter_testing.expect(h.state.marketerDashboard!.commissions.available, 12.5);
+      flutter_testing.expect(h.state.workshopDashboard, isNull);
     });
 
     test('a dashboard error is reported and nothing is shown', () async {
@@ -1228,8 +1227,8 @@ void main() {
 
       await h.state.loadDashboard();
 
-      ft.expect(h.state.dashboardLoaded, isFalse);
-      ft.expect(h.state.dashboardError, 'تعذر تحميل اللوحة');
+      flutter_testing.expect(h.state.dashboardLoaded, isFalse);
+      flutter_testing.expect(h.state.dashboardError, 'تعذر تحميل اللوحة');
     });
 
     test('opening a tab refreshes the data that tab shows', () async {
@@ -1242,20 +1241,20 @@ void main() {
 
       h.state.selectTab(tabOrders);
       await pumpEventQueue();
-      ft.expect(h.state.selectedTab, tabOrders);
-      ft.expect(h.state.ordersLoaded, isTrue);
-      ft.expect(h.state.requestsLoaded, isTrue);
+      flutter_testing.expect(h.state.selectedTab, tabOrders);
+      flutter_testing.expect(h.state.ordersLoaded, isTrue);
+      flutter_testing.expect(h.state.requestsLoaded, isTrue);
 
       h.state.selectTab(tabDashboard);
       await pumpEventQueue();
-      ft.expect(h.state.dashboardLoaded, isTrue);
+      flutter_testing.expect(h.state.dashboardLoaded, isTrue);
 
       final int partsBefore = h.server.requestsTo('GET', '/api/parts').length;
       final int dashboardBefore = h.server.requestsTo('GET', '/api/workshop/dashboard').length;
       h.state.selectTab(tabCart);
       await pumpEventQueue();
-      ft.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(partsBefore + 1));
-      ft.expect(h.server.requestsTo('GET', '/api/workshop/dashboard'), hasLength(dashboardBefore + 1));
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(partsBefore + 1));
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/workshop/dashboard'), hasLength(dashboardBefore + 1));
     });
 
     test('a marketer opening the cart only refreshes the catalog', () async {
@@ -1264,20 +1263,20 @@ void main() {
       h.state.selectTab(tabCart);
       await pumpEventQueue();
 
-      ft.expect(h.server.requestsTo('GET', '/api/workshop/dashboard'), isEmpty);
-      ft.expect(h.server.requestsTo('GET', '/api/marketer/dashboard'), isEmpty);
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/workshop/dashboard'), isEmpty);
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/marketer/dashboard'), isEmpty);
     });
 
     test('tabs outside the range, or while signed out, are ignored', () async {
       final Harness out = Harness();
       await out.state.restore();
       out.state.selectTab(tabOrders);
-      ft.expect(out.state.selectedTab, tabCatalog);
+      flutter_testing.expect(out.state.selectedTab, tabCatalog);
 
       final Harness h = await signedInHarness();
       h.state.selectTab(9);
       h.state.selectTab(-1);
-      ft.expect(h.state.selectedTab, tabCatalog);
+      flutter_testing.expect(h.state.selectedTab, tabCatalog);
     });
 
     test('the special requests shortcut opens the orders tab on that list', () async {
@@ -1285,24 +1284,24 @@ void main() {
 
       h.state.showSpecialRequests();
       await pumpEventQueue();
-      ft.expect(h.state.ordersView, OrdersView.requests);
-      ft.expect(h.state.selectedTab, tabOrders);
+      flutter_testing.expect(h.state.ordersView, OrdersView.requests);
+      flutter_testing.expect(h.state.selectedTab, tabOrders);
 
       h.state.setOrdersView(OrdersView.orders);
-      ft.expect(h.state.ordersView, OrdersView.orders);
+      flutter_testing.expect(h.state.ordersView, OrdersView.orders);
     });
 
     test('returning to the app refreshes the catalog at most every 30 seconds', () async {
       final Harness h = await signedInHarness();
-      ft.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(1));
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(1));
 
       h.state.refreshOnResume();
       await pumpEventQueue();
-      ft.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(2));
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(2));
 
       h.state.refreshOnResume();
       await pumpEventQueue();
-      ft.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(2));
+      flutter_testing.expect(h.server.requestsTo('GET', '/api/parts'), hasLength(2));
     });
   });
 
@@ -1316,15 +1315,15 @@ void main() {
       await h.state.updateProfile(name: '  اسم جديد ', city: ' دمشق ');
       await pumpEventQueue();
 
-      ft.expect(bodyOf(h.server.requestsTo('PUT', '/api/auth').single), <String, dynamic>{
+      flutter_testing.expect(bodyOf(h.server.requestsTo('PUT', '/api/auth').single), <String, dynamic>{
         'name': 'اسم جديد',
         'city': 'دمشق',
       });
-      ft.expect(h.state.user!.name, 'اسم جديد');
-      ft.expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['name'], 'اسم جديد');
+      flutter_testing.expect(h.state.user!.name, 'اسم جديد');
+      flutter_testing.expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['name'], 'اسم جديد');
 
       await h.state.updateProfile(name: 'اسم جديد', city: '', newPassword: 'abcd1234');
-      ft.expect(bodyOf(h.server.requestsTo('PUT', '/api/auth').last), <String, dynamic>{
+      flutter_testing.expect(bodyOf(h.server.requestsTo('PUT', '/api/auth').last), <String, dynamic>{
         'name': 'اسم جديد',
         'newPassword': 'abcd1234',
       });
@@ -1334,12 +1333,12 @@ void main() {
       final Harness h = await signedInHarness();
       h.server.reply('PUT', '/api/auth', <String, dynamic>{'error': 'كلمة المرور قصيرة'}, 400);
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.updateProfile(name: 'x', city: 'حلب', newPassword: 'ab'),
         throwsA(apiError(status: 400, message: 'كلمة المرور قصيرة')),
       );
 
-      ft.expect(h.state.user!.name, 'ورشة النور');
+      flutter_testing.expect(h.state.user!.name, 'ورشة النور');
     });
 
     test('a profile refresh that answers "no user" or another account is ignored', () async {
@@ -1347,13 +1346,13 @@ void main() {
 
       h.server.reply('GET', '/api/auth', <String, dynamic>{'user': null});
       await h.state.refreshProfile();
-      ft.expect(h.state.isSignedIn, isTrue);
-      ft.expect(h.state.user!.id, 'w1');
+      flutter_testing.expect(h.state.isSignedIn, isTrue);
+      flutter_testing.expect(h.state.user!.id, 'w1');
 
       h.server.reply('GET', '/api/auth', <String, dynamic>{'user': marketerJson()});
       await h.state.refreshProfile();
-      ft.expect(h.state.user!.id, 'w1');
-      ft.expect(h.state.user!.isWorkshop, isTrue);
+      flutter_testing.expect(h.state.user!.id, 'w1');
+      flutter_testing.expect(h.state.user!.isWorkshop, isTrue);
     });
 
     test('the profile photo is loaded, validated and uploaded', () async {
@@ -1367,23 +1366,23 @@ void main() {
       h.server.reply('PUT', '/api/account/avatar', <String, dynamic>{'ok': true});
       await h.state.restore();
       await pumpEventQueue();
-      ft.expect(h.state.avatarBytes, orderedEquals(<int>[1, 2, 3]));
+      flutter_testing.expect(h.state.avatarBytes, orderedEquals(<int>[1, 2, 3]));
 
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.uploadAvatar(Uint8List.fromList(<int>[1, 2, 3, 4])),
         throwsA(apiError(message: 'صيغة الصورة غير مدعومة، اختر صورة بصيغة JPG.')),
       );
       final Uint8List tooBig = Uint8List(maxAvatarBytes + 1)..setRange(0, 3, <int>[0xFF, 0xD8, 0xFF]);
-      await ft.expectLater(
+      await flutter_testing.expectLater(
         h.state.uploadAvatar(tooBig),
         throwsA(apiError(message: 'حجم الصورة كبير جداً. اختر صورة أصغر.')),
       );
-      ft.expect(h.server.requestsTo('PUT', '/api/account/avatar'), isEmpty);
+      flutter_testing.expect(h.server.requestsTo('PUT', '/api/account/avatar'), isEmpty);
 
       final Uint8List jpeg = Uint8List.fromList(<int>[0xFF, 0xD8, 0xFF, 0xE0, 9, 9]);
       await h.state.uploadAvatar(jpeg);
-      ft.expect(h.state.avatarBytes, orderedEquals(jpeg));
-      ft.expect(h.server.requestsTo('PUT', '/api/account/avatar').single.bodyBytes, orderedEquals(jpeg));
+      flutter_testing.expect(h.state.avatarBytes, orderedEquals(jpeg));
+      flutter_testing.expect(h.server.requestsTo('PUT', '/api/account/avatar').single.bodyBytes, orderedEquals(jpeg));
     });
   });
 
@@ -1398,13 +1397,13 @@ void main() {
       h.state.setThemeMode(ThemeMode.light);
       await pumpEventQueue();
 
-      ft.expect(notified, 1);
-      ft.expect(h.state.themeMode, ThemeMode.light);
-      ft.expect(h.store.data[themeKey], 'light');
+      flutter_testing.expect(notified, 1);
+      flutter_testing.expect(h.state.themeMode, ThemeMode.light);
+      flutter_testing.expect(h.store.data[themeKey], 'light');
 
       final Harness again = Harness(stored: h.store.data);
       await again.state.restore();
-      ft.expect(again.state.themeMode, ThemeMode.light);
+      flutter_testing.expect(again.state.themeMode, ThemeMode.light);
     });
   });
 }

@@ -945,7 +945,7 @@ class AppState extends ChangeNotifier {
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
   }
 
-  Future<PlacedOrder> placeOrder({required String pay, required String invoiceCurrency, Uint8List? receipt, String? addressId, double cashbackUsed = 0}) async {
+  Future<PlacedOrder> placeOrder({required String pay, String invoiceCurrency = 'USD', Uint8List? receipt, String? addressId, double cashbackUsed = 0}) async {
     final AppUser? current = _user;
     if (current == null) {
       throw const ApiException('يرجى تسجيل الدخول لإتمام الطلب');

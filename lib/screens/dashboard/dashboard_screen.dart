@@ -434,7 +434,10 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
   Widget build(BuildContext context) {
     final Palette p = Palette.of(context);
     final MarketerPayoutRequest? request = widget.data.payoutRequest;
-    final bool pending = request?.status == 'pending';
+    final List<MarketerPayoutRequest> history = widget.data.payoutRequests.isNotEmpty
+        ? widget.data.payoutRequests
+        : (request == null ? const <MarketerPayoutRequest>[] : <MarketerPayoutRequest>[request]);
+    final bool pending = history.any((MarketerPayoutRequest item) => item.status == 'pending');
     return Panel(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -443,9 +446,49 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
           Text('طلب تحويل العمولات', style: TextStyle(color: p.text, fontSize: 15.5, fontWeight: FontWeight.w700)),
           const SizedBox(height: 5),
           Text('المتاح للتحويل: ${formatUsd(widget.data.commissions.available)}. اكتب بيانات الحساب أو المحفظة التي تريد استلام المبلغ عليها.', style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.6)),
+          if (history.isNotEmpty) ...<Widget>[
+            const SizedBox(height: 14),
+            Text('سجل طلبات التحويل', style: TextStyle(color: p.text, fontSize: 13.5, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            for (final MarketerPayoutRequest item in history.take(8)) ...<Widget>[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(formatUsd(item.amount), style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
+                          Text(formatDate(item.createdAt), style: TextStyle(color: p.placeholder, fontSize: 11.5)),
+                          if (item.adminNote != null && item.adminNote!.isNotEmpty)
+                            Text('ملاحظة الإدارة: ${item.adminNote}', style: TextStyle(color: p.muted, fontSize: 11.5)),
+                        ],
+                      ),
+                    ),
+                    StatusChip(
+                      label: switch (item.status) {
+                        'pending' => 'قيد المراجعة',
+                        'paid' => 'تم التحويل',
+                        'rejected' => 'مرفوض',
+                        _ => item.status,
+                      },
+                      tone: switch (item.status) {
+                        'pending' => StatusTone.waiting,
+                        'paid' => StatusTone.success,
+                        'rejected' => StatusTone.danger,
+                        _ => StatusTone.progress,
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
           if (pending) ...<Widget>[
             const SizedBox(height: 10),
-            StatusChip(label: 'طلب تحويل قيد المراجعة · ${formatUsd(request!.amount)}', tone: StatusTone.waiting),
+            Text('يوجد طلب تحويل قيد المراجعة. يمكنك إرسال طلب جديد بعد معالجة الطلب الحالي.', style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.5)),
           ] else ...<Widget>[
             const SizedBox(height: 12),
             TextField(

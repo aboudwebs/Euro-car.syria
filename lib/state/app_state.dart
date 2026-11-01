@@ -433,6 +433,24 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Requests a WhatsApp verification code before account creation.
+  Future<String> requestRegistrationOtp({required String phone}) async {
+    final Map<String, dynamic> data = await api.postJson(
+      '/api/auth',
+      <String, dynamic>{
+        'mode': 'send-otp',
+        'client': 'mobile',
+        'phone': canonicalPhone(phone),
+      },
+      auth: false,
+    );
+    final Object? token = data['otpToken'];
+    if (token is! String || token.isEmpty) {
+      throw const ApiException('لم يرجع الخادم رمز تحقق صالحاً. حاول مجدداً.');
+    }
+    return token;
+  }
+
   /// Creates an account. A workshop must be approved by an admin first (pending result); a marketer is signed in
   /// immediately. [refCode] / [refSignature] come from a marketer's signed invitation link.
   Future<AuthResult> register({
@@ -445,6 +463,8 @@ class AppState extends ChangeNotifier {
     String specs = '',
     String refCode = '',
     String refSignature = '',
+    required String otpCode,
+    required String otpToken,
   }) async {
     final Map<String, dynamic> body = <String, dynamic>{
       'mode': 'register',
@@ -453,6 +473,8 @@ class AppState extends ChangeNotifier {
       'name': name.trim(),
       'phone': canonicalPhone(phone),
       'password': password,
+      'otpCode': toWesternDigits(otpCode).trim(),
+      'otpToken': otpToken,
     };
     if (role == 'workshop') {
       body['license'] = license.trim();

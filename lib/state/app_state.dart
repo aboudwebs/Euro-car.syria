@@ -244,6 +244,7 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
     if (index == tabCart) {
+      unawaited(loadSettings());
       // Stock may have changed, and a workshop needs its current debt balance to offer the debt ledger.
       unawaited(loadParts(silent: true));
       if (current.isWorkshop) {
@@ -344,6 +345,8 @@ class AppState extends ChangeNotifier {
   }
 
   void _resetData() {
+    _canUseSypInvoices = false;
+    _invoiceRate = null;
     _parts = const <Part>[];
     _partsLoading = false;
     _partsLoaded = false;
@@ -638,7 +641,10 @@ class AppState extends ChangeNotifier {
       }
       notifyListeners();
     } catch (_) {
-      // Keep the last known rate; prices stay as they are.
+      // Invoice currency must fail closed when the current stability check cannot be reached.
+      _canUseSypInvoices = false;
+      _invoiceRate = null;
+      notifyListeners();
     }
   }
 

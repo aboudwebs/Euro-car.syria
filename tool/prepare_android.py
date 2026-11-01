@@ -136,7 +136,7 @@ def patch_manifest(path: pathlib.Path) -> bool:
             text = text.replace("</manifest>", "    <queries>\n" + QUERY_HTTPS + QUERY_HTTP + "    </queries>\n</manifest>", 1)
 
     if 'android:scheme="eurocars"' not in text:
-        pattern = r'(<activity\\b(?=[^>]*android:name="\\.MainActivity")[\\s\\S]*?</activity>)'
+        pattern = r'(<activity\b(?=[^>]*android:name="\.MainActivity")[\s\S]*?</activity>)'
         text, count = re.subn(
             pattern,
             lambda match: match.group(1).replace("</activity>", APP_LINK_FILTER + "    </activity>", 1),

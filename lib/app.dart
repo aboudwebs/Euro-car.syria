@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Text;
+import 'package:app_links/app_links.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
@@ -11,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'core/api_client.dart';
 import 'core/config.dart';
 import 'core/session_store.dart';
+import 'core/referral.dart';
 import 'screens/auth/auth_flow.dart';
 import 'screens/home/home_shell.dart';
 import 'state/app_state.dart';
@@ -35,6 +37,8 @@ class _EuroAppState extends State<EuroApp> with WidgetsBindingObserver {
   late final AppState _state;
   late final ThemeData _lightTheme;
   late final ThemeData _darkTheme;
+  final AppLinks _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSubscription;
 
   @override
   void initState() {
@@ -47,6 +51,25 @@ class _EuroAppState extends State<EuroApp> with WidgetsBindingObserver {
       store: widget.store ?? SecureSessionStore(),
     );
     unawaited(_state.restore());
+    unawaited(_initializeAppLinks());
+  }
+
+  Future<void> _initializeAppLinks() async {
+    _linkSubscription = _appLinks.uriLinkStream.listen(_handleAppLink, onError: (Object error) {
+      debugPrint('EURO referral link stream error: $error');
+    });
+    try {
+      final Uri? initial = await _appLinks.getInitialLink();
+      if (initial != null) _handleAppLink(initial);
+    } catch (error) {
+      debugPrint('EURO initial referral link error: $error');
+    }
+  }
+
+  void _handleAppLink(Uri uri) {
+    if (uri.scheme != 'eurocars' || uri.host != 'referral') return;
+    final ReferralInput referral = parseReferral(uri.toString());
+    if (referral.isSigned) _state.setPendingReferral(referral);
   }
 
   @override
@@ -59,6 +82,7 @@ class _EuroAppState extends State<EuroApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    unawaited(_linkSubscription?.cancel());
     _state.dispose();
     _state.api.close();
     super.dispose();
@@ -122,7 +146,7 @@ class _Gate extends StatelessWidget {
       case SessionStatus.restoring:
         return const _Splash();
       case SessionStatus.signedOut:
-        return const AuthFlow();
+        return AuthFlow(initialReferral: state.takePendingReferral());
       case SessionStatus.signedIn:
         return const HomeShell();
     }

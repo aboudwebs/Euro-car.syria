@@ -36,6 +36,8 @@ enum OrdersView { orders, requests }
 class AppState extends ChangeNotifier {
   AppState({required this.api, required this.store}) {
     api.onUnauthorized = _handleUnauthorized;
+    PushNotifications.setTapHandler(_handlePushTap);
+    PushNotifications.setTokenRefreshHandler(_registerRefreshedPushToken);
   }
 
   final ApiClient api;
@@ -81,6 +83,7 @@ class AppState extends ChangeNotifier {
 
   Uint8List? _avatarBytes;
   DateTime? _lastResumeRefresh;
+  Map<String, String>? _pendingPushTap;
 
   // Display preferences (device-wide, kept across sign-outs) and what makes the whole UI rebuild when they change.
   String _language = languageArabic;
@@ -288,6 +291,8 @@ class AppState extends ChangeNotifier {
     _disposed = true;
     _notificationsTimer?.cancel();
     _notificationsTimer = null;
+    PushNotifications.setTapHandler(null);
+    PushNotifications.setTokenRefreshHandler(null);
     api.onUnauthorized = null;
     super.dispose();
   }
@@ -387,9 +392,15 @@ class AppState extends ChangeNotifier {
     _deletion = null;
     _deletionLoaded = false;
     _pendingCatalogQuery = null;
+    _pendingPushTap = null;
   }
 
   void _loadAfterSignIn() {
+    final pendingTap = _pendingPushTap;
+    if (pendingTap != null) {
+      _pendingPushTap = null;
+      _handlePushTap(pendingTap);
+    }
     unawaited(_registerPushToken());
     _notificationsTimer?.cancel();
     _notificationsTimer = Timer.periodic(const Duration(minutes: 1), (_) {
@@ -409,10 +420,33 @@ class AppState extends ChangeNotifier {
     final int epoch = _epoch;
     final String? pushToken = await PushNotifications.requestPermissionAndGetToken();
     if (pushToken == null || pushToken.isEmpty || epoch != _epoch || !isSignedIn) return;
+    await _registerRefreshedPushToken(pushToken);
+  }
+
+  Future<void> _registerRefreshedPushToken(String pushToken) async {
+    if (pushToken.isEmpty || !isSignedIn) return;
     try {
       await api.postJson('/api/push/register', <String, dynamic>{'token': pushToken});
     } catch (_) {
       // Push registration is best-effort; it must never block sign-in or app startup.
+    }
+  }
+
+  void _handlePushTap(Map<String, String> data) {
+    if (!isSignedIn) {
+      _pendingPushTap = data;
+      return;
+    }
+    final String screen = data['screen'] ?? '';
+    if (screen == 'orders' || screen == 'requests') {
+      if (screen == 'requests') _ordersView = OrdersView.requests;
+      selectTab(tabOrders);
+    } else if (screen == 'dashboard') {
+      selectTab(tabDashboard);
+    } else if (screen == 'account') {
+      selectTab(tabAccount);
+    } else {
+      selectTab(tabAccount);
     }
   }
 

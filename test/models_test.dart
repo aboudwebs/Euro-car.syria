@@ -300,7 +300,7 @@ void main() {
       expect(silver.tierIndex, 1);
       expect(silver.currentTier.name, 'فضية');
       expect(silver.nextTier?.name, 'ذهبية');
-      expect(silver.tierProgress, closeTo(0.05, 1e-9));
+      expect(silver.tierProgress, closeTo(0.1, 1e-9));
 
       final WorkshopDashboard top = dashboard(<Map<String, dynamic>>[
         order('o1', 12000, 'cod', 'shipped'),

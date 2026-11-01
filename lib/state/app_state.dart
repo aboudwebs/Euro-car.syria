@@ -18,6 +18,7 @@ import '../core/images.dart';
 import '../core/json_utils.dart';
 import '../core/models.dart';
 import '../core/session_store.dart';
+import '../core/push_notifications.dart';
 import '../core/text_utils.dart';
 
 enum SessionStatus { restoring, signedOut, signedIn }
@@ -389,6 +390,7 @@ class AppState extends ChangeNotifier {
   }
 
   void _loadAfterSignIn() {
+    unawaited(_registerPushToken());
     _notificationsTimer?.cancel();
     _notificationsTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (_user != null) unawaited(loadNotifications(silent: true));
@@ -401,6 +403,17 @@ class AppState extends ChangeNotifier {
     unawaited(loadVehicles(silent: true));
     unawaited(loadDeletion(silent: true));
     unawaited(loadNotifications(silent: true));
+  }
+
+  Future<void> _registerPushToken() async {
+    final int epoch = _epoch;
+    final String? pushToken = await PushNotifications.requestPermissionAndGetToken();
+    if (pushToken == null || pushToken.isEmpty || epoch != _epoch || !isSignedIn) return;
+    try {
+      await api.postJson('/api/push/register', <String, dynamic>{'token': pushToken});
+    } catch (_) {
+      // Push registration is best-effort; it must never block sign-in or app startup.
+    }
   }
 
   // ---------------------------------------------------------------- sign in / register / sign out

@@ -412,6 +412,7 @@ class _CartScreenState extends State<CartScreen> {
           const SizedBox(height: 14),
           _addressPanel(p, state),
         ],
+        if (amountDue > 0) ...<Widget>[
         const SizedBox(height: 14),
         Panel(
           padding: const EdgeInsets.all(16),
@@ -493,6 +494,25 @@ class _CartScreenState extends State<CartScreen> {
             ],
           ),
         ),
+        ],
+        if (amountDue <= 0) ...<Widget>[
+          const SizedBox(height: 14),
+          Panel(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: <Widget>[
+                Icon(Icons.verified_rounded, color: p.ok),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'سيتم دفع الطلب بالكامل من رصيد الكاش باك، ولا يلزم اختيار طريقة دفع أو إرفاق إيصال.',
+                    style: TextStyle(color: p.text, height: 1.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }

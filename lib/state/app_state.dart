@@ -342,6 +342,9 @@ class AppState extends ChangeNotifier {
     _cart.clear();
     _cartNotice = null;
     _orders = const <Order>[];
+    _notifications = const <UserNotification>[];
+    _notificationsLoading = false;
+    _notificationsError = null;
     _ordersLoading = false;
     _ordersLoaded = false;
     _ordersError = null;
@@ -381,6 +384,7 @@ class AppState extends ChangeNotifier {
     unawaited(loadAddresses(silent: true));
     unawaited(loadVehicles(silent: true));
     unawaited(loadDeletion(silent: true));
+    unawaited(loadNotifications(silent: true));
   }
 
   // ---------------------------------------------------------------- sign in / register / sign out

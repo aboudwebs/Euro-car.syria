@@ -286,8 +286,30 @@ void main() {
       h.server.reply('GET', '/api/settings', <String, dynamic>{'usdToSyp': 15000});
       await h.state.loadSettings();
       expect(h.state.canShowSyp, isTrue);
+      expect(h.state.canUseSypInvoices, isFalse, reason: 'a published rate alone does not prove stability');
       expect(h.state.setCurrency(currencySyp), isTrue);
       expect(DisplayPrefs.showSyp, isTrue);
+    });
+
+    test('only a fresh stable server decision enables SYP invoices', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('GET', '/api/settings', <String, dynamic>{
+        'usdToSyp': 143.75,
+        'canUseSypInvoices': true,
+        'rateStatus': 'stable',
+      });
+      await h.state.loadSettings();
+      expect(h.state.canUseSypInvoices, isTrue);
+      expect(h.state.invoiceRate, 143.75);
+
+      h.server.reply('GET', '/api/settings', <String, dynamic>{
+        'usdToSyp': 143.75,
+        'canUseSypInvoices': false,
+        'rateStatus': 'unstable',
+      });
+      await h.state.loadSettings();
+      expect(h.state.canUseSypInvoices, isFalse);
+      expect(h.state.invoiceRate, isNull);
     });
 
     test('the choices are saved on the device and the app tree is told to rebuild', () async {

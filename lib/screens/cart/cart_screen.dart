@@ -57,6 +57,7 @@ class _CartScreenState extends State<CartScreen> {
   String _pay = 'cod';
   Uint8List? _receipt;
   bool _busy = false;
+  bool _useCashback = false;
   String? _error;
 
   Future<void> _pickReceipt() async {
@@ -148,11 +149,11 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  Future<void> _submit(String pay) async {
+  Future<void> _submit(String pay, double cashbackUsed) async {
     if (_busy) {
       return;
     }
-    if (pay == 'sham' && _receipt == null) {
+    if (pay == 'sham' && (AppScope.read(context).cartTotalAmount - cashbackUsed) > 0 && _receipt == null) {
       setState(() => _error = 'يرجى إرفاق إشعار تحويل شام كاش لإتمام الطلب.');
       return;
     }
@@ -166,6 +167,7 @@ class _CartScreenState extends State<CartScreen> {
         pay: pay,
         receipt: pay == 'sham' ? _receipt : null,
         addressId: state.checkoutAddress?.id,
+        cashbackUsed: cashbackUsed,
       );
       if (!mounted) {
         return;
@@ -175,7 +177,7 @@ class _CartScreenState extends State<CartScreen> {
         _receipt = null;
         _pay = 'cod';
       });
-      await _showSuccess(placed, pay);
+      await _showSuccess(placed, pay, cashbackUsed);
     } on ApiException catch (error) {
       if (!mounted) {
         return;
@@ -195,7 +197,7 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  Future<void> _showSuccess(PlacedOrder placed, String pay) async {
+  Future<void> _showSuccess(PlacedOrder placed, String pay, double cashbackUsed) async {
     final int? number = placed.orderNumber;
     await showDialog<void>(
       context: context,
@@ -216,9 +218,11 @@ class _CartScreenState extends State<CartScreen> {
                 const SizedBox(height: 6),
               ],
               Text(
-                pay == 'debt'
-                    ? 'طلبك بانتظار موافقة الأدمن على الدين.'
-                    : 'سنتواصل معك لتأكيد التوصيل.',
+                (placed.total - cashbackUsed) <= 0.001
+                    ? 'تم تغطية قيمة الطلب بالكامل من رصيد الكاش باك.'
+                    : pay == 'debt'
+                        ? 'طلبك بانتظار موافقة الأدمن على الدين.'
+                        : 'سنتواصل معك لتأكيد التوصيل.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: p.muted, fontSize: 14.5, height: 1.6),
               ),
@@ -318,8 +322,11 @@ class _CartScreenState extends State<CartScreen> {
 
     final Palette p = Palette.of(context);
     final double total = state.cartTotalAmount;
+    final double cashbackBalance = user.isWorkshop ? (user.cashbackBalance ?? 0).clamp(0, double.infinity).toDouble() : 0;
+    final double cashbackUsed = _useCashback ? (cashbackBalance < total ? cashbackBalance : total) : 0;
+    final double amountDue = (total - cashbackUsed).clamp(0, double.infinity).toDouble();
     final List<String> methods = payMethodsFor(user);
-    final DebtCheck debt = checkDebtPayment(user: user, total: total);
+    final DebtCheck debt = checkDebtPayment(user: user, total: amountDue);
     String pay = _pay;
     if (!methods.contains(pay) || (pay == 'debt' && !debt.allowed)) {
       pay = 'cod';
@@ -371,6 +378,36 @@ class _CartScreenState extends State<CartScreen> {
             ],
           ),
         ),
+        if (user.isWorkshop && cashbackBalance > 0) ...<Widget>[
+          const SizedBox(height: 12),
+          Panel(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _useCashback,
+              onChanged: _busy ? null : (bool value) => setState(() { _useCashback = value; _error = null; }),
+              title: Text('استخدام رصيد الكاش باك', style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
+              subtitle: Text(
+                'رصيدك: ${formatUsd(cashbackBalance)}${_useCashback ? ' · سيتم استخدام ${formatUsd(cashbackUsed)}' : ''}',
+                style: TextStyle(color: p.muted, fontSize: 12.5),
+              ),
+              activeColor: p.primary,
+            ),
+          ),
+        ],
+        if (cashbackUsed > 0) ...<Widget>[
+          const SizedBox(height: 10),
+          Panel(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Column(
+              children: <Widget>[
+                InfoRow(label: 'الكاش باك المستخدم', value: '-${formatUsd(cashbackUsed)}'),
+                const SizedBox(height: 5),
+                InfoRow(label: 'المتبقي للدفع', value: formatUsd(amountDue), bold: true),
+              ],
+            ),
+          ),
+        ],
         if (state.addressesReady) ...<Widget>[
           const SizedBox(height: 14),
           _addressPanel(p, state),
@@ -411,7 +448,7 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                 ],
               ),
-              if (pay == 'sham') ...<Widget>[
+              if (pay == 'sham' && amountDue > 0) ...<Widget>[
                 const SizedBox(height: 14),
                 _receiptSection(p),
               ],
@@ -430,10 +467,10 @@ class _CartScreenState extends State<CartScreen> {
               ],
               const SizedBox(height: 16),
               PrimaryButton(
-                label: 'تأكيد الطلب · ${formatUsd(total)}',
+                label: 'تأكيد الطلب · ${formatUsd(amountDue)}',
                 icon: Icons.check_rounded,
                 busy: _busy,
-                onPressed: () => _submit(pay),
+                onPressed: () => _submit(pay, cashbackUsed),
               ),
               if (_busy)
                 Padding(

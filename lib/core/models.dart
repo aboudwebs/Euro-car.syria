@@ -211,6 +211,11 @@ class Order {
     this.refundStatus = 'not_required',
     this.refundNote,
     this.refundedAt,
+    this.invoiceCurrency = 'USD',
+    this.invoiceExchangeRate,
+    this.invoiceTotalSyp,
+    this.invoiceCashbackUsedSyp,
+    this.invoiceAmountDueSyp,
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
@@ -234,6 +239,11 @@ class Order {
       refundStatus: asString(json['refund_status'], 'not_required'),
       refundNote: asOptionalString(json['refund_note']),
       refundedAt: asDate(json['refunded_at']),
+      invoiceCurrency: asString(json['invoice_currency'], 'USD'),
+      invoiceExchangeRate: asDouble(json['invoice_exchange_rate']),
+      invoiceTotalSyp: asDouble(json['invoice_total_syp']),
+      invoiceCashbackUsedSyp: asDouble(json['invoice_cashback_used_syp']),
+      invoiceAmountDueSyp: asDouble(json['invoice_amount_due_syp']),
     );
   }
 
@@ -258,6 +268,11 @@ class Order {
   final String refundStatus;
   final String? refundNote;
   final DateTime? refundedAt;
+  final String invoiceCurrency;
+  final double? invoiceExchangeRate;
+  final double? invoiceTotalSyp;
+  final double? invoiceCashbackUsedSyp;
+  final double? invoiceAmountDueSyp;
 
   /// "#123", or the first characters of the id when the order has no number yet.
   String get label {
@@ -692,6 +707,9 @@ class PlacedOrder {
     required this.pay,
     required this.total,
     this.orderNumber,
+    this.invoiceCurrency = 'USD',
+    this.invoiceExchangeRate,
+    this.invoiceTotalSyp,
   });
 
   factory PlacedOrder.fromJson(Map<String, dynamic> json) {
@@ -700,6 +718,9 @@ class PlacedOrder {
       orderNumber: asInt(json['orderNumber']),
       pay: asString(json['pay']),
       total: asDouble(json['total']) ?? 0.0,
+      invoiceCurrency: asString(json['invoiceCurrency'], 'USD'),
+      invoiceExchangeRate: asDouble(json['invoiceExchangeRate']),
+      invoiceTotalSyp: asDouble(json['invoiceTotalSyp']),
     );
   }
 
@@ -707,6 +728,9 @@ class PlacedOrder {
   final int? orderNumber;
   final String pay;
   final double total;
+  final String invoiceCurrency;
+  final double? invoiceExchangeRate;
+  final double? invoiceTotalSyp;
 }
 
 /// What a sign-in or registration attempt led to.

@@ -85,6 +85,8 @@ class AppState extends ChangeNotifier {
   String _language = languageArabic;
   String _currency = currencyUsd;
   int _displayVersion = 0;
+  bool _canUseSypInvoices = false;
+  double? _invoiceRate;
 
   List<SavedAddress> _addresses = const <SavedAddress>[];
   bool _addressesLoaded = false;
@@ -184,6 +186,8 @@ class AppState extends ChangeNotifier {
 
   /// True once the admin has published a USD to SYP rate, so prices can be shown in Syrian pounds.
   bool get canShowSyp => (DisplayPrefs.sypRate ?? 0) > 0;
+  bool get canUseSypInvoices => _canUseSypInvoices && (_invoiceRate ?? 0) > 0;
+  double? get invoiceRate => canUseSypInvoices ? _invoiceRate : null;
 
   List<SavedAddress> get addresses => _addresses;
   bool get addressesLoaded => _addressesLoaded;
@@ -240,6 +244,7 @@ class AppState extends ChangeNotifier {
       notifyListeners();
     }
     if (index == tabCart) {
+      unawaited(loadSettings());
       // Stock may have changed, and a workshop needs its current debt balance to offer the debt ledger.
       unawaited(loadParts(silent: true));
       if (current.isWorkshop) {
@@ -340,6 +345,8 @@ class AppState extends ChangeNotifier {
   }
 
   void _resetData() {
+    _canUseSypInvoices = false;
+    _invoiceRate = null;
     _parts = const <Part>[];
     _partsLoading = false;
     _partsLoaded = false;
@@ -623,13 +630,21 @@ class AppState extends ChangeNotifier {
       final double? next = (rate != null && rate > 0) ? rate : null;
       final bool wasShowing = DisplayPrefs.showSyp;
       final double? previous = DisplayPrefs.sypRate;
+      final bool previousInvoiceReady = _canUseSypInvoices;
+      final double? previousInvoiceRate = _invoiceRate;
+      _canUseSypInvoices = data['canUseSypInvoices'] == true && next != null;
+      _invoiceRate = next;
       DisplayPrefs.sypRate = next;
-      if (DisplayPrefs.showSyp != wasShowing || (DisplayPrefs.showSyp && previous != next)) {
+      if (DisplayPrefs.showSyp != wasShowing || (DisplayPrefs.showSyp && previous != next) ||
+          previousInvoiceReady != _canUseSypInvoices || previousInvoiceRate != _invoiceRate) {
         _displayVersion++;
       }
       notifyListeners();
     } catch (_) {
-      // Keep the last known rate; prices stay as they are.
+      // Invoice currency must fail closed when the current stability check cannot be reached.
+      _canUseSypInvoices = false;
+      _invoiceRate = null;
+      notifyListeners();
     }
   }
 
@@ -936,7 +951,7 @@ class AppState extends ChangeNotifier {
     return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
   }
 
-  Future<PlacedOrder> placeOrder({required String pay, Uint8List? receipt, String? addressId, double cashbackUsed = 0}) async {
+  Future<PlacedOrder> placeOrder({required String pay, String invoiceCurrency = 'USD', Uint8List? receipt, String? addressId, double cashbackUsed = 0}) async {
     final AppUser? current = _user;
     if (current == null) {
       throw const ApiException('يرجى تسجيل الدخول لإتمام الطلب');
@@ -996,6 +1011,7 @@ class AppState extends ChangeNotifier {
           fields: <String, String>{
             'items': jsonEncode(items),
             'pay': effectivePay,
+            'invoiceCurrency': invoiceCurrency,
             'cashbackUsed': cashbackUsed.toStringAsFixed(2),
             if (addressId != null && addressId.isNotEmpty) 'addressId': addressId,
           },
@@ -1011,7 +1027,10 @@ class AppState extends ChangeNotifier {
       unawaited(loadDashboard(silent: true));
       return placed;
     } on ApiException catch (error) {
-      if (error.statusCode == 400) {
+      if (error.statusCode == 409 && error.message.contains('عملة الفاتورة إلى الدولار')) {
+        await loadSettings();
+        await _safeDelete(keyName);
+      } else if (error.statusCode == 400) {
         // A definitive rejection did not create the order; a changed checkout may use a fresh key.
         await _safeDelete(keyName);
         // Stock or availability changed: refresh the catalog so the cart reflects it.

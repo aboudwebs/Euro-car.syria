@@ -53,6 +53,21 @@ String formatUsd(num value) {
   return '$sign\$$grouped$fraction';
 }
 
+/// Whole Syrian pounds, based on the immutable rate stored with an invoice.
+String formatSypAmount(num value) {
+  final double number = value.toDouble();
+  if (number.isNaN || number.isInfinite) return '0 ل.س';
+  return '${_groupedWhole(number)} ل.س';
+}
+
+/// Formats an invoice amount using the currency and rate snapshot selected by the server.
+String formatInvoiceAmount(num value, {required String currency, double? rate}) {
+  if (currency == 'SYP' && rate != null && rate > 0) {
+    return formatSypAmount(value.toDouble() * rate);
+  }
+  return formatUsd(value);
+}
+
 /// dd/MM/yyyy, or a dash when the date is unknown.
 String formatDate(DateTime? date) {
   if (date == null) {

@@ -162,6 +162,25 @@ class _CartScreenState extends State<CartScreen> {
       setState(() => _error = 'المبلغ المحدد أكبر من رصيد الكاش باك أو من قيمة الطلب.');
       return;
     }
+    final String invoiceCurrency = state.canUseSypInvoices ? 'SYP' : 'USD';
+    if (invoiceCurrency == 'USD') {
+      final bool? continueInUsd = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext dialogContext) => AlertDialog(
+          title: const Text('تأكيد عملة الفاتورة'),
+          content: const Text(
+            'سعر الصرف متقلب أو غير متاح حالياً. يجب إكمال الفاتورة بالدولار الأمريكي. '
+            'طريقة الدفع التي اخترتها لن تتغير.',
+          ),
+          actions: <Widget>[
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('رجوع')),
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('متابعة بالدولار')),
+          ],
+        ),
+      );
+      if (continueInUsd != true || !mounted) return;
+    }
+
     // The database requires the dedicated payment method when cashback covers the whole order.
     // Do not send the default COD method for a zero-amount remainder.
     final bool fullyCoveredByCashback = cashbackUsed > 0 && (total - cashbackUsed).abs() < 0.005;
@@ -177,6 +196,7 @@ class _CartScreenState extends State<CartScreen> {
     try {
       final PlacedOrder placed = await state.placeOrder(
         pay: effectivePay,
+        invoiceCurrency: invoiceCurrency,
         receipt: effectivePay == 'sham' ? _receipt : null,
         addressId: state.checkoutAddress?.id,
         cashbackUsed: cashbackUsed,
@@ -357,6 +377,13 @@ class _CartScreenState extends State<CartScreen> {
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
       keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: <Widget>[
+        if (!state.canUseSypInvoices) ...<Widget>[
+          const NoticeBanner(
+            message: 'سعر الصرف متقلب أو غير متاح. ستصدر الفاتورة بالدولار بعد موافقتك، دون تغيير طريقة الدفع.',
+            kind: NoticeKind.warning,
+          ),
+          const SizedBox(height: 10),
+        ],
         if (notice != null) ...<Widget>[
           NoticeBanner(
             message: notice,
@@ -375,6 +402,8 @@ class _CartScreenState extends State<CartScreen> {
                   key: ValueKey<String>(lines[i].part.id),
                   line: lines[i],
                   enabled: !_busy,
+                  invoiceCurrency: state.canUseSypInvoices ? 'SYP' : 'USD',
+                  invoiceRate: state.invoiceRate,
                 ),
               ],
               Divider(height: 1, thickness: 1, color: p.line),
@@ -385,7 +414,7 @@ class _CartScreenState extends State<CartScreen> {
                   Text('إجمالي الطلب', style: TextStyle(color: p.muted, fontSize: 14)),
                   const Spacer(),
                   Text(
-                    formatUsd(total),
+                    formatInvoiceAmount(total, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate),
                     style: TextStyle(
                       color: p.text,
                       fontSize: 20,
@@ -420,7 +449,7 @@ class _CartScreenState extends State<CartScreen> {
                   }),
                   title: Text('استخدام رصيد الكاش باك', style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
                   subtitle: Text(
-                    'الرصيد المتاح: ${formatUsd(cashbackBalance)}',
+                    'الرصيد المتاح: ${formatInvoiceAmount(cashbackBalance, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate)}',
                     style: TextStyle(color: p.muted, fontSize: 12.5),
                   ),
                   activeTrackColor: p.primary,
@@ -440,7 +469,7 @@ class _CartScreenState extends State<CartScreen> {
                       decoration: InputDecoration(
                         labelText: 'المبلغ المراد استخدامه',
                         prefixText: '\$ ',
-                        helperText: 'يمكنك استخدام كامل الرصيد أو تحديد جزء منه',
+                        helperText: 'أدخل المبلغ بالدولار؛ سيظهر في ملخص الفاتورة بعملتها المعتمدة',
                         filled: true,
                         fillColor: p.fieldBg,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -458,9 +487,9 @@ class _CartScreenState extends State<CartScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Column(
               children: <Widget>[
-                InfoRow(label: 'الكاش باك المستخدم', value: '-${formatUsd(cashbackUsed)}'),
+                InfoRow(label: 'الكاش باك المستخدم', value: '-${formatInvoiceAmount(cashbackUsed, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate)}'),
                 const SizedBox(height: 5),
-                InfoRow(label: 'المتبقي للدفع', value: formatUsd(amountDue), bold: true),
+                InfoRow(label: 'المتبقي للدفع', value: formatInvoiceAmount(amountDue, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate), bold: true),
               ],
             ),
           ),
@@ -516,12 +545,12 @@ class _CartScreenState extends State<CartScreen> {
                   kind: NoticeKind.warning,
                   message: 'عدّاد 30 يومًا يبدأ من أول قطعة دين. عند تجاوزه يتوقف السحب الآجل حتى التسديد. '
                       'الكاش باك والعمولة يُصرفان بعد التسديد.\n'
-                      'المتاح من سقفك: ${debt.available == null ? 'غير محدد' : formatUsd(debt.available ?? 0)}',
+                      'المتاح من سقفك: ${debt.available == null ? 'غير محدد' : formatInvoiceAmount(debt.available ?? 0, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate)}',
                 ),
               ],
               const SizedBox(height: 16),
               PrimaryButton(
-                label: 'تأكيد الطلب · ${formatUsd(amountDue)}',
+                label: 'تأكيد الطلب · ${formatInvoiceAmount(amountDue, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate)}',
                 icon: Icons.check_rounded,
                 busy: _busy,
                 onPressed: () => _submit(pay, cashbackUsed),
@@ -567,7 +596,7 @@ class _CartScreenState extends State<CartScreen> {
           ),
           const SizedBox(height: 12),
           PrimaryButton(
-            label: 'تأكيد الطلب · ${formatUsd(total)}',
+            label: 'تأكيد الطلب · ${formatInvoiceAmount(total, currency: state.canUseSypInvoices ? 'SYP' : 'USD', rate: state.invoiceRate)}',
             icon: Icons.check_rounded,
             busy: _busy,
             onPressed: () => _submit(pay, cashbackUsed),
@@ -775,10 +804,12 @@ class _CartScreenState extends State<CartScreen> {
 
 /// One cart entry with its quantity stepper and remove button.
 class _CartLineTile extends StatelessWidget {
-  const _CartLineTile({super.key, required this.line, required this.enabled});
+  const _CartLineTile({super.key, required this.line, required this.enabled, required this.invoiceCurrency, this.invoiceRate});
 
   final CartLine line;
   final bool enabled;
+  final String invoiceCurrency;
+  final double? invoiceRate;
 
   @override
   Widget build(BuildContext context) {
@@ -853,11 +884,11 @@ class _CartLineTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: <Widget>[
                     Text(
-                      formatUsd(line.total),
+                      formatInvoiceAmount(line.total, currency: invoiceCurrency, rate: invoiceRate),
                       style: TextStyle(color: p.text, fontSize: 16.5, fontWeight: FontWeight.w700),
                     ),
                     Text(
-                      '${formatUsd(part.price)} للقطعة',
+                      '${formatInvoiceAmount(part.price, currency: invoiceCurrency, rate: invoiceRate)} للقطعة',
                       style: TextStyle(color: p.placeholder, fontSize: 12),
                     ),
                   ],

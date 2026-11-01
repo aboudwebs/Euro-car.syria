@@ -111,10 +111,11 @@ void main() {
       h.server.reply('POST', '/api/orders', <String, dynamic>{'orderId': 'o1', 'orderNumber': 7, 'pay': 'cod', 'total': 10.5});
       h.state.addToCart(catalogPart(h, 'p1'));
 
-      await h.state.placeOrder(pay: 'cod', addressId: 'a1');
+      await h.state.placeOrder(pay: 'cod', invoiceCurrency: 'SYP', addressId: 'a1');
 
       final List<MultipartPart> parts = parseMultipart(h.server.requestsTo('POST', '/api/orders').single);
       expect(partNamed(parts, 'addressId').text, 'a1');
+      expect(partNamed(parts, 'invoiceCurrency').text, 'SYP');
     });
   });
 
@@ -286,8 +287,30 @@ void main() {
       h.server.reply('GET', '/api/settings', <String, dynamic>{'usdToSyp': 15000});
       await h.state.loadSettings();
       expect(h.state.canShowSyp, isTrue);
+      expect(h.state.canUseSypInvoices, isFalse, reason: 'a published rate alone does not prove stability');
       expect(h.state.setCurrency(currencySyp), isTrue);
       expect(DisplayPrefs.showSyp, isTrue);
+    });
+
+    test('only a fresh stable server decision enables SYP invoices', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('GET', '/api/settings', <String, dynamic>{
+        'usdToSyp': 143.75,
+        'canUseSypInvoices': true,
+        'rateStatus': 'stable',
+      });
+      await h.state.loadSettings();
+      expect(h.state.canUseSypInvoices, isTrue);
+      expect(h.state.invoiceRate, 143.75);
+
+      h.server.reply('GET', '/api/settings', <String, dynamic>{
+        'usdToSyp': 143.75,
+        'canUseSypInvoices': false,
+        'rateStatus': 'unstable',
+      });
+      await h.state.loadSettings();
+      expect(h.state.canUseSypInvoices, isFalse);
+      expect(h.state.invoiceRate, isNull);
     });
 
     test('the choices are saved on the device and the app tree is told to rebuild', () async {

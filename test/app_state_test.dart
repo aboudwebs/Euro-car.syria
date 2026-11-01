@@ -676,8 +676,9 @@ void main() {
       final http.Request request = h.server.requestsTo('POST', '/api/orders').single;
       expect(request.headers['authorization'], 'Bearer tok-1');
       final List<MultipartPart> parts = parseMultipart(request);
-      expect(parts.map((MultipartPart p) => p.name), unorderedEquals(<String>['items', 'pay', 'cashbackUsed']));
+      expect(parts.map((MultipartPart p) => p.name), unorderedEquals(<String>['items', 'pay', 'invoiceCurrency', 'cashbackUsed']));
       expect(partNamed(parts, 'cashbackUsed').text, '0.00');
+      expect(partNamed(parts, 'invoiceCurrency').text, 'USD');
       expect(request.headers['idempotency-key'], isNotEmpty);
       expect(jsonDecode(partNamed(parts, 'items').text), <String, dynamic>{'p1': 2, 'p2': 1});
       expect(partNamed(parts, 'pay').text, 'cod');

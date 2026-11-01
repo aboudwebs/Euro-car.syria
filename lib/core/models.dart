@@ -711,6 +711,7 @@ class PlacedOrder {
     required this.pay,
     required this.total,
     this.orderNumber,
+    this.customerOrderNumber,
     this.invoiceCurrency = 'USD',
     this.invoiceExchangeRate,
     this.invoiceTotalSyp,

@@ -17,6 +17,8 @@ class AppUser {
     this.license,
     this.specs = const <String>[],
     this.tier,
+    this.seasonSpend = 0,
+    this.seasonStartedAt,
     this.debtLimit,
     this.debtBalance,
     this.cashbackBalance,
@@ -58,6 +60,8 @@ class AppUser {
   final String? license;
   final List<String> specs;
   final String? tier;
+  final double seasonSpend;
+  final DateTime? seasonStartedAt;
   final double? debtLimit;
   final double? debtBalance;
   final double? cashbackBalance;
@@ -476,6 +480,8 @@ class WorkshopDashboard {
     return WorkshopDashboard(
       name: asString(user['name']),
       tier: asOptionalString(user['tier']),
+      seasonSpend: asDouble(user['loyalty_season_spend']) ?? 0.0,
+      seasonStartedAt: asDate(user['loyalty_season_started_at']),
       debtLimit: asDouble(user['debt_limit']),
       debtBalance: asDouble(user['debt_balance']) ?? 0.0,
       cashbackBalance: asDouble(user['cashback_balance']) ?? 0.0,
@@ -506,27 +512,16 @@ class WorkshopDashboard {
       .where((Order o) => o.payMethod == 'debt' && o.status != 'cancelled')
       .toList();
 
-  /// Total of orders an admin has approved (approved, shipped or delivered).
-  double get approvedSpend {
-    double sum = 0.0;
-    for (final Order o in orders) {
-      if (o.status == 'approved' || o.status == 'shipped' || o.status == 'delivered') {
-        sum += o.total;
-      }
-    }
-    return sum;
-  }
+  /// Spend recorded by the server for the current 90-day loyalty season.
+  double get approvedSpend => seasonSpend;
 
-  int get tierIndex {
-    final double spend = approvedSpend;
-    int index = 0;
-    for (int i = 0; i < estimatedTiers.length; i++) {
-      if (spend >= estimatedTiers[i].minSpend) {
-        index = i;
-      }
-    }
-    return index;
-  }
+  int get tierIndex => switch (tier) {
+    'Silver' => 1,
+    'Gold' => 2,
+    'Platinum' => 3,
+    'VIP' => 4,
+    _ => 0,
+  };
 
   TierStep get currentTier => estimatedTiers[tierIndex];
 
@@ -535,21 +530,13 @@ class WorkshopDashboard {
     return next < estimatedTiers.length ? estimatedTiers[next] : null;
   }
 
-  /// Progress towards the next tier from 0 to 1 (1 when already at the top).
   double get tierProgress {
     final TierStep? next = nextTier;
-    if (next == null) {
-      return 1.0;
-    }
+    if (next == null) return 1.0;
     final double span = next.minSpend - currentTier.minSpend;
-    if (span <= 0) {
-      return 1.0;
-    }
-    final double value = (approvedSpend - currentTier.minSpend) / span;
-    if (value < 0) {
-      return 0.0;
-    }
-    return value > 1 ? 1.0 : value;
+    if (span <= 0) return 1.0;
+    final double value = (seasonSpend - currentTier.minSpend) / span;
+    return value.clamp(0.0, 1.0).toDouble();
   }
 
   /// Days left of the 30-day repayment window, counted from the latest debit entry that left a balance.
@@ -575,6 +562,7 @@ class Commissions {
     this.available = 0.0,
     this.held = 0.0,
     this.paid = 0.0,
+    this.requested = 0.0,
     this.total = 0.0,
   });
 
@@ -583,6 +571,7 @@ class Commissions {
       available: asDouble(json['available']) ?? 0.0,
       held: asDouble(json['held']) ?? 0.0,
       paid: asDouble(json['paid']) ?? 0.0,
+      requested: asDouble(json['requested']) ?? 0.0,
       total: asDouble(json['total']) ?? 0.0,
     );
   }
@@ -590,6 +579,7 @@ class Commissions {
   final double available;
   final double held;
   final double paid;
+  final double requested;
   final double total;
 }
 
@@ -601,6 +591,7 @@ class MarketerDashboard {
     required this.referralUrl,
     this.workshops = 0,
     this.commissions = const Commissions(),
+    this.payoutRequest,
   });
 
   factory MarketerDashboard.fromJson(Map<String, dynamic> json) {
@@ -611,6 +602,7 @@ class MarketerDashboard {
       referralUrl: asString(marketer['referralUrl']),
       workshops: asInt(json['workshops']) ?? 0,
       commissions: Commissions.fromJson(asMap(json['commissions'])),
+      payoutRequest: json['payoutRequest'] is Map ? MarketerPayoutRequest.fromJson(asMap(json['payoutRequest'])) : null,
     );
   }
 
@@ -619,6 +611,36 @@ class MarketerDashboard {
   final String referralUrl;
   final int workshops;
   final Commissions commissions;
+  final MarketerPayoutRequest? payoutRequest;
+}
+
+class MarketerPayoutRequest {
+  const MarketerPayoutRequest({required this.id, required this.amount, required this.status, this.payoutDetails, this.createdAt});
+  factory MarketerPayoutRequest.fromJson(Map<String, dynamic> json) => MarketerPayoutRequest(
+    id: asString(json['id']), amount: asDouble(json['amount']) ?? 0, status: asString(json['status']),
+    payoutDetails: asOptionalString(json['payout_details']), createdAt: asDate(json['created_at']),
+  );
+  final String id;
+  final double amount;
+  final String status;
+  final String? payoutDetails;
+  final DateTime? createdAt;
+}
+
+class UserNotification {
+  const UserNotification({required this.id, required this.type, required this.title, required this.body, this.orderId, this.readAt, this.createdAt});
+  factory UserNotification.fromJson(Map<String, dynamic> json) => UserNotification(
+    id: asString(json['id']), type: asString(json['type']), title: asString(json['title']), body: asString(json['body']),
+    orderId: asOptionalString(json['order_id']), readAt: asDate(json['read_at']), createdAt: asDate(json['created_at']),
+  );
+  final String id;
+  final String type;
+  final String title;
+  final String body;
+  final String? orderId;
+  final DateTime? readAt;
+  final DateTime? createdAt;
+  bool get isRead => readAt != null;
 }
 
 /// Result of POST /api/orders.

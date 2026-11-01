@@ -1067,15 +1067,15 @@ class AppState extends ChangeNotifier {
         !(effectivePay == 'cashback' && current.isWorkshop)) {
       throw const ApiException('طريقة الدفع هذه غير متاحة لحسابك.');
     }
-    if (addressId == null || addressId.trim().isEmpty) {
-      throw const ApiException('يجب إضافة عنوان شحن محفوظ قبل تأكيد الطلب.');
-    }
     if (effectivePay == 'sham' && cartTotalAmount - cashbackUsed > 0 &&
         (receipt == null || receipt.isEmpty)) {
       throw const ApiException('يرجى إرفاق إشعار تحويل شام كاش.');
     }
     if (receipt != null && receipt.length > maxImageBytes) {
       throw const ApiException('حجم الصورة يجب ألا يتجاوز 5 ميغابايت.');
+    }
+    if (addressId == null || addressId.trim().isEmpty) {
+      throw const ApiException('يجب إضافة عنوان شحن محفوظ قبل تأكيد الطلب.');
     }
 
     final Map<String, int> items = <String, int>{

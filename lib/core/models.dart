@@ -279,6 +279,7 @@ class Order {
 
   /// "#123", or the first characters of the id when the order has no number yet.
   String get label {
+    if (isCancelled) return '#—';
     final int? number = customerOrderNumber ?? orderNumber;
     if (number != null) {
       return '#$number';

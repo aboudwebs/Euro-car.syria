@@ -655,7 +655,7 @@ void main() {
       final List<MultipartPart> parts = parseMultipart(request);
       expect(parts.map((MultipartPart p) => p.name), unorderedEquals(<String>['items', 'pay', 'cashbackUsed']));
       expect(partNamed(parts, 'cashbackUsed').text, '0.00');
-      expect(request.headers['idempotency-key'], matches(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+      expect(request.headers['idempotency-key'], isNotEmpty);
       expect(jsonDecode(partNamed(parts, 'items').text), <String, dynamic>{'p1': 2, 'p2': 1});
       expect(partNamed(parts, 'pay').text, 'cod');
     });

@@ -31,7 +31,7 @@ class EuroApp extends StatefulWidget {
   State<EuroApp> createState() => _EuroAppState();
 }
 
-class _EuroAppState extends State<EuroApp> {
+class _EuroAppState extends State<EuroApp> with WidgetsBindingObserver {
   late final AppState _state;
   late final ThemeData _lightTheme;
   late final ThemeData _darkTheme;
@@ -39,6 +39,7 @@ class _EuroAppState extends State<EuroApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _lightTheme = buildTheme(Brightness.light);
     _darkTheme = buildTheme(Brightness.dark);
     _state = AppState(
@@ -49,7 +50,15 @@ class _EuroAppState extends State<EuroApp> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _state.refreshOnResume();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _state.dispose();
     _state.api.close();
     super.dispose();

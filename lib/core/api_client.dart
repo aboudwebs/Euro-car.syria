@@ -178,11 +178,15 @@ class ApiClient {
     String path, {
     required Map<String, String> fields,
     List<UploadFile> files = const <UploadFile>[],
+    String? idempotencyKey,
   }) {
     return _request(
       () async {
         final http.MultipartRequest request = http.MultipartRequest('POST', _uri(path));
         request.headers.addAll(_headers());
+        if (idempotencyKey != null && idempotencyKey.isNotEmpty) {
+          request.headers['Idempotency-Key'] = idempotencyKey;
+        }
         request.fields.addAll(fields);
         for (final UploadFile file in files) {
           request.files.add(

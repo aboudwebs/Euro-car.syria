@@ -48,6 +48,18 @@ void main() {
     });
   });
 
+  group('invoice currency formatting', () {
+    test('formats SYP invoices from their saved exchange rate regardless of profile currency', () {
+      DisplayPrefs.currency = currencyUsd;
+      expect(formatInvoiceAmount(2, currency: 'SYP', rate: 143.75), '288 ل.س');
+      expect(formatInvoiceAmount(2, currency: 'USD'), '\$2');
+    });
+
+    test('falls back to USD when the invoice rate is unavailable', () {
+      expect(formatInvoiceAmount(2, currency: 'SYP'), '\$2');
+    });
+  });
+
   group('formatDate', () {
     test('uses dd/MM/yyyy with leading zeros', () {
       expect(formatDate(DateTime(2026, 3, 7)), '07/03/2026');

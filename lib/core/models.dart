@@ -469,6 +469,8 @@ class WorkshopDashboard {
     required this.debtBalance,
     required this.cashbackBalance,
     this.tier,
+    this.seasonSpend = 0,
+    this.seasonStartedAt,
     this.debtLimit,
     this.orders = const <Order>[],
     this.ledger = const <LedgerEntry>[],
@@ -493,6 +495,8 @@ class WorkshopDashboard {
 
   final String name;
   final String? tier;
+  final double seasonSpend;
+  final DateTime? seasonStartedAt;
   final double? debtLimit;
   final double debtBalance;
   final double cashbackBalance;

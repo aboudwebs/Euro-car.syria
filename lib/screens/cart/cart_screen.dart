@@ -560,6 +560,22 @@ class _CartScreenState extends State<CartScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 12),
+          PrimaryButton(
+            label: 'تأكيد الطلب · ${formatUsd(total)}',
+            icon: Icons.check_rounded,
+            busy: _busy,
+            onPressed: () => _submit(pay, cashbackUsed),
+          ),
+          if (_busy)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                'جارٍ إرسال الطلب، قد يستغرق ذلك لحظات إذا كان الخادم في وضع السكون. لا تغلق التطبيق.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: p.muted, fontSize: 13, height: 1.5),
+              ),
+            ),
         ],
         if (error != null) ...<Widget>[
           const SizedBox(height: 14),

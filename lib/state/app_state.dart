@@ -63,6 +63,7 @@ class AppState extends ChangeNotifier {
   List<UserNotification> _notifications = const <UserNotification>[];
   bool _notificationsLoading = false;
   String? _notificationsError;
+  Timer? _notificationsTimer;
   bool _ordersLoading = false;
   bool _ordersLoaded = false;
   String? _ordersError;
@@ -249,6 +250,8 @@ class AppState extends ChangeNotifier {
       unawaited(loadRequests(silent: true));
     } else if (index == tabDashboard) {
       unawaited(loadDashboard(silent: true));
+    } else if (index == tabAccount) {
+      unawaited(loadNotifications(silent: true));
     }
   }
 
@@ -277,6 +280,8 @@ class AppState extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _notificationsTimer?.cancel();
+    _notificationsTimer = null;
     api.onUnauthorized = null;
     super.dispose();
   }
@@ -377,6 +382,10 @@ class AppState extends ChangeNotifier {
   }
 
   void _loadAfterSignIn() {
+    _notificationsTimer?.cancel();
+    _notificationsTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (_user != null) unawaited(loadNotifications(silent: true));
+    });
     unawaited(loadParts());
     unawaited(loadAvatar());
     unawaited(refreshProfile());
@@ -506,6 +515,8 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _endSession({required bool clearCart, String? notice}) async {
+    _notificationsTimer?.cancel();
+    _notificationsTimer = null;
     _epoch++;
     api.token = null;
     _user = null;

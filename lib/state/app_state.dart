@@ -898,7 +898,7 @@ class AppState extends ChangeNotifier {
       for (final CartLine line in lines) line.part.id: line.qty,
     };
     final List<UploadFile> files = <UploadFile>[];
-    if (pay == 'sham' && receipt != null) {
+    if (pay == 'sham' && cartTotalAmount - cashbackUsed > 0 && receipt != null) {
       files.add(
         UploadFile(
           field: 'receipt',

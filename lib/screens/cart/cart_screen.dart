@@ -434,7 +434,7 @@ class _CartScreenState extends State<CartScreen> {
                     prefixText: '\$ ',
                     helperText: 'يمكنك استخدام كامل الرصيد أو تحديد جزء منه',
                     filled: true,
-                    fillColor: p.field,
+                    fillColor: p.fieldBg,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),

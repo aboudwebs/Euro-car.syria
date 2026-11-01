@@ -930,9 +930,6 @@ class AppState extends ChangeNotifier {
     if (current == null) {
       throw const ApiException('يرجى تسجيل الدخول لإتمام الطلب');
     }
-    if (!payMethodsFor(current).contains(pay)) {
-      throw const ApiException('طريقة الدفع هذه غير متاحة لحسابك.');
-    }
     final List<CartLine> lines = cartLines;
     if (lines.isEmpty) {
       throw const ApiException('السلة فارغة.');
@@ -940,7 +937,16 @@ class AppState extends ChangeNotifier {
     if (cashbackUsed < 0 || cashbackUsed > cartTotalAmount || cashbackUsed > (current.cashbackBalance ?? 0)) {
       throw const ApiException('قيمة الكاش باك غير صالحة أو الرصيد غير كافٍ.');
     }
-    if (pay == 'sham' && cartTotalAmount - cashbackUsed > 0 && (receipt == null || receipt.isEmpty)) {
+    // Normalize full redemption here too, so non-UI callers cannot accidentally send COD with a zero balance due.
+    final bool fullyCoveredByCashback =
+        cashbackUsed > 0 && (cartTotalAmount - cashbackUsed).abs() < 0.005;
+    final String effectivePay = fullyCoveredByCashback ? 'cashback' : pay;
+    if (!payMethodsFor(current).contains(effectivePay) &&
+        !(effectivePay == 'cashback' && current.isWorkshop)) {
+      throw const ApiException('طريقة الدفع هذه غير متاحة لحسابك.');
+    }
+    if (effectivePay == 'sham' && cartTotalAmount - cashbackUsed > 0 &&
+        (receipt == null || receipt.isEmpty)) {
       throw const ApiException('يرجى إرفاق إشعار تحويل شام كاش.');
     }
     if (receipt != null && receipt.length > maxImageBytes) {
@@ -951,7 +957,7 @@ class AppState extends ChangeNotifier {
       for (final CartLine line in lines) line.part.id: line.qty,
     };
     final List<UploadFile> files = <UploadFile>[];
-    if (pay == 'sham' && cartTotalAmount - cashbackUsed > 0 && receipt != null) {
+    if (effectivePay == 'sham' && cartTotalAmount - cashbackUsed > 0 && receipt != null) {
       files.add(
         UploadFile(
           field: 'receipt',
@@ -978,7 +984,7 @@ class AppState extends ChangeNotifier {
           '/api/orders',
           fields: <String, String>{
             'items': jsonEncode(items),
-            'pay': pay,
+            'pay': effectivePay,
             'cashbackUsed': cashbackUsed.toStringAsFixed(2),
             if (addressId != null && addressId.isNotEmpty) 'addressId': addressId,
           },

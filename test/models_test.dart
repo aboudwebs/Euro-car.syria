@@ -9,6 +9,8 @@ void main() {
       final Map<String, dynamic> json = <String, dynamic>{
         ...workshopJson(debtLimit: 500, debtBalance: 120.5),
         'cashback_balance': '7.25',
+        'loyalty_season_spend': '1250.5',
+        'loyalty_season_started_at': '2026-01-01T00:00:00Z',
         'my_ref_code': 'MK-1',
         'created_at': '2026-01-02T03:04:05Z',
         'future_field': 'kept',
@@ -23,6 +25,8 @@ void main() {
       expect(user.license, 'L-100');
       expect(user.specs, <String>['BMW']);
       expect(user.tier, 'Bronze');
+      expect(user.seasonSpend, 1250.5);
+      expect(user.seasonStartedAt, DateTime.parse('2026-01-01T00:00:00Z'));
       expect(user.debtLimit, 500.0);
       expect(user.debtBalance, 120.5);
       expect(user.cashbackBalance, 7.25);
@@ -155,6 +159,9 @@ void main() {
         'pay_method': 'cod',
         'status': 'pending',
         'status_note': null,
+        'refund_status': 'pending_review',
+        'refund_note': 'بانتظار مراجعة الإدارة',
+        'refunded_at': null,
         'created_at': '2026-02-03T00:00:00Z',
         'items': <Map<String, dynamic>>[
           <String, dynamic>{'part_id': 'p1', 'qty': 1, 'unit_price': 5},
@@ -165,6 +172,9 @@ void main() {
       expect(order.total, 99.9);
       expect(order.payMethod, 'cod');
       expect(order.statusNote, isNull);
+      expect(order.refundStatus, 'pending_review');
+      expect(order.refundNote, 'بانتظار مراجعة الإدارة');
+      expect(order.refundedAt, isNull);
       expect(order.createdAt, isNotNull);
       expect(order.items, hasLength(2));
       expect(order.items[1].lineTotal, 14.0);
@@ -373,6 +383,17 @@ void main() {
         },
         'workshops': '4',
         'commissions': <String, dynamic>{'available': 1, 'held': 2, 'paid': 3, 'total': 6},
+        'payoutRequests': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'pr1',
+            'amount': '12.5',
+            'status': 'rejected',
+            'payout_details': 'محفظة تجريبية',
+            'admin_note': 'بيانات الحساب غير مكتملة',
+            'created_at': '2026-02-01T00:00:00Z',
+            'processed_at': '2026-02-02T00:00:00Z',
+          },
+        ],
       });
       expect(d.code, 'MK-1A2B3C');
       expect(d.referralUrl, contains('sig=abc'));
@@ -381,6 +402,11 @@ void main() {
       expect(d.commissions.held, 2.0);
       expect(d.commissions.paid, 3.0);
       expect(d.commissions.total, 6.0);
+      expect(d.payoutRequests, hasLength(1));
+      expect(d.payoutRequests.single.amount, 12.5);
+      expect(d.payoutRequests.single.status, 'rejected');
+      expect(d.payoutRequests.single.adminNote, 'بيانات الحساب غير مكتملة');
+      expect(d.payoutRequests.single.processedAt, isNotNull);
     });
 
     test('Commissions defaults missing values to zero', () {

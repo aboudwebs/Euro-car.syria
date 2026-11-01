@@ -166,6 +166,18 @@ class _OrderCardState extends State<OrderCard> {
             NoteBox(text: 'السبب: $note', color: p.err),
           ],
           if (order.isCancelled && order.payMethod == 'sham' && order.refundStatus != 'not_required') ...<Widget>[
+            const SizedBox(height: 10),
+            NoteBox(
+              text: switch (order.refundStatus) {
+                'pending_review' => 'استرداد شام كاش: بانتظار مراجعة الإدارة. إذا تم التحويل فعلياً، ستتابع الإدارة إعادة المبلغ.',
+                'refunded' => 'استرداد شام كاش: أكدت الإدارة إعادة المبلغ إليك.',
+                'not_refundable' => 'استرداد شام كاش: تمت مراجعة الطلب. ${order.refundNote ?? ''}',
+                _ => 'استرداد شام كاش: الحالة قيد المراجعة.',
+              },
+              color: order.refundStatus == 'refunded' ? p.ok : p.warn,
+            ),
+          ],
+          if (order.isCancelled && order.payMethod == 'sham' && order.refundStatus != 'not_required') ...<Widget>[
             const SizedBox(height: 8),
             NoteBox(
               text: switch (order.refundStatus) {

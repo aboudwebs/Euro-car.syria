@@ -1052,9 +1052,6 @@ class AppState extends ChangeNotifier {
     if (current == null) {
       throw const ApiException('يرجى تسجيل الدخول لإتمام الطلب');
     }
-    if (addressId == null || addressId.trim().isEmpty) {
-      throw const ApiException('يجب إضافة عنوان شحن محفوظ قبل تأكيد الطلب.');
-    }
     final List<CartLine> lines = cartLines;
     if (lines.isEmpty) {
       throw const ApiException('السلة فارغة.');
@@ -1069,6 +1066,9 @@ class AppState extends ChangeNotifier {
     if (!payMethodsFor(current).contains(effectivePay) &&
         !(effectivePay == 'cashback' && current.isWorkshop)) {
       throw const ApiException('طريقة الدفع هذه غير متاحة لحسابك.');
+    }
+    if (addressId == null || addressId.trim().isEmpty) {
+      throw const ApiException('يجب إضافة عنوان شحن محفوظ قبل تأكيد الطلب.');
     }
     if (effectivePay == 'sham' && cartTotalAmount - cashbackUsed > 0 &&
         (receipt == null || receipt.isEmpty)) {

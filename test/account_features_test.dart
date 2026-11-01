@@ -111,10 +111,11 @@ void main() {
       h.server.reply('POST', '/api/orders', <String, dynamic>{'orderId': 'o1', 'orderNumber': 7, 'pay': 'cod', 'total': 10.5});
       h.state.addToCart(catalogPart(h, 'p1'));
 
-      await h.state.placeOrder(pay: 'cod', addressId: 'a1');
+      await h.state.placeOrder(pay: 'cod', invoiceCurrency: 'SYP', addressId: 'a1');
 
       final List<MultipartPart> parts = parseMultipart(h.server.requestsTo('POST', '/api/orders').single);
       expect(partNamed(parts, 'addressId').text, 'a1');
+      expect(partNamed(parts, 'invoiceCurrency').text, 'SYP');
     });
   });
 

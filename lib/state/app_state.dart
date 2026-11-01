@@ -979,6 +979,18 @@ class AppState extends ChangeNotifier {
         ),
       );
     }
+    final AppUser? current = _user;
+    if (current == null) throw const ApiException('يرجى تسجيل الدخول أولاً.');
+    final String keyName = 'pending_special_request_key_${current.id}';
+    String? idempotencyKey = await _safeRead(keyName);
+    if (idempotencyKey == null || idempotencyKey.isEmpty) {
+      idempotencyKey = _newIdempotencyKey();
+      try {
+        await store.write(keyName, idempotencyKey);
+      } catch (_) {
+        throw const ApiException('تعذر حفظ معرّف التأكيد بأمان. تحقق من مساحة التخزين وحاول مجدداً.');
+      }
+    }
     await _guard(
       () => api.postMultipart(
         '/api/special-requests',
@@ -990,8 +1002,10 @@ class AppState extends ChangeNotifier {
           'notes': notes.trim(),
         },
         files: files,
+        idempotencyKey: idempotencyKey,
       ),
     );
+    await _safeDelete(keyName);
     unawaited(loadRequests(silent: true));
   }
 

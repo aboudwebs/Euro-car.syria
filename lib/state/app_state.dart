@@ -392,7 +392,6 @@ class AppState extends ChangeNotifier {
     _deletion = null;
     _deletionLoaded = false;
     _pendingCatalogQuery = null;
-    _pendingPushTap = null;
   }
 
   void _loadAfterSignIn() {
@@ -591,6 +590,10 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _endSession({required bool clearCart, String? notice}) async {
+    final String? pushToken = await PushNotifications.currentToken();
+    if (pushToken != null && pushToken.isNotEmpty && api.token != null) {
+      unawaited(api.deleteJson('/api/push/register?token=${Uri.encodeQueryComponent(pushToken)}'));
+    }
     _notificationsTimer?.cancel();
     _notificationsTimer = null;
     _epoch++;

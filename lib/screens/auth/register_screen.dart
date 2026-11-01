@@ -31,12 +31,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _license = TextEditingController();
   final TextEditingController _otherBrand = TextEditingController();
   final TextEditingController _referral = TextEditingController();
+  final TextEditingController _otpCode = TextEditingController();
 
   String _role = 'workshop';
   String _city = defaultGovernorate;
   final List<String> _specs = <String>['Mercedes-Benz'];
   ReferralInput? _signedReferral;
   bool _busy = false;
+  bool _otpSent = false;
+  String? _otpToken;
   String? _error;
   String? _pendingMessage;
 
@@ -48,6 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _license.dispose();
     _otherBrand.dispose();
     _referral.dispose();
+    _otpCode.dispose();
     super.dispose();
   }
 
@@ -68,6 +72,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() {
       _signedReferral = null;
       _referral.clear();
+      _otpSent = false;
+      _otpToken = null;
+      _otpCode.clear();
     });
   }
 
@@ -114,20 +121,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _submit() async {
-    if (_busy) {
-      return;
-    }
+    if (_busy) return;
     final String? problem = _validate();
     if (problem != null) {
       setState(() => _error = problem);
       return;
     }
+    if (_otpSent && _otpCode.text.trim().length != 6) {
+      setState(() => _error = 'أدخل رمز التحقق المكوّن من 6 أرقام.');
+      return;
+    }
+
     final AppState state = AppScope.read(context);
     FocusScope.of(context).unfocus();
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
+    setState(() { _busy = true; _error = null; });
+
+    if (!_otpSent) {
+      try {
+        final String token = await state.requestRegistrationOtp(phone: _phone.text);
+        if (!mounted) return;
+        setState(() {
+          _otpToken = token;
+          _otpSent = true;
+          _busy = false;
+        });
+      } on ApiException catch (error) {
+        if (mounted) setState(() { _busy = false; _error = error.message; });
+      } catch (_) {
+        if (mounted) setState(() { _busy = false; _error = unexpectedMessage; });
+      }
+      return;
+    }
 
     final ReferralInput referral = _signedReferral ?? parseReferral(_referral.text);
     final AuthResult result = await state.register(
@@ -140,10 +164,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       specs: _specsText(),
       refCode: referral.code,
       refSignature: referral.signature,
+      otpCode: _otpCode.text,
+      otpToken: _otpToken ?? '',
     );
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     setState(() {
       _busy = false;
       if (result.isPending) {
@@ -353,11 +377,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ],
+      if (_otpSent) ...<Widget>[
+        const SizedBox(height: 12),
+        AppTextField(
+          controller: _otpCode,
+          label: 'رمز التحقق المرسل إلى واتساب',
+          hint: '000000',
+          icon: Icons.password_rounded,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
+          maxLength: 6,
+          ltr: true,
+          radius: 10,
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: _busy ? null : () => setState(() {
+            _otpSent = false;
+            _otpToken = null;
+            _otpCode.clear();
+            _error = null;
+          }),
+          child: const Text('تغيير الرقم أو إعادة طلب الرمز'),
+        ),
+      ],
       const SizedBox(height: 16),
       PrimaryButton(
         flat: true,
         color: !_isWorkshop ? const Color(0xFFF59E0B) : null,
-        label: _isWorkshop ? 'إرسال طلب اعتماد الورشة' : 'إنشاء الحساب فوراً',
+        label: _otpSent ? 'تأكيد الرمز وإنشاء الحساب' : 'إرسال رمز التحقق إلى واتساب',
         busy: _busy,
         onPressed: _submit,
       ),

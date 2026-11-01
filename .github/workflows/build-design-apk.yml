@@ -27,7 +27,7 @@ on:
       - 'tool/**'
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: euro-cars-apk-${{ github.ref }}
@@ -77,6 +77,19 @@ jobs:
 
       - name: Verify APK
         run: bash tool/verify_apk.sh build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Publish permanent APK download
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-latest
+          name: EURO CARS — Latest Android APK
+          body: Latest verified EURO CARS Android APK (ARM32 + ARM64).
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          files: build/app/outputs/flutter-apk/app-release.apk
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4

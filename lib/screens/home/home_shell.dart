@@ -18,6 +18,7 @@ import '../cart/cart_screen.dart';
 import '../catalog/catalog_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../orders/orders_screen.dart';
+import '../account/notifications_screen.dart';
 import '../../widgets/tx.dart';
 
 class HomeShell extends StatefulWidget {
@@ -58,6 +59,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
     }
   }
 
+  void _openNotifications() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (BuildContext context) => const NotificationsScreen()),
+    );
+  }
+
   void _selectTab(AppState state, int index) {
     FocusManager.instance.primaryFocus?.unfocus();
     state.selectTab(index);
@@ -84,7 +91,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           backgroundColor: Colors.transparent,
           body: Column(
             children: <Widget>[
-              _TopBar(onOpenAccount: () => _selectTab(state, tabAccount)),
+              _TopBar(
+                onOpenAccount: () => _selectTab(state, tabAccount),
+                onOpenNotifications: _openNotifications,
+              ),
               Expanded(
                 child: IndexedStack(
                   index: tab,
@@ -152,9 +162,10 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 /// The glass header of the web app: the wordmark at the start; the signed-in user (opens the account tab) and the
 /// light / dark switch at the end.
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.onOpenAccount});
+  const _TopBar({required this.onOpenAccount, required this.onOpenNotifications});
 
   final VoidCallback onOpenAccount;
+  final VoidCallback onOpenNotifications;
 
   @override
   Widget build(BuildContext context) {
@@ -189,7 +200,19 @@ class _TopBar extends StatelessWidget {
                         Flexible(
                           child: _UserChip(label: who, onTap: onOpenAccount),
                         ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        tooltip: 'الإشعارات',
+                        onPressed: onOpenNotifications,
+                        icon: Badge(
+                          isLabelVisible: state.unreadNotificationCount > 0,
+                          label: Text(
+                            state.unreadNotificationCount > 99 ? '99+' : '${state.unreadNotificationCount}',
+                          ),
+                          child: const Icon(Icons.notifications_none_rounded),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                       RoundIconButton(
                         icon: dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
                         tooltip: 'تبديل الوضع',

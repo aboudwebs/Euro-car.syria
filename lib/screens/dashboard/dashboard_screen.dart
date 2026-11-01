@@ -255,6 +255,13 @@ class DashboardScreen extends StatelessWidget {
             ],
             const SizedBox(height: 12),
             ProgressBar(value: data.tierProgress, height: 12),
+            const SizedBox(height: 6),
+            Text(
+              data.seasonStartedAt == null
+                  ? 'تبدأ دورة الولاء لمدة 90 يوماً بعد أول طلب يتم تسليمه.'
+                  : 'متبقي ${data.seasonDaysLeft(DateTime.now()) ?? 0} يوم على نهاية دورة الولاء الحالية.',
+              style: TextStyle(color: p.muted, fontSize: 12),
+            ),
             const SizedBox(height: 10),
             Row(
               children: <Widget>[

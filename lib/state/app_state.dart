@@ -17,8 +17,8 @@ import '../core/display.dart';
 import '../core/images.dart';
 import '../core/json_utils.dart';
 import '../core/models.dart';
-import '../core/session_store.dart';
 import '../core/push_notifications.dart';
+import '../core/session_store.dart';
 import '../core/text_utils.dart';
 
 enum SessionStatus { restoring, signedOut, signedIn }

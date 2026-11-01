@@ -18,6 +18,7 @@ import '../core/images.dart';
 import '../core/json_utils.dart';
 import '../core/models.dart';
 import '../core/push_notifications.dart';
+import '../core/referral.dart';
 import '../core/session_store.dart';
 import '../core/text_utils.dart';
 
@@ -84,6 +85,7 @@ class AppState extends ChangeNotifier {
   Uint8List? _avatarBytes;
   DateTime? _lastResumeRefresh;
   Map<String, String>? _pendingPushTap;
+  ReferralInput? _pendingReferral;
 
   // Display preferences (device-wide, kept across sign-outs) and what makes the whole UI rebuild when they change.
   String _language = languageArabic;
@@ -120,6 +122,18 @@ class AppState extends ChangeNotifier {
   AppUser? get user => _user;
   bool get isSignedIn => _status == SessionStatus.signedIn && _user != null;
   String? get sessionNotice => _sessionNotice;
+
+  void setPendingReferral(ReferralInput referral) {
+    if (referral.isEmpty) return;
+    _pendingReferral = referral;
+    notifyListeners();
+  }
+
+  ReferralInput? takePendingReferral() {
+    final ReferralInput? referral = _pendingReferral;
+    _pendingReferral = null;
+    return referral;
+  }
   ThemeMode get themeMode => _themeMode;
 
   List<Part> get parts => _parts;

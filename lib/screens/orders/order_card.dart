@@ -77,6 +77,19 @@ class _OrderCardState extends State<OrderCard> {
               PayMethodBadge(method: order.payMethod),
             ],
           ),
+          if (order.cashbackUsed > 0) ...<Widget>[
+            const SizedBox(height: 8),
+            _DetailLine(
+              icon: Icons.savings_outlined,
+              label: 'الكاش باك المستخدم',
+              value: formatUsd(order.cashbackUsed),
+            ),
+            _DetailLine(
+              icon: Icons.payments_outlined,
+              label: 'المتبقي للدفع',
+              value: formatUsd(order.amountDue ?? (order.total - order.cashbackUsed)),
+            ),
+          ],
           const SizedBox(height: 9),
           Row(
             children: <Widget>[
@@ -141,6 +154,7 @@ class PayMethodBadge extends StatelessWidget {
     final StatusTone tone = switch (method) {
       'debt' => StatusTone.waiting,
       'cod' => StatusTone.success,
+      'cashback' => StatusTone.success,
       _ => StatusTone.progress,
     };
     return StatusChip(label: payMethodLabel(method), tone: tone);

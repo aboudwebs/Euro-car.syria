@@ -5,10 +5,12 @@
 
 import 'package:flutter/material.dart' hide Text;
 
+import '../../core/api_client.dart';
 import '../../core/format.dart';
 import '../../core/i18n.dart';
 import '../../core/labels.dart';
 import '../../core/models.dart';
+import '../../state/app_state.dart';
 import '../../theme/palette.dart';
 import '../../widgets/feedback.dart';
 import '../../widgets/panel.dart';
@@ -26,6 +28,33 @@ class OrderCard extends StatefulWidget {
 
 class _OrderCardState extends State<OrderCard> {
   bool _open = false;
+  bool _cancelBusy = false;
+
+  Future<void> _cancel(BuildContext context, Order order) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('إلغاء الطلب'),
+        content: Text(order.payMethod == 'sham'
+            ? 'هل تريد إلغاء الطلب؟ إذا كنت قد حولت المبلغ عبر شام كاش، ستحتاج إلى مراجعة الإدارة لاسترداده.'
+            : 'هل تريد إلغاء هذا الطلب؟ يمكن الإلغاء فقط قبل بدء التجهيز.'),
+        actions: <Widget>[
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('رجوع')),
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('تأكيد الإلغاء')),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted || _cancelBusy) return;
+    setState(() => _cancelBusy = true);
+    try {
+      await AppScope.read(context).cancelOrder(order.id);
+      if (context.mounted) showSnack(context, 'تم إلغاء الطلب.');
+    } on ApiException catch (error) {
+      if (context.mounted) showSnack(context, error.message);
+    } finally {
+      if (mounted) setState(() => _cancelBusy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +147,18 @@ class _OrderCardState extends State<OrderCard> {
               label: 'رقم التتبع',
               value: trackingNumber,
               ltr: true,
+            ),
+          ],
+          if (order.status == 'pending') ...<Widget>[
+            const SizedBox(height: 8),
+            Align(
+              alignment: AlignmentDirectional.centerEnd,
+              child: TextButton.icon(
+                onPressed: _cancelBusy ? null : () => _cancel(context, order),
+                style: TextButton.styleFrom(foregroundColor: p.errText),
+                icon: _cancelBusy ? const SizedBox(width: 15, height: 15, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.cancel_outlined, size: 17),
+                label: Text(_cancelBusy ? 'جارٍ الإلغاء...' : 'إلغاء الطلب'),
+              ),
             ),
           ],
           if (order.isCancelled && note != null && note.isNotEmpty) ...<Widget>[

@@ -201,6 +201,7 @@ class Order {
     required this.payMethod,
     required this.status,
     this.orderNumber,
+    this.customerOrderNumber,
     this.cashbackUsed = 0,
     this.amountDue,
     this.statusNote,
@@ -222,6 +223,7 @@ class Order {
     return Order(
       id: asString(json['id']),
       orderNumber: asInt(json['order_number']),
+      customerOrderNumber: asInt(json['customer_order_number']),
       total: asDouble(json['total_amount']) ?? 0.0,
       cashbackUsed: asDouble(json['cashback_used']) ?? 0.0,
       amountDue: asDouble(json['amount_due']),
@@ -249,6 +251,7 @@ class Order {
 
   final String id;
   final int? orderNumber;
+  final int? customerOrderNumber;
   final double total;
   final double cashbackUsed;
   final double? amountDue;
@@ -276,7 +279,7 @@ class Order {
 
   /// "#123", or the first characters of the id when the order has no number yet.
   String get label {
-    final int? number = orderNumber;
+    final int? number = customerOrderNumber ?? orderNumber;
     if (number != null) {
       return '#$number';
     }
@@ -716,6 +719,7 @@ class PlacedOrder {
     return PlacedOrder(
       orderId: asString(json['orderId']),
       orderNumber: asInt(json['orderNumber']),
+      customerOrderNumber: asInt(json['customerOrderNumber']),
       pay: asString(json['pay']),
       total: asDouble(json['total']) ?? 0.0,
       invoiceCurrency: asString(json['invoiceCurrency'], 'USD'),
@@ -726,6 +730,7 @@ class PlacedOrder {
 
   final String orderId;
   final int? orderNumber;
+  final int? customerOrderNumber;
   final String pay;
   final double total;
   final String invoiceCurrency;

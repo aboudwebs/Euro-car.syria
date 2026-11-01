@@ -154,25 +154,30 @@ class _CartScreenState extends State<CartScreen> {
     if (_busy) {
       return;
     }
-    final AppUser? current = AppScope.read(context).user;
+    final AppState state = AppScope.read(context);
+    final AppUser? current = state.user;
+    final double total = state.cartTotalAmount;
     final double availableCashback = current?.cashbackBalance ?? 0;
-    if (cashbackUsed < 0 || cashbackUsed > availableCashback || cashbackUsed > AppScope.read(context).cartTotalAmount) {
+    if (cashbackUsed < 0 || cashbackUsed > availableCashback || cashbackUsed > total) {
       setState(() => _error = 'المبلغ المحدد أكبر من رصيد الكاش باك أو من قيمة الطلب.');
       return;
     }
-    if (pay == 'sham' && (AppScope.read(context).cartTotalAmount - cashbackUsed) > 0 && _receipt == null) {
+    // The database requires the dedicated payment method when cashback covers the whole order.
+    // Do not send the default COD method for a zero-amount remainder.
+    final bool fullyCoveredByCashback = cashbackUsed > 0 && (total - cashbackUsed).abs() < 0.005;
+    final String effectivePay = fullyCoveredByCashback ? 'cashback' : pay;
+    if (effectivePay == 'sham' && (total - cashbackUsed) > 0 && _receipt == null) {
       setState(() => _error = 'يرجى إرفاق إشعار تحويل شام كاش لإتمام الطلب.');
       return;
     }
-    final AppState state = AppScope.read(context);
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
       final PlacedOrder placed = await state.placeOrder(
-        pay: pay,
-        receipt: pay == 'sham' ? _receipt : null,
+        pay: effectivePay,
+        receipt: effectivePay == 'sham' ? _receipt : null,
         addressId: state.checkoutAddress?.id,
         cashbackUsed: cashbackUsed,
       );
@@ -186,7 +191,7 @@ class _CartScreenState extends State<CartScreen> {
         _useCashback = false;
         _cashbackController.clear();
       });
-      await _showSuccess(placed, pay, cashbackUsed);
+      await _showSuccess(placed, effectivePay, cashbackUsed);
     } on ApiException catch (error) {
       if (!mounted) {
         return;

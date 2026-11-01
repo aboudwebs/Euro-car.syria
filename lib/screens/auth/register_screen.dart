@@ -335,7 +335,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             icon: Icons.link_rounded,
             ltr: true,
             readOnly: true,
-            enabled: false,
             radius: 10,
             suffix: Padding(
               padding: const EdgeInsetsDirectional.only(end: 12),

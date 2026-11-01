@@ -87,7 +87,9 @@ class _OrderCardState extends State<OrderCard> {
               ),
               const SizedBox(width: 12),
               Text(
-                formatUsd(order.total),
+                order.invoiceCurrency == 'SYP' && order.invoiceTotalSyp != null
+                    ? formatSypAmount(order.invoiceTotalSyp!)
+                    : formatUsd(order.total),
                 style: TextStyle(
                   color: p.text,
                   fontSize: 17,
@@ -112,12 +114,16 @@ class _OrderCardState extends State<OrderCard> {
             _DetailLine(
               icon: Icons.savings_outlined,
               label: 'الكاش باك المستخدم',
-              value: formatUsd(order.cashbackUsed),
+              value: order.invoiceCurrency == 'SYP' && order.invoiceCashbackUsedSyp != null
+                  ? formatSypAmount(order.invoiceCashbackUsedSyp!)
+                  : formatUsd(order.cashbackUsed),
             ),
             _DetailLine(
               icon: Icons.payments_outlined,
               label: 'المتبقي للدفع',
-              value: formatUsd(order.amountDue ?? (order.total - order.cashbackUsed)),
+              value: order.invoiceCurrency == 'SYP' && order.invoiceAmountDueSyp != null
+                  ? formatSypAmount(order.invoiceAmountDueSyp!)
+                  : formatUsd(order.amountDue ?? (order.total - order.cashbackUsed)),
             ),
           ],
           const SizedBox(height: 9),
@@ -189,7 +195,8 @@ class _OrderCardState extends State<OrderCard> {
           if (_open && hasItems) ...<Widget>[
             const SizedBox(height: 8),
             Divider(height: 1, thickness: 1, color: p.line),
-            for (final OrderLine line in order.items) _OrderLineRow(line: line),
+            for (final OrderLine line in order.items)
+              _OrderLineRow(line: line, invoiceCurrency: order.invoiceCurrency, invoiceRate: order.invoiceExchangeRate),
           ],
         ],
       ),
@@ -273,9 +280,11 @@ class _StatusLine extends StatelessWidget {
 }
 
 class _OrderLineRow extends StatelessWidget {
-  const _OrderLineRow({required this.line});
+  const _OrderLineRow({required this.line, required this.invoiceCurrency, this.invoiceRate});
 
   final OrderLine line;
+  final String invoiceCurrency;
+  final double? invoiceRate;
 
   @override
   Widget build(BuildContext context) {
@@ -312,11 +321,11 @@ class _OrderLineRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: <Widget>[
               Text(
-                formatUsd(line.lineTotal),
+                formatInvoiceAmount(line.lineTotal, currency: invoiceCurrency, rate: invoiceRate),
                 style: TextStyle(color: p.text, fontSize: 14.5, fontWeight: FontWeight.w700),
               ),
               Text(
-                '${line.qty} × ${formatUsd(line.unitPrice)}',
+                '${line.qty} × ${formatInvoiceAmount(line.unitPrice, currency: invoiceCurrency, rate: invoiceRate)}',
                 style: TextStyle(color: p.muted, fontSize: 12),
               ),
             ],

@@ -86,6 +86,19 @@ void main() {
       );
     });
 
+    test('JSON mutations carry the supplied idempotency key', () async {
+      final FakeServer server = FakeServer()..reply('POST', '/api/account/addresses', <String, dynamic>{'ok': true});
+      final ApiClient api = makeClient(server);
+
+      await api.postJson(
+        '/api/account/addresses',
+        <String, dynamic>{'label': 'البيت'},
+        idempotencyKey: '11111111-1111-4111-8111-111111111111',
+      );
+
+      expect(server.requests.single.headers['idempotency-key'], '11111111-1111-4111-8111-111111111111');
+    });
+
     test('a trailing slash on the base URL is ignored', () async {
       final FakeServer server = FakeServer()..reply('GET', '/api/parts', <String, dynamic>{'parts': <Object>[]});
       final ApiClient api = makeClient(server, baseUrl: 'https://api.test/');
@@ -333,12 +346,14 @@ void main() {
         '/api/orders',
         fields: <String, String>{'items': '{"p1":2}', 'pay': 'sham', 'note': 'ملاحظة'},
         files: <UploadFile>[UploadFile(field: 'receipt', bytes: receipt, filename: 'receipt.jpg')],
+        idempotencyKey: '22222222-2222-4222-8222-222222222222',
       );
 
       expect(data['orderId'], 'o1');
       final http.Request request = server.requests.single;
       expect(request.headers['content-type'], startsWith('multipart/form-data; boundary='));
       expect(request.headers['authorization'], 'Bearer tok');
+      expect(request.headers['idempotency-key'], '22222222-2222-4222-8222-222222222222');
 
       final List<MultipartPart> parts = parseMultipart(request);
       expect(partNamed(parts, 'items').text, '{"p1":2}');

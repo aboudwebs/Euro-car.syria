@@ -58,6 +58,7 @@ class _CartScreenState extends State<CartScreen> {
   Uint8List? _receipt;
   bool _busy = false;
   bool _useCashback = false;
+  final TextEditingController _cashbackController = TextEditingController();
   String? _error;
 
   Future<void> _pickReceipt() async {
@@ -153,6 +154,12 @@ class _CartScreenState extends State<CartScreen> {
     if (_busy) {
       return;
     }
+    final AppUser? current = AppScope.read(context).user;
+    final double availableCashback = current?.cashbackBalance ?? 0;
+    if (cashbackUsed < 0 || cashbackUsed > availableCashback || cashbackUsed > AppScope.read(context).cartTotalAmount) {
+      setState(() => _error = 'المبلغ المحدد أكبر من رصيد الكاش باك أو من قيمة الطلب.');
+      return;
+    }
     if (pay == 'sham' && (AppScope.read(context).cartTotalAmount - cashbackUsed) > 0 && _receipt == null) {
       setState(() => _error = 'يرجى إرفاق إشعار تحويل شام كاش لإتمام الطلب.');
       return;
@@ -177,6 +184,7 @@ class _CartScreenState extends State<CartScreen> {
         _receipt = null;
         _pay = 'cod';
         _useCashback = false;
+        _cashbackController.clear();
       });
       await _showSuccess(placed, pay, cashbackUsed);
     } on ApiException catch (error) {
@@ -244,6 +252,12 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
     AppScope.read(context).selectTab(tabOrders);
+  }
+
+  @override
+  void dispose() {
+    _cashbackController.dispose();
+    super.dispose();
   }
 
   @override
@@ -324,7 +338,7 @@ class _CartScreenState extends State<CartScreen> {
     final Palette p = Palette.of(context);
     final double total = state.cartTotalAmount;
     final double cashbackBalance = user.isWorkshop ? (user.cashbackBalance ?? 0).clamp(0, double.infinity).toDouble() : 0;
-    final double cashbackUsed = _useCashback ? (cashbackBalance < total ? cashbackBalance : total) : 0;
+    final double cashbackUsed = _useCashback ? (double.tryParse(_cashbackController.text.trim()) ?? 0) : 0;
     final double amountDue = (total - cashbackUsed).clamp(0, double.infinity).toDouble();
     final List<String> methods = payMethodsFor(user);
     final DebtCheck debt = checkDebtPayment(user: user, total: amountDue);
@@ -386,14 +400,46 @@ class _CartScreenState extends State<CartScreen> {
             child: SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               value: _useCashback,
-              onChanged: _busy ? null : (bool value) => setState(() { _useCashback = value; _error = null; }),
+              onChanged: _busy ? null : (bool value) => setState(() {
+                _useCashback = value;
+                _error = null;
+                if (value) {
+                  final double full = cashbackBalance < total ? cashbackBalance : total;
+                  _cashbackController.text = full.toStringAsFixed(2);
+                } else {
+                  _cashbackController.clear();
+                }
+              }),
               title: Text('استخدام رصيد الكاش باك', style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
               subtitle: Text(
-                'رصيدك: ${formatUsd(cashbackBalance)}${_useCashback ? ' · سيتم استخدام ${formatUsd(cashbackUsed)}' : ''}',
+                'الرصيد المتاح: ${formatUsd(cashbackBalance)}',
                 style: TextStyle(color: p.muted, fontSize: 12.5),
               ),
               activeTrackColor: p.primary,
             ),
+            if (_useCashback) ...<Widget>[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: TextFormField(
+                  controller: _cashbackController,
+                  enabled: !_busy,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: <TextInputFormatter>[
+                    FilteringTextInputFormatter.allow(RegExp(r'^\\d*\\.?\\d{0,2}')),
+                  ],
+                  onChanged: (_) => setState(() => _error = null),
+                  style: TextStyle(color: p.text, fontWeight: FontWeight.w600),
+                  decoration: InputDecoration(
+                    labelText: 'المبلغ المراد استخدامه',
+                    prefixText: '\$ ',
+                    helperText: 'يمكنك استخدام كامل الرصيد أو تحديد جزء منه',
+                    filled: true,
+                    fillColor: p.field,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
         if (cashbackUsed > 0) ...<Widget>[

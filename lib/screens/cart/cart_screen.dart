@@ -391,7 +391,7 @@ class _CartScreenState extends State<CartScreen> {
                 'رصيدك: ${formatUsd(cashbackBalance)}${_useCashback ? ' · سيتم استخدام ${formatUsd(cashbackUsed)}' : ''}',
                 style: TextStyle(color: p.muted, fontSize: 12.5),
               ),
-              activeColor: p.primary,
+              activeTrackColor: p.primary,
             ),
           ),
         ],

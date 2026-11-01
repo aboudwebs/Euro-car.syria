@@ -128,8 +128,16 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                         label: tr('لوحتي'),
                       ),
                       NavigationDestination(
-                        icon: const Icon(Icons.person_outline_rounded),
-                        selectedIcon: const Icon(Icons.person_rounded),
+                        icon: Badge(
+                          isLabelVisible: state.unreadNotificationCount > 0,
+                          label: Text(state.unreadNotificationCount > 99 ? '99+' : '${state.unreadNotificationCount}'),
+                          child: const Icon(Icons.person_outline_rounded),
+                        ),
+                        selectedIcon: Badge(
+                          isLabelVisible: state.unreadNotificationCount > 0,
+                          label: Text(state.unreadNotificationCount > 99 ? '99+' : '${state.unreadNotificationCount}'),
+                          child: const Icon(Icons.person_rounded),
+                        ),
                         label: tr('حسابي'),
                       ),
                     ],

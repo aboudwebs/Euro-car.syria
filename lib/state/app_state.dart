@@ -5,6 +5,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -862,7 +863,16 @@ class AppState extends ChangeNotifier {
 
   /// Sends the cart as an order. Prices and totals are computed by the server; only part ids and quantities are
   /// sent. Throws [ApiException] with a message for the user when the order is refused.
-  Future<PlacedOrder> placeOrder({required String pay, Uint8List? receipt, String? addressId}) async {
+  String _newIdempotencyKey() {
+    final Random random = Random.secure();
+    final List<int> bytes = List<int>.generate(16, (_) => random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    final String hex = bytes.map((int b) => b.toRadixString(16).padLeft(2, '0')).join();
+    return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
+  }
+
+  Future<PlacedOrder> placeOrder({required String pay, Uint8List? receipt, String? addressId, double cashbackUsed = 0}) async {
     final AppUser? current = _user;
     if (current == null) {
       throw const ApiException('يرجى تسجيل الدخول لإتمام الطلب');
@@ -874,7 +884,10 @@ class AppState extends ChangeNotifier {
     if (lines.isEmpty) {
       throw const ApiException('السلة فارغة.');
     }
-    if (pay == 'sham' && (receipt == null || receipt.isEmpty)) {
+    if (cashbackUsed < 0 || cashbackUsed > cartTotalAmount || cashbackUsed > (current.cashbackBalance ?? 0)) {
+      throw const ApiException('قيمة الكاش باك غير صالحة أو الرصيد غير كافٍ.');
+    }
+    if (pay == 'sham' && cartTotalAmount - cashbackUsed > 0 && (receipt == null || receipt.isEmpty)) {
       throw const ApiException('يرجى إرفاق إشعار تحويل شام كاش.');
     }
     if (receipt != null && receipt.length > maxImageBytes) {
@@ -895,6 +908,17 @@ class AppState extends ChangeNotifier {
       );
     }
 
+    final String keyName = 'pending_order_key_${current.id}';
+    String? idempotencyKey = await _safeRead(keyName);
+    if (idempotencyKey == null || idempotencyKey.isEmpty) {
+      idempotencyKey = _newIdempotencyKey();
+      try {
+        await store.write(keyName, idempotencyKey);
+      } catch (_) {
+        throw const ApiException('تعذر حفظ معرّف التأكيد بأمان. تحقق من مساحة التخزين وحاول مجدداً.');
+      }
+    }
+
     try {
       final Map<String, dynamic> data = await _guard(
         () => api.postMultipart(
@@ -902,12 +926,15 @@ class AppState extends ChangeNotifier {
           fields: <String, String>{
             'items': jsonEncode(items),
             'pay': pay,
+            'cashbackUsed': cashbackUsed.toStringAsFixed(2),
             if (addressId != null && addressId.isNotEmpty) 'addressId': addressId,
           },
           files: files,
+          idempotencyKey: idempotencyKey,
         ),
       );
       final PlacedOrder placed = PlacedOrder.fromJson(data);
+      await _safeDelete(keyName);
       clearCart();
       unawaited(loadOrders(silent: true));
       return placed;

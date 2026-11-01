@@ -163,6 +163,31 @@ def patch_gradle(path: pathlib.Path) -> bool:
         if count != 1:
             raise PatchError("`minSdk = flutter.minSdkVersion` not found in app/build.gradle.kts")
 
+    # flutter_local_notifications requires Java 8+ API desugaring on Android.
+    if "isCoreLibraryDesugaringEnabled = true" not in text:
+        text, count = re.subn(
+            r"(?m)^    compileOptions \{\n",
+            lambda match: match.group(0) + "        isCoreLibraryDesugaringEnabled = true\n",
+            text,
+            count=1,
+        )
+        if count != 1:
+            raise PatchError("compileOptions block not found in app/build.gradle.kts")
+
+    desugaring_dependency = '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
+    if desugaring_dependency not in text:
+        text, count = re.subn(
+            r"(?m)^dependencies \{\n",
+            lambda match: match.group(0) + desugaring_dependency + "\n",
+            text,
+            count=1,
+        )
+        if count == 0:
+            text += "\ndependencies {\n" + desugaring_dependency + "\n}\n"
+
+    if "isCoreLibraryDesugaringEnabled = true" not in text or desugaring_dependency not in text:
+        raise PatchError("core library desugaring configuration could not be applied")
+
     return write_if_changed(path, text)
 
 

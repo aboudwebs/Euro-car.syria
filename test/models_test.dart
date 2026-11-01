@@ -297,6 +297,15 @@ void main() {
       expect(d.approvedSpend, 1130.0);
     });
 
+    test('seasonDaysLeft follows the 90-day server season start', () {
+      final WorkshopDashboard active = WorkshopDashboard.fromJson(<String, dynamic>{
+        'user': <String, dynamic>{'loyalty_season_started_at': '2026-01-01T00:00:00Z'},
+      });
+      expect(active.seasonDaysLeft(DateTime.utc(2026, 3, 31)), 1);
+      expect(active.seasonDaysLeft(DateTime.utc(2026, 4, 1)), 0);
+      expect(dashboard(<Map<String, dynamic>>[]).seasonDaysLeft(DateTime.utc(2026, 3, 1)), isNull);
+    });
+
     test('tier estimate and progress follow the spend', () {
       final WorkshopDashboard none = dashboard(<Map<String, dynamic>>[]);
       expect(none.tierIndex, 0);

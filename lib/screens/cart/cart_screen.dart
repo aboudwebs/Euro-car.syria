@@ -239,7 +239,7 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _showSuccess(PlacedOrder placed, String pay, double cashbackUsed) async {
-    final int? number = placed.orderNumber;
+    final int? number = placed.customerOrderNumber ?? placed.orderNumber;
     await showDialog<void>(
       context: context,
       builder: (BuildContext dialogContext) {

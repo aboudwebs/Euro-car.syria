@@ -439,6 +439,29 @@ void main() {
       expect(h.state.status, SessionStatus.signedOut);
     });
 
+    test('opening the account tab refreshes unread notifications', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('GET', '/api/notifications', <String, dynamic>{
+        'notifications': <Map<String, dynamic>>[
+          <String, dynamic>{
+            'id': 'n1',
+            'type': 'debt',
+            'title': 'تم تسجيل تسديد',
+            'body': 'تم تسجيل تسديد على دفتر الدين.',
+            'created_at': '2026-11-01T00:00:00Z',
+          },
+        ],
+      });
+
+      h.state.selectTab(tabAccount);
+      await pumpEventQueue();
+
+      expect(h.state.selectedTab, tabAccount);
+      expect(h.state.notifications, hasLength(1));
+      expect(h.state.unreadNotificationCount, 1);
+      expect(h.state.notifications.single.type, 'debt');
+    });
+
     test('notifications after dispose are harmless', () async {
       final Harness h = await signedInHarness();
       h.state.dispose();

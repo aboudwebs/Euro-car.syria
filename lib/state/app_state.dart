@@ -937,6 +937,8 @@ class AppState extends ChangeNotifier {
       await _safeDelete(keyName);
       clearCart();
       unawaited(loadOrders(silent: true));
+      unawaited(refreshProfile());
+      unawaited(loadDashboard(silent: true));
       return placed;
     } on ApiException catch (error) {
       if (error.statusCode == 400) {

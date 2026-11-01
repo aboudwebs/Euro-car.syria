@@ -33,6 +33,8 @@ const Map<String, String> tierLabels = <String, String>{
   'Bronze': 'برونزية',
   'Silver': 'فضية',
   'Gold': 'ذهبية',
+  'Platinum': 'بلاتينية',
+  'VIP': 'النخبة VIP',
 };
 
 const Map<String, String> roleLabels = <String, String>{

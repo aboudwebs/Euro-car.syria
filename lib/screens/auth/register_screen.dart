@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart' hide Text;
 
+import '../../core/api_client.dart';
 import '../../core/config.dart';
 import '../../core/models.dart';
 import '../../core/referral.dart';
@@ -242,6 +243,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         keyboardType: TextInputType.phone,
         textInputAction: TextInputAction.next,
         ltr: true,
+        readOnly: _otpSent,
         radius: 10,
       ),
       const SizedBox(height: 12),

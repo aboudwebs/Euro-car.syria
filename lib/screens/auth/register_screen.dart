@@ -141,9 +141,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!_otpSent) {
       try {
-        final String? token = await state.requestRegistrationOtp(phone: _phone.text);
+        final String token = await state.requestRegistrationOtp(phone: _phone.text);
         if (!mounted) return;
-        if (token != null) {
+        if (token.isNotEmpty) {
           setState(() {
             _otpToken = token;
             _otpSent = true;

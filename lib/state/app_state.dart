@@ -502,7 +502,7 @@ class AppState extends ChangeNotifier {
   }
 
   /// Requests a WhatsApp verification code before account creation.
-  Future<String?> requestRegistrationOtp({required String phone}) async {
+  Future<String> requestRegistrationOtp({required String phone}) async {
     final Map<String, dynamic> data = await api.postJson(
       '/api/auth',
       <String, dynamic>{
@@ -512,7 +512,7 @@ class AppState extends ChangeNotifier {
       },
       auth: false,
     );
-    if (data['otpRequired'] == false) return null;
+    if (data['otpRequired'] == false) return '';
     final Object? token = data['otpToken'];
     if (token is! String || token.isEmpty) {
       throw const ApiException('لم يرجع الخادم رمز تحقق صالحاً. حاول مجدداً.');

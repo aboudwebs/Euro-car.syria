@@ -141,19 +141,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (!_otpSent) {
       try {
-        final String token = await state.requestRegistrationOtp(phone: _phone.text);
+        final String? token = await state.requestRegistrationOtp(phone: _phone.text);
         if (!mounted) return;
-        setState(() {
-          _otpToken = token;
-          _otpSent = true;
-          _busy = false;
-        });
+        if (token != null) {
+          setState(() {
+            _otpToken = token;
+            _otpSent = true;
+            _busy = false;
+          });
+          return;
+        }
+        // Demo mode: the server has temporarily disabled registration OTP.
       } on ApiException catch (error) {
         if (mounted) setState(() { _busy = false; _error = error.message; });
+        return;
       } catch (_) {
         if (mounted) setState(() { _busy = false; _error = unexpectedMessage; });
+        return;
       }
-      return;
     }
 
     final ReferralInput referral = _signedReferral ?? parseReferral(_referral.text);
@@ -408,7 +413,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       PrimaryButton(
         flat: true,
         color: !_isWorkshop ? const Color(0xFFF59E0B) : null,
-        label: _otpSent ? 'تأكيد الرمز وإنشاء الحساب' : 'إرسال رمز التحقق إلى واتساب',
+        label: _otpSent ? 'تأكيد الرمز وإنشاء الحساب' : 'متابعة وإنشاء الحساب',
         busy: _busy,
         onPressed: _submit,
       ),

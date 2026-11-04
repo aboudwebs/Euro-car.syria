@@ -528,6 +528,7 @@ class AppState extends ChangeNotifier {
     required String phone,
     required String password,
     String license = '',
+    bool manualVerification = false,
     String city = '',
     String specs = '',
     String refCode = '',
@@ -549,6 +550,7 @@ class AppState extends ChangeNotifier {
     };
     if (role == 'workshop') {
       body['license'] = license.trim();
+      if (manualVerification) body['manualVerification'] = true;
       body['city'] = city.trim();
       body['spec'] = specs;
       if (refCode.trim().isNotEmpty) {

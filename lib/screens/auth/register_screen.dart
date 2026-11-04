@@ -40,6 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final List<String> _specs = <String>['Mercedes-Benz'];
   ReferralInput? _signedReferral;
   bool _busy = false;
+  bool _manualVerification = false;
   bool _otpSent = false;
   String? _otpToken;
   String? _error;
@@ -110,8 +111,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return 'يرجى إدخال رقم الموبايل وكلمة مرور من 4 أحرف على الأقل';
     }
     if (_isWorkshop) {
-      if (_license.text.trim().isEmpty) {
-        return 'يرجى إدخال رقم الترخيص أو السجل التجاري للورشة';
+      if (_license.text.trim().isEmpty && !_manualVerification) {
+        return 'أدخل رقم الترخيص أو فعّل خيار التحقق اليدوي إذا لم تكن تملكه';
       }
       if (_specs.isEmpty) {
         return 'يرجى اختيار ماركة واحدة على الأقل لاختصاص الورشة';
@@ -168,6 +169,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       phone: _phone.text,
       password: _password.text,
       license: _license.text,
+      manualVerification: _isWorkshop && _license.text.trim().isEmpty && _manualVerification,
       city: _city,
       specs: _specsText(),
       refCode: referral.code,
@@ -269,12 +271,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 12),
         AppTextField(
           controller: _license,
-          label: 'رقم السجل التجاري / ترخيص الورشة',
+          label: 'رقم السجل التجاري / ترخيص الورشة (اختياري عند التحقق اليدوي)',
           icon: Icons.verified_outlined,
           textInputAction: TextInputAction.next,
           maxLength: 80,
           radius: 10,
         ),
+        CheckboxListTile(
+          value: _manualVerification,
+          onChanged: (bool? value) => setState(() {
+            _manualVerification = value ?? false;
+            _error = null;
+          }),
+          activeColor: p.primary,
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          title: Text('لا أملك سجلاً تجارياً أو ترخيصاً', style: TextStyle(color: p.text, fontSize: 13, fontWeight: FontWeight.w700)),
+          subtitle: Text('سأخضع للتحقق اليدوي من فريق الدعم قبل تفعيل حساب الورشة.', style: TextStyle(color: p.muted, fontSize: 12, height: 1.5)),
+        ),
+        if (_manualVerification) ...<Widget>[
+          Text('بعد إرسال الطلب، تواصل مع الدعم عبر واتساب لتأكيد اسم الورشة وموقعها وإرسال صورة الواجهة أو إجراء مكالمة فيديو للتحقق.', style: TextStyle(color: p.primary, fontSize: 12.5, height: 1.6)),
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: _busy ? null : () async { await openExternalUrl(supportUrl()); },
+              icon: const Icon(Icons.support_agent_rounded, size: 17),
+              label: const Text('التواصل مع دعم اليورو'),
+            ),
+          ),
+        ],
         const SizedBox(height: 12),
         SelectField(
           label: 'المحافظة',

@@ -275,6 +275,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
           maxLength: 80,
           radius: 10,
         ),
+        const SizedBox(height: 7),
+        InkWell(
+          onTap: () async {
+            final bool opened = await openExternalUrl(supportUrl());
+            if (!opened && mounted) {
+              showSnack(context, 'تعذر فتح واتساب. يرجى المحاولة مرة أخرى.');
+            }
+          },
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Icon(Icons.info_outline_rounded, color: p.primary, size: 17),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    'إذا كنت صاحب ورشة ولا تملك سجلاً تجارياً أو ترخيصاً، يرجى التواصل مع فريق دعم اليورو عبر واتساب للتحقق من هويتك ومساعدتك في إكمال التسجيل.',
+                    style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.55),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
         const SizedBox(height: 12),
         SelectField(
           label: 'المحافظة',

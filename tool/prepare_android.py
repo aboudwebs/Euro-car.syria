@@ -267,6 +267,7 @@ def main() -> int:
             copied,
         )
     )
+    print("prepare_android.py: core library desugaring enabled (compileOptions + desugar_jdk_libs 2.1.4)")
     return 0
 
 

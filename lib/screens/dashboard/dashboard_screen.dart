@@ -408,28 +408,36 @@ class _PayoutRequestPanel extends StatefulWidget {
 }
 
 class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
+  final TextEditingController _amount = TextEditingController();
   final TextEditingController _details = TextEditingController();
   bool _busy = false;
 
   @override
   void dispose() {
+    _amount.dispose();
     _details.dispose();
     super.dispose();
   }
 
   Future<void> _request() async {
     if (_busy || widget.data.commissions.available <= 0) return;
+    final double? amount = double.tryParse(_amount.text.trim().replaceAll(',', '.'));
+    if (amount == null || !amount.isFinite || amount <= 0 || amount > widget.data.commissions.available + 0.001) {
+      showSnack(context, 'أدخل مبلغاً صحيحاً لا يتجاوز الرصيد المتاح.');
+      return;
+    }
     final String details = _details.text.trim();
-    if (details.length < 6) {
-      showSnack(context, 'اكتب بيانات استلام التحويل بشكل واضح.');
+    if (details.length > 1000) {
+      showSnack(context, 'معلومات السحب طويلة جداً.');
       return;
     }
     setState(() => _busy = true);
     try {
-      await AppScope.read(context).requestMarketerPayout(details);
+      await AppScope.read(context).requestMarketerPayout(amount: amount, payoutDetails: details);
       if (!mounted) return;
+      _amount.clear();
       _details.clear();
-      showSnack(context, 'تم إرسال طلب سحب العمولات للإدارة.');
+      showSnack(context, 'تم إرسال طلب السحب للإدارة.');
     } on ApiException catch (error) {
       if (mounted) showSnack(context, error.message);
     } finally {
@@ -452,7 +460,7 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
         children: <Widget>[
           Text('طلب تحويل العمولات', style: TextStyle(color: p.text, fontSize: 15.5, fontWeight: FontWeight.w700)),
           const SizedBox(height: 5),
-          Text('المتاح للتحويل: ${formatUsd(widget.data.commissions.available)}. اكتب بيانات الحساب أو المحفظة التي تريد استلام المبلغ عليها.', style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.6)),
+          Text('المتاح للسحب: ${formatUsd(widget.data.commissions.available)}. حدد المبلغ الذي تريد سحبه، ويمكنك استلامه عبر شام كاش أو من مقر الشركة.', style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.6)),
           if (history.isNotEmpty) ...<Widget>[
             const SizedBox(height: 14),
             Text('سجل طلبات التحويل', style: TextStyle(color: p.text, fontSize: 13.5, fontWeight: FontWeight.w700)),
@@ -499,19 +507,31 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
           ] else ...<Widget>[
             const SizedBox(height: 12),
             TextField(
+              controller: _amount,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textDirection: TextDirection.ltr,
+              decoration: const InputDecoration(
+                labelText: 'المبلغ المراد سحبه (USD)',
+                hintText: 'أدخل المبلغ',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
               controller: _details,
               minLines: 2,
               maxLines: 4,
               maxLength: 1000,
               textDirection: TextDirection.rtl,
               decoration: const InputDecoration(
-                hintText: 'مثال: اسم المحفظة ورقم الحساب أو بيانات الاستلام',
+                hintText: 'أدخل رقم محفظة شام كاش، أو تفضل بزيارة الشركة لتقديم طلب السحب يدوياً',
+                helperText: 'اختياري — اتركه فارغاً إذا كنت ستستلم المبلغ من الشركة',
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
             PrimaryButton(
-              label: _busy ? 'جارٍ إرسال الطلب...' : 'طلب تحويل ${formatUsd(widget.data.commissions.available)}',
+              label: _busy ? 'جارٍ إرسال الطلب...' : 'إرسال طلب السحب',
               icon: Icons.account_balance_wallet_outlined,
               onPressed: _busy || widget.data.commissions.available <= 0 ? null : _request,
             ),

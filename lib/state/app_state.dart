@@ -996,8 +996,11 @@ class AppState extends ChangeNotifier {
     unawaited(refreshProfile());
   }
 
-  Future<void> requestMarketerPayout(String payoutDetails) async {
-    await _guard(() => api.postJson('/api/marketer/payout', <String, dynamic>{'payoutDetails': payoutDetails}));
+  Future<void> requestMarketerPayout({required double amount, String payoutDetails = ''}) async {
+    await _guard(() => api.postJson('/api/marketer/payout', <String, dynamic>{
+      'amount': amount,
+      'payoutDetails': payoutDetails.trim(),
+    }));
     await loadDashboard(silent: true);
   }
 

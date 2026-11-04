@@ -458,7 +458,7 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: <Widget>[
-          Text('طلب تحويل العمولات', style: TextStyle(color: p.text, fontSize: 15.5, fontWeight: FontWeight.w700)),
+          Text('طلب سحب العمولات', style: TextStyle(color: p.text, fontSize: 15.5, fontWeight: FontWeight.w700)),
           const SizedBox(height: 5),
           Text('المتاح للسحب: ${formatUsd(widget.data.commissions.available)}. حدد المبلغ الذي تريد سحبه، ويمكنك استلامه عبر شام كاش أو من مقر الشركة.', style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.6)),
           if (history.isNotEmpty) ...<Widget>[
@@ -485,7 +485,7 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
                     StatusChip(
                       label: switch (item.status) {
                         'pending' => 'قيد المراجعة',
-                        'paid' => 'تم التحويل',
+                        'paid' => 'تم الدفع',
                         'rejected' => 'مرفوض',
                         _ => item.status,
                       },

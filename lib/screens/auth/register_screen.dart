@@ -267,7 +267,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 12),
         AppTextField(
           controller: _license,
-          label: 'رقم السجل التجاري / ترخيص الورشة (اختياري عند التحقق اليدوي)',
+          label: 'رقم السجل التجاري / ترخيص الورشة (اختياري)',
           icon: Icons.verified_outlined,
           textInputAction: TextInputAction.next,
           maxLength: 80,

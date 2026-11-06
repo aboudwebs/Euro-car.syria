@@ -6,7 +6,7 @@
 /// Base URL of the EURO CARS API. Override per build with --dart-define=EURO_API_URL=https://example.com
 const String apiBase = String.fromEnvironment(
   'EURO_API_URL',
-  defaultValue: 'https://al-euro-cdzo.onrender.com',
+  defaultValue: 'https://control-panel-euro-cars.onrender.com',
 );
 
 /// Support WhatsApp number (same number the web account page links to).

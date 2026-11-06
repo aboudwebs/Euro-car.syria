@@ -181,10 +181,12 @@ void main() {
         await tester.scrollUntilVisible(find.text(title), 300, scrollable: find.byType(Scrollable).first);
         expect(find.text(title), findsOneWidget, reason: title);
       }
-      for (final String title in <String>['عن EURO', 'طلباتي النشطة', 'طلباتي السابقة', 'حذف الحساب']) {
+      for (final String title in <String>['عن EURO', 'حذف الحساب']) {
         await tester.scrollUntilVisible(find.text(title), 300, scrollable: find.byType(Scrollable).first);
         expect(find.text(title), findsOneWidget, reason: title);
       }
+      expect(find.text('طلباتي النشطة'), findsNothing);
+      expect(find.text('طلباتي السابقة'), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
     });

@@ -30,6 +30,7 @@ const Map<String, String> ledgerTxLabels = <String, String>{
 };
 
 const Map<String, String> tierLabels = <String, String>{
+  'Standard': 'عادي',
   'Bronze': 'برونزية',
   'Silver': 'فضية',
   'Gold': 'ذهبية',
@@ -79,9 +80,10 @@ class TierStep {
 }
 
 const List<TierStep> estimatedTiers = <TierStep>[
-  TierStep('برونزية', 0, '2%'),
-  TierStep('فضية', 1000, '4%'),
-  TierStep('ذهبية', 2000, '6%'),
-  TierStep('بلاتينية', 3000, '8%'),
-  TierStep('النخبة VIP', 4000, '10%'),
+  TierStep('عادي', 0, '0%'),
+  TierStep('برونزية', 10000, '2%'),
+  TierStep('فضية', 15000, '5%'),
+  TierStep('ذهبية', 20000, '7%'),
+  TierStep('بلاتينية', 30000, '10%'),
+  TierStep('النخبة VIP', 50000, '15%'),
 ];

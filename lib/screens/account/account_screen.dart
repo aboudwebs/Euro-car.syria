@@ -1,5 +1,5 @@
 // Account tab (the profile): photo and details, display settings (currency, language, theme), pages for account data,
-// addresses, vehicles and About EURO, the customer's active and previous orders, support, sign-out and account
+// addresses, vehicles and About EURO, support, sign-out and account
 // deletion (30-day grace period that can be cancelled).
 //
 // The profile card, stat cards, support button and red sign-out button follow the web account page.
@@ -23,7 +23,6 @@ import '../../widgets/pickers.dart';
 import '../../widgets/pressable.dart';
 import '../../widgets/segmented.dart';
 import '../home/tab_header.dart';
-import '../orders/order_card.dart';
 import '../../widgets/tx.dart';
 import 'about_screen.dart';
 import 'account_data_screen.dart';
@@ -50,7 +49,6 @@ class _AccountScreenState extends State<AccountScreen> {
         return;
       }
       final AppState state = AppScope.read(context);
-      state.loadOrders(silent: true);
       state.loadDeletion(silent: true);
     });
   }
@@ -137,16 +135,6 @@ class _AccountScreenState extends State<AccountScreen> {
         _error = unexpectedMessage;
       });
     }
-  }
-
-  Future<void> _openAccountOrders({required bool active}) async {
-    await AppScope.read(context).loadOrders(silent: true);
-    if (!mounted) return;
-    await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
-        builder: (BuildContext routeContext) => AccountOrdersScreen(active: active),
-      ),
-    );
   }
 
   Future<void> _openSupport() async {
@@ -289,29 +277,6 @@ class _AccountScreenState extends State<AccountScreen> {
               _settingsPanel(p, state),
               const SectionTitle('الحساب والخدمات'),
               _linksPanel(p, state),
-              const SectionTitle('الطلبات'),
-              Panel(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Column(
-                  children: <Widget>[
-                    ListTile(
-                      leading: Icon(Icons.local_shipping_outlined, color: p.primary),
-                      title: const Text('طلباتي النشطة'),
-                      subtitle: Text('متابعة الطلبات قيد التنفيذ', style: TextStyle(color: p.muted, fontSize: 12)),
-                      trailing: Icon(Icons.chevron_left_rounded, color: p.muted),
-                      onTap: () => _openAccountOrders(active: true),
-                    ),
-                    Divider(height: 1, color: p.line),
-                    ListTile(
-                      leading: Icon(Icons.history_rounded, color: p.primary),
-                      title: const Text('طلباتي السابقة'),
-                      subtitle: Text('عرض الطلبات المكتملة والملغاة', style: TextStyle(color: p.muted, fontSize: 12)),
-                      trailing: Icon(Icons.chevron_left_rounded, color: p.muted),
-                      onTap: () => _openAccountOrders(active: false),
-                    ),
-                  ],
-                ),
-              ),
               const SectionTitle('المساعدة'),
               SecondaryButton(
                 label: 'التواصل مع الدعم عبر واتساب',
@@ -908,93 +873,6 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
               : const Text('تأكيد حذف الحساب'),
         ),
       ],
-    );
-  }
-}
-
-
-/// Orders opened from the profile as dedicated screens, keeping the profile uncluttered.
-class AccountOrdersScreen extends StatelessWidget {
-  const AccountOrdersScreen({super.key, required this.active});
-
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    final Palette p = Palette.of(context);
-    final AppState state = AppScope.of(context);
-    final List<Order> orders = active ? state.activeOrders : state.previousOrders;
-    final String? error = state.ordersError;
-
-    Widget content;
-    if (!state.ordersLoaded && state.ordersLoading) {
-      content = const Center(child: LoadingBlock(message: 'جارٍ تحميل الطلبات...'));
-    } else if (!state.ordersLoaded && error != null) {
-      content = ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          NoticeBanner(message: error, kind: NoticeKind.error, onRetry: () => state.loadOrders()),
-        ],
-      );
-    } else if (orders.isEmpty) {
-      content = ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
-        children: <Widget>[
-          Panel(
-            padding: EdgeInsets.zero,
-            child: EmptyState(
-              icon: active ? Icons.local_shipping_outlined : Icons.history_rounded,
-              title: active ? 'لا توجد طلبات نشطة' : 'لا توجد طلبات سابقة',
-              message: active
-                  ? 'ستظهر هنا طلباتك التي ما زالت قيد التنفيذ.'
-                  : 'ستظهر هنا طلباتك المكتملة أو الملغاة.',
-            ),
-          ),
-          if (error != null) ...<Widget>[
-            const SizedBox(height: 12),
-            NoticeBanner(message: error, kind: NoticeKind.error, onRetry: () => state.loadOrders()),
-          ],
-        ],
-      );
-    } else {
-      content = ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-        itemCount: orders.length + (error == null ? 0 : 1),
-        itemBuilder: (BuildContext context, int index) {
-          if (error != null && index == 0) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: NoticeBanner(message: error, kind: NoticeKind.error, onRetry: () => state.loadOrders()),
-            );
-          }
-          final Order order = orders[index - (error == null ? 0 : 1)];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: OrderCard(key: ValueKey<String>(order.id), order: order),
-          );
-        },
-      );
-    }
-
-    return AppBackdrop(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        appBar: AppBar(
-          title: Text(active ? 'طلباتي النشطة' : 'طلباتي السابقة'),
-          backgroundColor: Colors.transparent,
-        ),
-        body: SafeArea(
-          child: RefreshIndicator(
-            color: p.primary,
-            backgroundColor: p.panel,
-            onRefresh: () => state.loadOrders(),
-            child: content,
-          ),
-        ),
-      ),
     );
   }
 }

@@ -471,46 +471,6 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
           Text('طلب تحويل العمولات', style: TextStyle(color: p.text, fontSize: 15.5, fontWeight: FontWeight.w700)),
           const SizedBox(height: 5),
           Text('المتاح للتحويل: ${formatUsd(widget.data.commissions.available)}. اكتب بيانات الحساب أو المحفظة التي تريد استلام المبلغ عليها.', style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.6)),
-          if (history.isNotEmpty) ...<Widget>[
-            const SizedBox(height: 14),
-            Text('سجل طلبات التحويل', style: TextStyle(color: p.text, fontSize: 13.5, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            for (final MarketerPayoutRequest item in history.take(8)) ...<Widget>[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(formatUsd(item.amount), style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
-                          Text(formatDate(item.createdAt), style: TextStyle(color: p.placeholder, fontSize: 11.5)),
-                          if (item.adminNote != null && item.adminNote!.isNotEmpty)
-                            Text('ملاحظة الإدارة: ${item.adminNote}', style: TextStyle(color: p.muted, fontSize: 11.5)),
-                        ],
-                      ),
-                    ),
-                    StatusChip(
-                      label: switch (item.status) {
-                        'pending' => 'قيد المراجعة',
-                        'paid' => 'تم التحويل',
-                        'rejected' => 'مرفوض',
-                        _ => item.status,
-                      },
-                      tone: switch (item.status) {
-                        'pending' => StatusTone.waiting,
-                        'paid' => StatusTone.success,
-                        'rejected' => StatusTone.danger,
-                        _ => StatusTone.progress,
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
           if (pending) ...<Widget>[
             const SizedBox(height: 10),
             Text('يوجد طلب تحويل قيد المراجعة. يمكنك إرسال طلب جديد بعد معالجة الطلب الحالي.', style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.5)),
@@ -560,7 +520,130 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
               onPressed: _busy || widget.data.commissions.available <= 0 ? null : _request,
             ),
           ],
+          const SizedBox(height: 14),
+          SecondaryButton(
+            label: history.isEmpty ? 'سجل طلبات السحب' : 'سجل طلبات السحب (${history.length})',
+            icon: Icons.history_rounded,
+            onPressed: () => _showPayoutHistory(context, history),
+          ),
         ],
+      ),
+    );
+  }
+
+  void _showPayoutHistory(BuildContext context, List<MarketerPayoutRequest> history) {
+    final Palette p = Palette.of(context);
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: p.panel,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (BuildContext sheetContext) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(sheetContext).size.height * 0.78,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 18, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'سجل طلبات السحب',
+                        style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      icon: Icon(Icons.close_rounded, color: p.muted),
+                    ),
+                  ],
+                ),
+                Text(
+                  'جميع طلباتك السابقة والحالية (${history.length})',
+                  style: TextStyle(color: p.placeholder, fontSize: 12.5),
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: history.isEmpty
+                      ? Center(
+                          child: Text('ما عندك طلبات سحب حالياً.', style: TextStyle(color: p.muted)),
+                        )
+                      : ListView.separated(
+                          itemCount: history.length,
+                          separatorBuilder: (_, __) => Divider(color: p.line, height: 18),
+                          itemBuilder: (BuildContext context, int index) {
+                            final MarketerPayoutRequest item = history[index];
+                            final String status = switch (item.status) {
+                              'pending' => 'قيد المراجعة',
+                              'paid' => 'تم التحويل',
+                              'rejected' => 'مرفوض',
+                              _ => item.status,
+                            };
+                            final StatusTone tone = switch (item.status) {
+                              'pending' => StatusTone.waiting,
+                              'paid' => StatusTone.success,
+                              'rejected' => StatusTone.danger,
+                              _ => StatusTone.progress,
+                            };
+                            return Container(
+                              padding: const EdgeInsets.all(13),
+                              decoration: BoxDecoration(
+                                color: p.panelAlt,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: p.line),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: <Widget>[
+                                  Row(
+                                    children: <Widget>[
+                                      Expanded(
+                                        child: Text(
+                                          formatUsd(item.amount),
+                                          style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w700),
+                                        ),
+                                      ),
+                                      StatusChip(label: status, tone: tone),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 7),
+                                  Text(
+                                    'تاريخ الطلب: ${item.createdAt == null ? "—" : formatDate(item.createdAt!)}',
+                                    style: TextStyle(color: p.placeholder, fontSize: 12),
+                                  ),
+                                  if (item.processedAt != null)
+                                    Text(
+                                      'تاريخ المعالجة: ${formatDate(item.processedAt!)}',
+                                      style: TextStyle(color: p.placeholder, fontSize: 12),
+                                    ),
+                                  if (item.payoutDetails != null && item.payoutDetails!.trim().isNotEmpty) ...<Widget>[
+                                    const SizedBox(height: 8),
+                                    SelectableText(
+                                      item.payoutDetails!.replaceAll(r'\\n', '\\n'),
+                                      style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.5),
+                                    ),
+                                  ],
+                                  if (item.adminNote != null && item.adminNote!.trim().isNotEmpty) ...<Widget>[
+                                    const SizedBox(height: 7),
+                                    Text(
+                                      'ملاحظة الإدارة: ${item.adminNote}',
+                                      style: TextStyle(color: p.muted, fontSize: 12.5, height: 1.5),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

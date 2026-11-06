@@ -273,7 +273,7 @@ void main() {
     test('reads the account block and the lists', () {
       final WorkshopDashboard d = dashboard(<Map<String, dynamic>>[order('o1', 400, 'cod', 'delivered')]);
       expect(d.name, 'ورشة');
-      expect(d.tier, 'Bronze');
+      expect(d.tier, 'Standard');
       expect(d.debtLimit, 1000.0);
       expect(d.debtBalance, 250.0);
       expect(d.cashbackBalance, 12.0);

@@ -253,7 +253,7 @@ void main() {
     WorkshopDashboard dashboard(
       List<Map<String, dynamic>> orders, [
       List<Map<String, dynamic>>? ledger,
-      String tier = 'Bronze',
+      String tier = 'Standard',
       num seasonSpend = 0,
     ]) {
       return WorkshopDashboard.fromJson(<String, dynamic>{
@@ -315,22 +315,31 @@ void main() {
     test('tier estimate and progress follow the spend', () {
       final WorkshopDashboard none = dashboard(<Map<String, dynamic>>[]);
       expect(none.tierIndex, 0);
-      expect(none.currentTier.name, 'برونزية');
-      expect(none.nextTier?.name, 'فضية');
+      expect(none.currentTier.name, 'عادي');
+      expect(none.nextTier?.name, 'برونزية');
       expect(none.tierProgress, 0.0);
 
+      final WorkshopDashboard bronze = dashboard(<Map<String, dynamic>>[
+        order('o1', 10000, 'cod', 'delivered'),
+      ], null, 'Bronze', 10000);
+      expect(bronze.tierIndex, 1);
+      expect(bronze.currentTier.name, 'برونزية');
+      expect(bronze.nextTier?.name, 'فضية');
+      expect(bronze.tierProgress, 0.0);
+
       final WorkshopDashboard silver = dashboard(<Map<String, dynamic>>[
-        order('o1', 1100, 'cod', 'delivered'),
-      ], null, 'Silver', 1100);
-      expect(silver.tierIndex, 1);
+        order('o1', 16000, 'cod', 'delivered'),
+      ], null, 'Silver', 16000);
+      expect(silver.tierIndex, 2);
       expect(silver.currentTier.name, 'فضية');
       expect(silver.nextTier?.name, 'ذهبية');
-      expect(silver.tierProgress, closeTo(0.1, 1e-9));
+      expect(silver.tierProgress, closeTo(0.2, 1e-9));
 
       final WorkshopDashboard top = dashboard(<Map<String, dynamic>>[
-        order('o1', 12000, 'cod', 'shipped'),
-      ], null, 'VIP', 12000);
-      expect(top.tierIndex, 4);
+        order('o1', 50000, 'cod', 'shipped'),
+      ], null, 'VIP', 50000);
+      expect(top.tierIndex, 5);
+      expect(top.currentTier.name, 'النخبة VIP');
       expect(top.nextTier, isNull);
       expect(top.tierProgress, 1.0);
     });

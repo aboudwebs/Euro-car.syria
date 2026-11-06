@@ -408,27 +408,45 @@ class _PayoutRequestPanel extends StatefulWidget {
 }
 
 class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
-  final TextEditingController _details = TextEditingController();
+  final TextEditingController _wallet = TextEditingController();
+  final TextEditingController _amount = TextEditingController();
+  final TextEditingController _fullName = TextEditingController();
   bool _busy = false;
 
   @override
   void dispose() {
-    _details.dispose();
+    _wallet.dispose();
+    _amount.dispose();
+    _fullName.dispose();
     super.dispose();
   }
 
   Future<void> _request() async {
-    if (_busy || widget.data.commissions.available <= 0) return;
-    final String details = _details.text.trim();
-    if (details.length < 6) {
-      showSnack(context, 'اكتب بيانات استلام التحويل بشكل واضح.');
+    final double available = widget.data.commissions.available;
+    if (_busy || available <= 0) return;
+    final String wallet = _wallet.text.trim();
+    final String fullName = _fullName.text.trim();
+    final double? amount = double.tryParse(_amount.text.trim().replaceAll(',', '.'));
+    if (wallet.length < 4) {
+      showSnack(context, 'أدخل عنوان المحفظة بشكل صحيح.');
       return;
     }
+    if (fullName.length < 4 || !fullName.contains(' ')) {
+      showSnack(context, 'أدخل الاسم الكامل.');
+      return;
+    }
+    if (amount == null || !amount.isFinite || amount <= 0 || amount > available || (amount * 100).roundToDouble() != amount * 100) {
+      showSnack(context, 'أدخل مبلغاً صحيحاً لا يتجاوز ${formatUsd(available)}.');
+      return;
+    }
+    final String details = 'الاسم الكامل: $fullName\\nعنوان المحفظة: $wallet';
     setState(() => _busy = true);
     try {
-      await AppScope.read(context).requestMarketerPayout(details);
+      await AppScope.read(context).requestMarketerPayout(amount: amount, payoutDetails: details);
       if (!mounted) return;
-      _details.clear();
+      _wallet.clear();
+      _amount.clear();
+      _fullName.clear();
       showSnack(context, 'تم إرسال طلب سحب العمولات للإدارة.');
     } on ApiException catch (error) {
       if (mounted) showSnack(context, error.message);
@@ -499,19 +517,45 @@ class _PayoutRequestPanelState extends State<_PayoutRequestPanel> {
           ] else ...<Widget>[
             const SizedBox(height: 12),
             TextField(
-              controller: _details,
-              minLines: 2,
-              maxLines: 4,
-              maxLength: 1000,
+              controller: _fullName,
               textDirection: TextDirection.rtl,
+              textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
-                hintText: 'مثال: اسم المحفظة ورقم الحساب أو بيانات الاستلام',
+                labelText: 'الاسم الكامل',
+                hintText: 'أدخل الاسم الثلاثي أو الكامل',
+                prefixIcon: Icon(Icons.person_outline),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _wallet,
+              textDirection: TextDirection.ltr,
+              decoration: const InputDecoration(
+                labelText: 'عنوان المحفظة',
+                hintText: 'أدخل عنوان المحفظة لاستلام التحويل',
+                prefixIcon: Icon(Icons.account_balance_wallet_outlined),
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _amount,
+              textDirection: TextDirection.ltr,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: <TextInputFormatter>[
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+              ],
+              decoration: const InputDecoration(
+                labelText: 'مبلغ السحب المطلوب (USD)',
+                hintText: 'مثال: 50 أو 125.50',
+                prefixIcon: Icon(Icons.payments_outlined),
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 8),
             PrimaryButton(
-              label: _busy ? 'جارٍ إرسال الطلب...' : 'طلب تحويل ${formatUsd(widget.data.commissions.available)}',
+              label: _busy ? 'جارٍ إرسال الطلب...' : 'إرسال طلب السحب',
               icon: Icons.account_balance_wallet_outlined,
               onPressed: _busy || widget.data.commissions.available <= 0 ? null : _request,
             ),

@@ -550,10 +550,11 @@ class WorkshopDashboard {
   double get approvedSpend => seasonSpend;
 
   int get tierIndex => switch (tier) {
-    'Silver' => 1,
-    'Gold' => 2,
-    'Platinum' => 3,
-    'VIP' => 4,
+    'Bronze' => 1,
+    'Silver' => 2,
+    'Gold' => 3,
+    'Platinum' => 4,
+    'VIP' || 'Elite' => 5,
     _ => 0,
   };
 

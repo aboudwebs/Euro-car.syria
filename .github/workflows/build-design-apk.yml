@@ -79,7 +79,7 @@ jobs:
           keystore = Path("android/app/euro-cars-release.jks")
           keystore.parent.mkdir(parents=True, exist_ok=True)
           try:
-              data = base64.b64decode(os.environ["ANDROID_KEYSTORE_BASE64"], validate=True)
+              data = base64.b64decode("".join(os.environ["ANDROID_KEYSTORE_BASE64"].split()), validate=True)
           except Exception as exc:
               raise SystemExit("ANDROID_KEYSTORE_BASE64 is not valid Base64") from exc
           if not data:

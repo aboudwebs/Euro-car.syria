@@ -26,7 +26,7 @@ class UnifiedAuthScreen extends StatefulWidget {
 enum _Mode { welcome, login, register }
 
 class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
-  final FirebaseIdentityService _firebase = FirebaseIdentityService();
+  late final FirebaseIdentityService _firebase = FirebaseIdentityService();
   final _phone = TextEditingController();
   final _oldPassword = TextEditingController();
   final _email = TextEditingController();
@@ -98,7 +98,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       case 'too-many-requests':
         return 'محاولات كثيرة. انتظر قليلاً ثم حاول مجدداً.';
       case 'operation-not-allowed':
-        return 'طريقة الدخول غير مفعّلة في إعدادات Firebase.';
+        return error.message?.trim().isNotEmpty == true ? error.message! : 'طريقة الدخول غير مفعّلة في إعدادات Firebase.';
       default:
         return error.message?.trim().isNotEmpty == true ? error.message! : 'تعذر إكمال التحقق من الهوية.';
     }

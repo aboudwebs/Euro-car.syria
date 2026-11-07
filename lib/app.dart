@@ -148,6 +148,7 @@ class _Gate extends StatelessWidget {
       case SessionStatus.signedOut:
         return AuthFlow(initialReferral: state.takePendingReferral());
       case SessionStatus.signedIn:
+      case SessionStatus.guest:
         return const HomeShell();
     }
   }

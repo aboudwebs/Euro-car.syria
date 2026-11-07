@@ -101,7 +101,7 @@ void main() {
       await tester.tap(find.text('تسجيل الدخول').first);
       await settle(tester);
       await tester.ensureVisible(find.text('تسجيل الدخول').last);
-      await tester.tap(find.text('الدخول برقم الهاتف وكلمة المرور'));
+      await tester.tap(find.text('تسجيل الدخول').last);
       await settle(tester);
 
       expect(find.text('أدخل رقم الهاتف وكلمة المرور القديمة.'), findsOneWidget);
@@ -119,8 +119,8 @@ void main() {
       await settle(tester);
       await tester.enterText(find.byType(TextField).at(0), '0982026134');
       await tester.enterText(find.byType(TextField).at(1), 'wrong-password');
-      await tester.ensureVisible(find.text('الدخول برقم الهاتف وكلمة المرور'));
-      await tester.tap(find.text('الدخول برقم الهاتف وكلمة المرور'));
+      await tester.ensureVisible(find.text('تسجيل الدخول').last);
+      await tester.tap(find.text('تسجيل الدخول').last);
       await settle(tester);
 
       expect(find.text('بيانات الدخول غير صحيحة'), findsOneWidget);
@@ -138,7 +138,7 @@ void main() {
       await tester.tap(find.text('تسجيل الدخول').first);
       await settle(tester);
       await tester.ensureVisible(find.text('نسيت كلمة المرور؟'));
-      await tester.tap(find.text('نسيت كلمة المرور القديمة؟'));
+      await tester.tap(find.text('نسيت كلمة المرور؟'));
       await settle(tester);
 
       expect(find.text('استعادة كلمة المرور عبر واتساب'), findsOneWidget);

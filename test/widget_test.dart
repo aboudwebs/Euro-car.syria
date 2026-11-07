@@ -67,7 +67,7 @@ void main() {
       await settle(tester);
 
       expect(find.text('حساب ورشة / شركة'), findsOneWidget);
-      expect(find.text('حساب عميل / مسوّق'), findsOneWidget);
+      expect(find.text('حساب مسوّق'), findsOneWidget);
     });
 
     testWidgets('an empty form is rejected before any request is sent', (WidgetTester tester) async {

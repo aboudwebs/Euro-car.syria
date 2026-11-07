@@ -608,7 +608,10 @@ class AppState extends ChangeNotifier {
       },
       auth: false,
     );
-    await _completeSignIn(data);
+    final AuthResult result = await _completeSignIn(data);
+    if (!result.isSignedIn) {
+      throw ApiException(result.message.isEmpty ? 'تعذر إكمال توثيق الحساب.' : result.message);
+    }
   }
 
   /// Opens the public, read-only catalog without creating a user session.

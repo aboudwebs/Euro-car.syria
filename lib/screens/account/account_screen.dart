@@ -495,7 +495,7 @@ class _AccountScreenState extends State<AccountScreen> {
                           'apple.com' || 'apple' => 'طريقة الدخول: Apple',
                           'password' || 'email' => 'طريقة الدخول: البريد الإلكتروني',
                           'phone' || 'phoneNumber' => 'طريقة الدخول: رقم الهاتف',
-                          _ => 'طريقة الدخول: ' + user.raw['auth_provider'].toString(),
+                          _ => 'طريقة الدخول: ${user.raw['auth_provider']}',
                         },
                       ),
                     if (city != null && city.isNotEmpty)

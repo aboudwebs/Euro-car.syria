@@ -1,11 +1,14 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
+import 'config.dart';
 import 'text_utils.dart';
 
 /// Firebase identity-provider and phone-verification operations used by the EURO sign-in flow.
 class FirebaseIdentityService {
+  static Future<void>? _googleInitialization;
   FirebaseIdentityService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _auth;
@@ -20,8 +23,24 @@ class FirebaseIdentityService {
     return _auth.createUserWithEmailAndPassword(email: email.trim(), password: password);
   }
 
-  Future<UserCredential> signInWithGoogle() {
-    return _auth.signInWithProvider(OAuthProvider('google.com'));
+  Future<UserCredential> signInWithGoogle() async {
+    if (googleServerClientId.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'operation-not-allowed',
+        message: 'إعداد Google OAuth غير مكتمل. يلزم إضافة Web client ID إلى إعدادات البناء.',
+      );
+    }
+    _googleInitialization ??= GoogleSignIn.instance.initialize(
+      serverClientId: googleServerClientId,
+    );
+    await _googleInitialization;
+    final GoogleSignInAccount account = await GoogleSignIn.instance.authenticate();
+    final String? idToken = account.authentication.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw FirebaseAuthException(code: 'invalid-credential', message: 'لم يرجع Google رمز هوية صالحاً.');
+    }
+    final OAuthCredential credential = GoogleAuthProvider.credential(idToken: idToken);
+    return _auth.signInWithCredential(credential);
   }
 
   Future<UserCredential> signInWithApple() {

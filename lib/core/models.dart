@@ -742,7 +742,7 @@ class PlacedOrder {
 }
 
 /// What a sign-in or registration attempt led to.
-enum AuthResultKind { signedIn, pendingApproval, failed }
+enum AuthResultKind { signedIn, pendingApproval, registrationRequired, failed }
 
 class AuthResult {
   const AuthResult(this.kind, [this.message = '']);
@@ -752,4 +752,5 @@ class AuthResult {
 
   bool get isSignedIn => kind == AuthResultKind.signedIn;
   bool get isPending => kind == AuthResultKind.pendingApproval;
+  bool get needsRegistration => kind == AuthResultKind.registrationRequired;
 }

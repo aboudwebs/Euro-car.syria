@@ -110,7 +110,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               ),
             ],
           ),
-          bottomNavigationBar: keyboardOpen
+          bottomNavigationBar: keyboardOpen || state.isGuest
               ? null
               : DecoratedBox(
                   decoration: BoxDecoration(border: Border(top: BorderSide(color: p.barLine))),

@@ -92,7 +92,8 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
           body: Column(
             children: <Widget>[
               _TopBar(
-                onOpenAccount: () => _selectTab(state, tabAccount),
+                guest: state.isGuest,
+                onOpenAccount: () => state.isGuest ? state.exitGuestSession() : _selectTab(state, tabAccount),
                 onOpenNotifications: _openNotifications,
               ),
               Expanded(
@@ -114,7 +115,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               : DecoratedBox(
                   decoration: BoxDecoration(border: Border(top: BorderSide(color: p.barLine))),
                   child: NavigationBar(
-                    selectedIndex: tab,
+                    selectedIndex: state.isGuest ? 0 : tab,
                     onDestinationSelected: (int index) => _selectTab(state, index),
                     destinations: <Widget>[
                       NavigationDestination(
@@ -122,6 +123,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                         selectedIcon: const Icon(Icons.storefront_rounded),
                         label: tr('الكتالوج'),
                       ),
+                      if (!state.isGuest) ...<Widget>[
                       NavigationDestination(
                         icon: _CartIcon(count: cartCount, selected: false),
                         selectedIcon: _CartIcon(count: cartCount, selected: true),
@@ -142,6 +144,7 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                         selectedIcon: const Icon(Icons.person_rounded),
                         label: tr('حسابي'),
                       ),
+                      ],
                     ],
                   ),
                 ),
@@ -154,10 +157,11 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
 /// The glass header of the web app: the wordmark at the start; the signed-in user (opens the account tab) and the
 /// light / dark switch at the end.
 class _TopBar extends StatelessWidget {
-  const _TopBar({required this.onOpenAccount, required this.onOpenNotifications});
+  const _TopBar({required this.onOpenAccount, required this.onOpenNotifications, required this.guest});
 
   final VoidCallback onOpenAccount;
   final VoidCallback onOpenNotifications;
+  final bool guest;
 
   @override
   Widget build(BuildContext context) {
@@ -165,9 +169,9 @@ class _TopBar extends StatelessWidget {
     final AppState state = AppScope.of(context);
     final AppUser? user = state.user;
     final bool dark = Theme.of(context).brightness == Brightness.dark;
-    final String who = user == null
-        ? ''
-        : '${user.name} (${user.isWorkshop ? 'ورشة' : 'عميل/مسوّق'})';
+    final String who = guest
+        ? 'تسجيل الدخول'
+        : user == null ? '' : '${user.name} (${user.isWorkshop ? 'ورشة' : 'مسوّق'})';
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -193,17 +197,18 @@ class _TopBar extends StatelessWidget {
                           child: _UserChip(label: who, onTap: onOpenAccount),
                         ),
                       const SizedBox(width: 4),
-                      IconButton(
-                        tooltip: 'الإشعارات',
-                        onPressed: onOpenNotifications,
-                        icon: Badge(
-                          isLabelVisible: state.unreadNotificationCount > 0,
-                          label: Text(
-                            state.unreadNotificationCount > 99 ? '99+' : '${state.unreadNotificationCount}',
+                      if (!guest)
+                        IconButton(
+                          tooltip: 'الإشعارات',
+                          onPressed: onOpenNotifications,
+                          icon: Badge(
+                            isLabelVisible: state.unreadNotificationCount > 0,
+                            label: Text(
+                              state.unreadNotificationCount > 99 ? '99+' : '${state.unreadNotificationCount}',
+                            ),
+                            child: const Icon(Icons.notifications_none_rounded),
                           ),
-                          child: const Icon(Icons.notifications_none_rounded),
                         ),
-                      ),
                       const SizedBox(width: 4),
                       RoundIconButton(
                         icon: dark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,

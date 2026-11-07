@@ -29,6 +29,7 @@ class ApiException implements Exception {
     this.statusCode,
     this.unauthorized = false,
     this.pendingApproval = false,
+    this.code,
     this.network = false,
     this.timedOut = false,
   });
@@ -41,6 +42,9 @@ class ApiException implements Exception {
 
   /// The account exists but an admin has not approved it yet.
   final bool pendingApproval;
+
+  /// Stable server error code used for guided recovery flows.
+  final String? code;
 
   /// The server could not be reached at all.
   final bool network;
@@ -307,6 +311,7 @@ class ApiClient {
       statusCode: status,
       unauthorized: unauthorized,
       pendingApproval: body != null && body['pendingApproval'] == true,
+      code: body != null && body['code'] is String ? body['code'] as String : null,
     );
   }
 

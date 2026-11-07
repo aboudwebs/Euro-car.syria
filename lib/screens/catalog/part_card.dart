@@ -147,6 +147,13 @@ class PartCard extends StatelessWidget {
   }
 
   Widget _action(BuildContext context, AppState state, int qty) {
+    if (state.isGuest) {
+      return SecondaryButton(
+        label: 'تسجيل الدخول للشراء',
+        onPressed: state.exitGuestSession,
+        compact: true,
+      );
+    }
     if (!part.inStock) {
       return SecondaryButton(
         label: 'غير متوفرة — اطلبها',

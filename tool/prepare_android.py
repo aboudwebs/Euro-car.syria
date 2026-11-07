@@ -105,7 +105,7 @@ def patch_manifest(path: pathlib.Path) -> bool:
     text = read(path)
 
     # Firebase OAuth Custom Tabs must be able to resume the Flutter activity after app switching.
-    text = re.sub(r'\\sandroid:taskAffinity=""', '', text)
+    text = re.sub(r'\sandroid:taskAffinity=""', '', text)
 
     if "android.permission.POST_NOTIFICATIONS" not in text:
         text, count = re.subn(r"(<manifest\b[^>]*>)", r"\1\n    " + POST_NOTIFICATIONS, text, count=1)

@@ -10,6 +10,7 @@ import '../../core/text_utils.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
 import '../../widgets/inputs.dart';
+import '../../widgets/part_plate.dart';
 import '../../widgets/tx.dart';
 import 'auth_widgets.dart';
 
@@ -73,6 +74,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       _error = null;
       _notice = null;
       _pending = null;
+      if (mode != _Mode.register) _registrationFromLogin = false;
       _verificationId = null;
       _sms.clear();
     });
@@ -302,7 +304,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       const SizedBox(height: 8),
       PasswordField(controller: _password, label: 'كلمة مرور البريد', radius: 10),
       const SizedBox(height: 10),
-      SecondaryButton(label: 'الدخول بالبريد الإلكتروني', busy: _busy, onPressed: () => _authenticate('email')),
       const SizedBox(height: 12),
       _providers(),
       TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.register),
@@ -314,7 +315,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     title: _registrationFromLogin ? 'أكمل إنشاء حساب EURO' : 'إنشاء حساب جديد',
     children: [
       RoleSelector(role: _role, registering: true,
-          onChanged: _busy ? null : (value) => setState(() { _role = value; _error = null; })),
+          onChanged: (value) { if (!_busy) setState(() { _role = value; _error = null; }); }),
       const SizedBox(height: 12),
       AppTextField(controller: _name, label: _role == 'workshop' ? 'اسم الورشة أو الشركة' : 'الاسم الكامل',
           maxLength: 100, radius: 10),
@@ -334,7 +335,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           value: _city.text,
           decoration: const InputDecoration(labelText: 'المحافظة'),
           items: governorates.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList(),
-          onChanged: _busy ? null : (value) { if (value != null) _city.text = value; },
+          onChanged: (value) { if (!_busy && value != null) setState(() => _city.text = value); },
         ),
         const SizedBox(height: 8),
         AppTextField(controller: _spec, label: 'اختصاص الورشة / الماركات', hint: 'Mercedes-Benz, BMW', radius: 10),
@@ -368,7 +369,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       SecondaryButton(label: _mode == _Mode.register ? 'المتابعة بالبريد الإلكتروني' : 'الدخول بالبريد الإلكتروني',
-          icon: Icons.email_outlined, busy: _busy, onPressed: () => _authenticate('email')),
+          icon: Icons.email_outlined, onPressed: _busy ? null : () => _authenticate('email')),
       const SizedBox(height: 8),
       OutlinedButton.icon(onPressed: _busy ? null : () => _authenticate('google'),
           icon: const Icon(Icons.g_mobiledata_rounded, size: 25), label: const Text('المتابعة باستخدام Google')),

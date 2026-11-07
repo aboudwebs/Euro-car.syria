@@ -6,7 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import 'config.dart';
 
-/// Firebase identity-provider and phone-verification operations used by the EURO sign-in flow.
+/// Firebase identity-provider operations used by the EURO sign-in flow.
 class FirebaseIdentityService {
   static Future<void>? _googleInitialization;
   FirebaseIdentityService({FirebaseAuth? auth}) : _providedAuth = auth;

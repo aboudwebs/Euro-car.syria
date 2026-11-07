@@ -12,6 +12,12 @@
           "package_name": "com.eurocars.euro_cars"
         }
       },
+      "oauth_client": [
+        {
+          "client_id": "189528496462-0ics7rrrqlf6rcj3pu6u351stkr0ah7s.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyD2RrwTUlKjMLmq73yAABhX67a5AJGudIo"
@@ -19,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "189528496462-0ics7rrrqlf6rcj3pu6u351stkr0ah7s.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

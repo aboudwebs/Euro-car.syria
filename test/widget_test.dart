@@ -42,17 +42,39 @@ Future<void> settle(WidgetTester tester) async {
 void main() {
   setUpAll(loadAppFont);
 
+  group('first launch onboarding', () {
+    testWidgets('shows four intro pages and skip opens authentication', (WidgetTester tester) async {
+      usePhoneScreen(tester);
+      final MemoryStore store = MemoryStore();
+      await tester.pumpWidget(EuroApp(store: store, httpClient: FakeServer().client));
+      await settle(tester);
+
+      expect(find.text('كل القطع بمكان واحد'), findsOneWidget);
+      expect(find.text('التالي'), findsOneWidget);
+      expect(find.text('تخطي'), findsOneWidget);
+
+      await tester.tap(find.text('التالي'));
+      await settle(tester);
+      expect(find.text('نتائج أدق لسيارتك'), findsOneWidget);
+
+      await tester.tap(find.text('تخطي'));
+      await settle(tester);
+      expect(find.text('أهلاً بك في اليورو'), findsOneWidget);
+      expect(await store.read('euro_intro_seen_v1'), '1');
+    });
+  });
+
   group('signed out', () {
     testWidgets('shows a spinner while the saved session is read, then the sign-in screen', (WidgetTester tester) async {
       usePhoneScreen(tester);
-      await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: FakeServer().client));
+      await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       await settle(tester);
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.text('مرحباً بك في EURO CARS'), findsOneWidget);
+      expect(find.text('أهلاً بك في اليورو'), findsOneWidget);
       expect(find.text('تسجيل الدخول'), findsOneWidget);
       expect(find.text('إنشاء حساب جديد'), findsOneWidget);
       expect(find.text('متابعة كضيف — تصفح الكتالوج فقط'), findsOneWidget);
@@ -60,7 +82,7 @@ void main() {
 
     testWidgets('registration offers only workshop and marketer roles', (WidgetTester tester) async {
       usePhoneScreen(tester);
-      await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: FakeServer().client));
+      await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
       await settle(tester);
 
       await tester.tap(find.text('إنشاء حساب جديد').first);
@@ -73,12 +95,12 @@ void main() {
     testWidgets('an empty form is rejected before any request is sent', (WidgetTester tester) async {
       usePhoneScreen(tester);
       final FakeServer server = FakeServer();
-      await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: server.client));
+      await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: server.client));
       await settle(tester);
 
       await tester.tap(find.text('تسجيل الدخول').first);
       await settle(tester);
-      await tester.ensureVisible(find.text('الدخول برقم الهاتف وكلمة المرور'));
+      await tester.ensureVisible(find.text('تسجيل الدخول').last);
       await tester.tap(find.text('الدخول برقم الهاتف وكلمة المرور'));
       await settle(tester);
 
@@ -90,7 +112,7 @@ void main() {
       usePhoneScreen(tester);
       final FakeServer server = FakeServer()
         ..reply('POST', '/api/auth', <String, dynamic>{'error': 'بيانات الدخول غير صحيحة'}, 401);
-      await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: server.client));
+      await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: server.client));
       await settle(tester);
 
       await tester.tap(find.text('تسجيل الدخول').first);
@@ -110,12 +132,12 @@ void main() {
     testWidgets('forgot password opens the WhatsApp recovery page and asks for the number first', (WidgetTester tester) async {
       usePhoneScreen(tester);
       final FakeServer server = FakeServer();
-      await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: server.client));
+      await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: server.client));
       await settle(tester);
 
       await tester.tap(find.text('تسجيل الدخول').first);
       await settle(tester);
-      await tester.ensureVisible(find.text('نسيت كلمة المرور القديمة؟'));
+      await tester.ensureVisible(find.text('نسيت كلمة المرور؟'));
       await tester.tap(find.text('نسيت كلمة المرور القديمة؟'));
       await settle(tester);
 
@@ -131,7 +153,7 @@ void main() {
 
     testWidgets('the registration screen opens from the sign-in screen', (WidgetTester tester) async {
       usePhoneScreen(tester);
-      await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: FakeServer().client));
+      await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
       await settle(tester);
 
       await tester.ensureVisible(find.text('إنشاء حساب جديد'));
@@ -148,7 +170,7 @@ void main() {
       usePhoneScreen(tester);
       final FakeServer server = FakeServer()
         ..reply('GET', '/api/parts', <String, dynamic>{'parts': catalogJson()});
-      await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: server.client));
+      await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: server.client));
       await settle(tester);
 
       await tester.tap(find.text('متابعة كضيف — تصفح الكتالوج فقط'));

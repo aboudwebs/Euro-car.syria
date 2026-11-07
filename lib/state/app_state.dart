@@ -515,7 +515,7 @@ class AppState extends ChangeNotifier {
         '/api/auth/firebase',
         <String, dynamic>{
           'idToken': idToken,
-          if (phone.trim().isNotEmpty) 'contactPhone': canonicalPhone(phone),
+          if (phone.trim().isNotEmpty) 'phone': canonicalPhone(phone),
           if (otpCode.trim().isNotEmpty) 'otpCode': toWesternDigits(otpCode).trim(),
           if (otpToken.trim().isNotEmpty) 'otpToken': otpToken,
         },
@@ -561,7 +561,7 @@ class AppState extends ChangeNotifier {
           'idToken': idToken,
           'role': role,
           if (name.trim().isNotEmpty) 'name': name.trim(),
-          if (phone.trim().isNotEmpty) 'phone': canonicalPhone(phone),
+          if (phone.trim().isNotEmpty) 'contactPhone': canonicalPhone(phone),
           if (otpCode.trim().isNotEmpty) 'otpCode': toWesternDigits(otpCode).trim(),
           if (otpToken.trim().isNotEmpty) 'otpToken': otpToken,
           if (role == 'workshop' && license.trim().isNotEmpty) 'license': license.trim(),

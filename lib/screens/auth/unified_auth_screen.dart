@@ -36,17 +36,13 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   final _city = TextEditingController(text: defaultGovernorate);
   final _spec = TextEditingController(text: 'Mercedes-Benz');
   final _referral = TextEditingController();
-  final _sms = TextEditingController();
 
   _Mode _mode = _Mode.welcome;
   String _role = 'workshop';
-  String? _otpToken;
-  String? _verifiedOtpCode;
   String? _error;
   String? _notice;
   String? _pending;
   bool _busy = false;
-  bool _identityReady = false;
   bool _firebaseAttemptStarted = false;
   bool _registrationFromLogin = false;
   ReferralInput? _signedReferral;
@@ -64,7 +60,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
   @override
   void dispose() {
-    for (final controller in [_phone, _oldPassword, _email, _password, _name, _license, _city, _spec, _referral, _sms]) {
+    for (final controller in [_phone, _oldPassword, _email, _password, _name, _license, _city, _spec, _referral]) {
       controller.dispose();
     }
     super.dispose();
@@ -89,11 +85,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       _notice = null;
       _pending = null;
       _registrationFromLogin = false;
-      _identityReady = false;
       _firebaseAttemptStarted = false;
-      _otpToken = null;
-      _verifiedOtpCode = null;
-      _sms.clear();
     });
   }
 
@@ -135,7 +127,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     if (!mounted) return;
     setState(() {
       _busy = false;
-      _identityReady = result.isPending || result.isSignedIn;
       if (result.isPending) {
         _pending = result.message;
       } else if (!result.isSignedIn) {
@@ -173,6 +164,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         throw FirebaseAuthException(code: 'no-current-user');
       }
       final String idToken = await _firebase.freshIdToken();
+      if (!mounted) return;
       final AppState state = AppScope.read(context);
       final AuthResult result;
 
@@ -195,7 +187,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
             setState(() {
               _mode = _Mode.register;
               _registrationFromLogin = true;
-              _identityReady = true;
               _busy = false;
               _notice = 'تم التحقق من هويتك. اختر نوع الحساب لإنشاء حساب EURO.';
             });
@@ -221,71 +212,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     }
   }
 
-  Future<void> _confirmPhone() async {
-    final otpToken = _otpToken;
-    if (_busy || otpToken == null) return;
-    if (toWesternDigits(_sms.text).trim().length != 6) {
-      setState(() => _error = 'أدخل رمز التحقق المكوّن من 6 أرقام.');
-      return;
-    }
-    setState(() { _busy = true; _error = null; });
-    try {
-      await _submitIdentity(otpCode: _sms.text, otpToken: otpToken);
-    } on FirebaseAuthException catch (error) {
-      if (mounted) setState(() { _busy = false; _error = _firebaseError(error); });
-    } catch (error) {
-      if (mounted) setState(() { _busy = false; _error = error is ApiException ? error.message : unexpectedMessage; });
-    }
-  }
-
-  Future<void> _submitIdentity({required String otpCode, required String otpToken}) async {
-    final AppState state = AppScope.read(context);
-    final String token = await _firebase.freshIdToken();
-    final AuthResult result;
-    if (_mode == _Mode.register || _registrationFromLogin) {
-      final referral = _signedReferral ?? parseReferral(_referral.text);
-      result = await state.registerFirebase(
-        idToken: token,
-        role: _role,
-        name: _name.text,
-        phone: _phone.text,
-        otpCode: otpCode,
-        otpToken: otpToken,
-        license: _license.text,
-        manualVerification: _role == 'workshop' && _license.text.trim().isEmpty,
-        city: _city.text,
-        specs: _spec.text,
-        refCode: referral.code,
-        refSignature: referral.signature,
-      );
-    } else {
-      final login = await state.exchangeFirebaseIdentity(idToken: token, phone: _phone.text, otpCode: otpCode, otpToken: otpToken);
-      if (login.needsRegistration) {
-        if (mounted) {
-          setState(() {
-            _mode = _Mode.register;
-            _registrationFromLogin = true;
-            _identityReady = true;
-            _verifiedOtpCode = otpCode;
-            _busy = false;
-            _notice = 'تم توثيق هويتك ورقم هاتفك. أكمل البيانات لإنشاء حساب EURO.';
-          });
-        }
-        return;
-      }
-      result = login;
-    }
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      if (result.isPending) {
-        _pending = result.message;
-      } else if (!result.isSignedIn) {
-        _error = result.message;
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = Palette.of(context);
@@ -302,7 +228,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           if (_mode == _Mode.welcome) _welcome(),
           if (_mode == _Mode.login) _login(),
           if (_mode == _Mode.register) _register(p),
-          if (_otpToken != null && !_identityReady) _otp(p),
           if (_pending != null) ...[
             const SizedBox(height: 12),
             PendingApprovalCard(message: _pending!, onBack: () => _modeTo(_Mode.login)),
@@ -402,19 +327,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       const SizedBox(height: 14),
       _providers(),
       TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.login), child: const Text('لديك حساب؟ تسجيل الدخول')),
-    ],
-  );
-
-  Widget _otp(Palette p) => AuthFormCard(
-    title: 'توثيق رقم الهاتف',
-    children: [
-      Text('أدخل رمز واتساب الذي وصل إلى رقمك. لن نطلب الرمز في كل تسجيل دخول لاحق.',
-          textAlign: TextAlign.center, style: TextStyle(color: p.muted)),
-      const SizedBox(height: 10),
-      AppTextField(controller: _sms, label: 'رمز واتساب', hint: '000000',
-          keyboardType: TextInputType.number, ltr: true, maxLength: 6, radius: 10),
-      const SizedBox(height: 10),
-      PrimaryButton(label: 'تأكيد الهاتف والمتابعة', busy: _busy, onPressed: _confirmPhone),
     ],
   );
 

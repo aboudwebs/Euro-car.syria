@@ -486,7 +486,7 @@ class AppState extends ChangeNotifier {
           'mode': 'login',
           'client': 'mobile',
           if (role != null && role.isNotEmpty) 'role': role,
-          'phone': canonicalPhone(phone),
+          'phone': phone.trim(),
           'password': password,
         },
         auth: false,

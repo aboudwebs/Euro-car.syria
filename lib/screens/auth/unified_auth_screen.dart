@@ -46,6 +46,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   String? _pending;
   bool _busy = false;
   bool _identityReady = false;
+  bool _firebaseAttemptStarted = false;
   bool _registrationFromLogin = false;
   ReferralInput? _signedReferral;
 
@@ -141,7 +142,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
     setState(() { _busy = true; _error = null; _pending = null; });
     try {
-      if (!_identityReady) {
+      if (!_identityReady && !_firebaseAttemptStarted) {
         if (_firebase.currentUser != null) await _firebase.signOut();
         if (provider == 'email') {
           if (_mode == _Mode.register) {
@@ -154,6 +155,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         } else {
           await _firebase.signInWithApple();
         }
+        _firebaseAttemptStarted = true;
       }
 
       final user = _firebase.currentUser;

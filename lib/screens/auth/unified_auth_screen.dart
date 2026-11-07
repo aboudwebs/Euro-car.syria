@@ -318,7 +318,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           onChanged: (value) { if (!_busy && value != null) setState(() => _city.text = value); },
         ),
         const SizedBox(height: 8),
-        AppTextField(controller: _spec, label: 'اختصاص الورشة (اختياري)', radius: 10),
+        AppTextField(controller: _spec, label: 'اختصاص الورشة / الماركات (اختياري)', radius: 10),
         const SizedBox(height: 8),
         AppTextField(controller: _referral, label: 'كود المسوّق (اختياري)',
             readOnly: _signedReferral?.isSigned == true, ltr: true, radius: 10),

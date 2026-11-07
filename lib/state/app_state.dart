@@ -853,8 +853,9 @@ class AppState extends ChangeNotifier {
     required Future<T> Function() fetch,
     required void Function(T value) apply,
     required void Function(bool loading, String? error) report,
+    bool allowGuest = false,
   }) async {
-    if (_user == null) {
+    if (_user == null && !(allowGuest && isGuest)) {
       return;
     }
     final int epoch = _epoch;
@@ -900,6 +901,7 @@ class AppState extends ChangeNotifier {
   Future<void> loadParts({bool silent = false}) {
     return _runLoad<List<Part>>(
       silent: silent,
+      allowGuest: true,
       hasData: _partsLoaded,
       fetch: () async {
         final Map<String, dynamic> data = await api.getJson('/api/parts');

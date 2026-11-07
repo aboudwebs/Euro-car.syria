@@ -77,6 +77,29 @@ String cartJson(String uid, Map<String, Object?> items) {
 }
 
 void main() {
+  group('guest catalog', () {
+    test('a guest can load the public catalog but cannot use the cart', () async {
+      final Harness h = Harness();
+      h.server.reply('GET', '/api/parts', <String, dynamic>{'parts': catalogJson()});
+
+      h.state.startGuestSession();
+      await pumpEventQueue();
+
+      expect(h.state.status, SessionStatus.guest);
+      expect(h.state.isGuest, isTrue);
+      expect(h.state.user, isNull);
+      expect(h.state.partsLoaded, isTrue);
+      expect(h.state.parts, hasLength(3));
+      expect(h.state.addToCart(h.state.parts.first), isNotNull);
+      expect(h.server.requestsTo('GET', '/api/parts'), hasLength(1));
+      expect(h.server.requestsTo('POST', '/api/orders'), isEmpty);
+
+      h.state.exitGuestSession();
+      expect(h.state.status, SessionStatus.signedOut);
+      expect(h.state.parts, isEmpty);
+    });
+  });
+
   group('restoring a session', () {
     test('without a saved session it leads to the sign-in screen', () async {
       final Harness h = Harness();

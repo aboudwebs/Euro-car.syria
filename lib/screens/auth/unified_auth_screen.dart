@@ -69,14 +69,27 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     super.dispose();
   }
 
-  void _modeTo(_Mode mode) {
+  Future<void> _modeTo(_Mode mode) async {
     if (_busy) return;
+    final bool hasFirebaseIdentity = _firebase.currentUser != null;
+    if (hasFirebaseIdentity) {
+      setState(() => _busy = true);
+      try {
+        await _firebase.signOut();
+      } catch (_) {
+        // A stale Firebase session must not be reused across a different auth flow.
+      }
+      if (!mounted) return;
+    }
     setState(() {
+      _busy = false;
       _mode = mode;
       _error = null;
       _notice = null;
       _pending = null;
-      if (mode != _Mode.register) _registrationFromLogin = false;
+      _registrationFromLogin = false;
+      _identityReady = false;
+      _firebaseAttemptStarted = false;
       _verificationId = null;
       _sms.clear();
     });

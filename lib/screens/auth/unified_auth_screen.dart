@@ -270,10 +270,12 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const BrandMark(size: 42),
-          const SizedBox(height: 14),
-          const AuthHeader(),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          const BrandMark(size: 54),
+          const SizedBox(height: 5),
+          Text('قطع غيار السيارات الأوروبية', textAlign: TextAlign.center,
+              style: TextStyle(color: p.muted, fontSize: 12, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 22),
           if (_mode == _Mode.welcome) _welcome(),
           if (_mode == _Mode.login) _login(),
           if (_mode == _Mode.register) _register(p),
@@ -301,10 +303,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   }
 
   Widget _welcome() => AuthFormCard(
-    title: 'مرحباً بك في EURO CARS',
+    title: 'أهلاً بك في اليورو',
     children: [
-      const Text('ابحث عن قطع الغيار الأوروبية وتابع حسابك وطلباتك من مكان واحد.',
-          textAlign: TextAlign.center),
+      const Text('اختر طريقة المتابعة', textAlign: TextAlign.center),
       const SizedBox(height: 18),
       PrimaryButton(label: 'تسجيل الدخول', icon: Icons.login_rounded, onPressed: () => _modeTo(_Mode.login)),
       const SizedBox(height: 10),
@@ -319,25 +320,25 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   );
 
   Widget _login() => AuthFormCard(
-    title: 'تسجيل الدخول',
+    title: 'أهلاً بعودتك',
     children: [
-      AppTextField(controller: _phone, label: 'رقم الهاتف (للحساب القديم أو توثيق الهاتف)',
+      AppTextField(controller: _phone, label: 'رقم الهاتف',
           hint: '+963 9XXXXXXXX', keyboardType: TextInputType.phone, ltr: true, radius: 10),
       const SizedBox(height: 8),
-      PasswordField(controller: _oldPassword, label: 'كلمة المرور القديمة', radius: 10),
+      PasswordField(controller: _oldPassword, label: 'كلمة المرور', radius: 10),
       const SizedBox(height: 10),
-      PrimaryButton(label: 'الدخول برقم الهاتف وكلمة المرور', busy: _busy, onPressed: _legacyLogin),
+      PrimaryButton(label: 'تسجيل الدخول', busy: _busy, onPressed: _legacyLogin),
       Align(
         alignment: AlignmentDirectional.centerStart,
-        child: TextButton(onPressed: _busy ? null : _forgotOldPassword, child: const Text('نسيت كلمة المرور القديمة؟')),
+        child: TextButton(onPressed: _busy ? null : _forgotOldPassword, child: const Text('نسيت كلمة المرور؟')),
       ),
-      const Divider(height: 26),
+      const Divider(height: 22),
       AppTextField(controller: _email, label: 'البريد الإلكتروني', keyboardType: TextInputType.emailAddress,
           ltr: true, radius: 10),
       const SizedBox(height: 8),
-      PasswordField(controller: _password, label: 'كلمة مرور البريد', radius: 10),
+      PasswordField(controller: _password, label: 'كلمة المرور', radius: 10),
       const SizedBox(height: 10),
-      const SizedBox(height: 12),
+      const SizedBox(height: 8),
       _providers(),
       TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.register),
           child: const Text('ليس لديك حساب؟ إنشاء حساب جديد')),
@@ -345,7 +346,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   );
 
   Widget _register(Palette p) => AuthFormCard(
-    title: _registrationFromLogin ? 'أكمل إنشاء حساب EURO' : 'إنشاء حساب جديد',
+    title: _registrationFromLogin ? 'أكمل بياناتك' : 'حساب جديد',
     children: [
       RoleSelector(role: _role, registering: true,
           onChanged: (value) { if (!_busy) setState(() { _role = value; _error = null; }); }),

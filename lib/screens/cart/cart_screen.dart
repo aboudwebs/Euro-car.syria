@@ -12,6 +12,7 @@ import '../../core/api_client.dart';
 import '../../core/cart.dart';
 import '../../core/config.dart';
 import '../../core/format.dart';
+import '../../core/firebase_identity.dart';
 import '../../core/models.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
@@ -220,13 +221,16 @@ class _CartScreenState extends State<CartScreen> {
       });
       await _showSuccess(placed, effectivePay, cashbackUsed);
     } on ApiException catch (error) {
-      if (!mounted) {
-        return;
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (error.code == 'PHONE_VERIFICATION_REQUIRED') {
+        final bool verified = await _completePhoneVerification(state);
+        if (verified && mounted) {
+          await _submit(pay, cashbackUsed);
+          return;
+        }
       }
-      setState(() {
-        _busy = false;
-        _error = error.message;
-      });
+      if (mounted) setState(() => _error = error.message);
     } catch (_) {
       if (!mounted) {
         return;
@@ -236,6 +240,119 @@ class _CartScreenState extends State<CartScreen> {
         _error = unexpectedMessage;
       });
     }
+  }
+
+  Future<bool> _completePhoneVerification(AppState state) async {
+    final nameController = TextEditingController(text: state.user?.name ?? '');
+    final phoneController = TextEditingController(text: state.user?.phone ?? '');
+    final codeController = TextEditingController();
+    String? otpToken;
+    String? localError;
+    bool dialogBusy = false;
+
+    final bool? completed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setDialogState) => AlertDialog(
+          title: const Text('توثيق الهاتف قبل الشراء'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                const Text('أكمل اسمك ورقم هاتفك. سنرسل رمز التحقق إلى واتساب، وبعد تأكيده سيُستكمل طلبك.'),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: nameController,
+                  textDirection: TextDirection.rtl,
+                  decoration: const InputDecoration(labelText: 'الاسم الكامل'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  textDirection: TextDirection.ltr,
+                  decoration: const InputDecoration(labelText: 'رقم الهاتف', hintText: '+963 9XXXXXXXX'),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: codeController,
+                  keyboardType: TextInputType.number,
+                  textDirection: TextDirection.ltr,
+                  maxLength: 6,
+                  decoration: const InputDecoration(labelText: 'رمز واتساب'),
+                ),
+                const SizedBox(height: 6),
+                if (localError != null)
+                  Text(localError!, style: TextStyle(color: Palette.of(context).errText)),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: dialogBusy ? null : () => Navigator.of(dialogContext).pop(false),
+              child: const Text('لاحقاً'),
+            ),
+            TextButton(
+              onPressed: dialogBusy || otpToken != null ? null : () async {
+                if (nameController.text.trim().length < 2 || phoneController.text.trim().length < 8) {
+                  setDialogState(() => localError = 'أدخل الاسم ورقم الهاتف بشكل صحيح.');
+                  return;
+                }
+                setDialogState(() { dialogBusy = true; localError = null; });
+                try {
+                  final String token = await state.requestRegistrationOtp(phone: phoneController.text);
+                  if (token.isEmpty) {
+                    setDialogState(() => localError = 'إرسال رمز واتساب غير مفعّل حالياً. سيُتاح عند نشر التحديث.');
+                  } else {
+                    setDialogState(() {
+                      otpToken = token;
+                      localError = 'تم إرسال الرمز إلى واتساب.';
+                    });
+                  }
+                } catch (error) {
+                  setDialogState(() => localError = error is ApiException ? error.message : unexpectedMessage);
+                } finally {
+                  setDialogState(() => dialogBusy = false);
+                }
+              },
+              child: Text(otpToken == null ? 'إرسال رمز واتساب' : 'تم الإرسال'),
+            ),
+            FilledButton(
+              onPressed: dialogBusy || otpToken == null ? null : () async {
+                if (codeController.text.trim().length != 6) {
+                  setDialogState(() => localError = 'أدخل رمز التحقق المكوّن من 6 أرقام.');
+                  return;
+                }
+                setDialogState(() { dialogBusy = true; localError = null; });
+                try {
+                  final String idToken = await FirebaseIdentityService().freshIdToken();
+                  await state.completeFirebaseProfile(
+                    idToken: idToken,
+                    name: nameController.text,
+                    phone: phoneController.text,
+                    otpCode: codeController.text,
+                    otpToken: otpToken!,
+                  );
+                  if (dialogContext.mounted) Navigator.of(dialogContext).pop(true);
+                } catch (error) {
+                  setDialogState(() => localError = error is ApiException ? error.message : unexpectedMessage);
+                } finally {
+                  if (dialogContext.mounted) setDialogState(() => dialogBusy = false);
+                }
+              },
+              child: const Text('تأكيد ومتابعة الشراء'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    nameController.dispose();
+    phoneController.dispose();
+    codeController.dispose();
+    return completed == true;
   }
 
   Future<void> _showSuccess(PlacedOrder placed, String pay, double cashbackUsed) async {

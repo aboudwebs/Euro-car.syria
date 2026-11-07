@@ -383,6 +383,11 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           ltr: true, radius: 10),
       const SizedBox(height: 8),
       PasswordField(controller: _password, label: 'كلمة المرور (للدخول بالبريد فقط)', radius: 10),
+      if (_role == 'workshop') ...[
+        const SizedBox(height: 8),
+        AppTextField(controller: _referral, label: 'كود المسوّق (اختياري)',
+            readOnly: _signedReferral?.isSigned == true, ltr: true, radius: 10),
+      ],
       const SizedBox(height: 14),
       _providers(),
       TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.login), child: const Text('لديك حساب؟ تسجيل الدخول')),

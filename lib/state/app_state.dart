@@ -486,7 +486,9 @@ class AppState extends ChangeNotifier {
           'mode': 'login',
           'client': 'mobile',
           if (role != null && role.isNotEmpty) 'role': role,
-          'phone': phone.trim(),
+          'phone': canonicalPhone(phone),
+          'otpCode': toWesternDigits(otpCode).trim(),
+          'otpToken': otpToken,
           'password': password,
         },
         auth: false,
@@ -504,11 +506,11 @@ class AppState extends ChangeNotifier {
 
   /// Exchanges a phone-verified Firebase identity for an existing EURO account session.
   /// A new identity is returned to the registration form without creating a partial EURO user.
-  Future<AuthResult> exchangeFirebaseIdentity({required String idToken}) async {
+  Future<AuthResult> exchangeFirebaseIdentity({required String idToken, required String phone, required String otpCode, required String otpToken}) async {
     try {
       final Map<String, dynamic> data = await api.postJson(
         '/api/auth/firebase',
-        <String, dynamic>{'idToken': idToken},
+        <String, dynamic>{'idToken': idToken, 'phone': canonicalPhone(phone), 'otpCode': toWesternDigits(otpCode).trim(), 'otpToken': otpToken},
         auth: false,
       );
       if (data['registrationRequired'] == true) {
@@ -535,6 +537,8 @@ class AppState extends ChangeNotifier {
     required String role,
     required String name,
     required String phone,
+    required String otpCode,
+    required String otpToken,
     String license = '',
     bool manualVerification = false,
     String city = '',

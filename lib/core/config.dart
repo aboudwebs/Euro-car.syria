@@ -4,6 +4,8 @@
 // two clients stay consistent. The server remains the authority for every rule below.
 
 /// Base URL of the EURO CARS API. Override per build with --dart-define=EURO_API_URL=https://example.com
+const String googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
+
 const String apiBase = String.fromEnvironment(
   'EURO_API_URL',
   defaultValue: 'https://control-panel-euro-cars.onrender.com',

@@ -134,12 +134,18 @@ jobs:
         with:
           tag_name: mobile-latest
           name: EURO CARS — Latest Android APK
-          body: Latest verified EURO CARS Android APK (ARM32 + ARM64).
+          body: |
+            Verified standalone EURO CARS Android APK (ARM32 + ARM64).
+            Download app-release.apk below to install. Do not use the Actions artifact ZIP as the installer.
+            The SHA-256 checksum and full verification report are attached.
           prerelease: true
           make_latest: false
           overwrite_files: true
           fail_on_unmatched_files: true
-          files: build/app/outputs/flutter-apk/app-release.apk
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-release.apk.sha256
+            build/app/outputs/flutter-apk/app-release.apk.verification.txt
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -156,6 +162,10 @@ jobs:
         if: always()
         run: |
           echo "### EURO CARS — main" >> "$GITHUB_STEP_SUMMARY"
-          if [ -f build/app/outputs/flutter-apk/app-release.apk ]; then
-            echo "APK size: $(du -h build/app/outputs/flutter-apk/app-release.apk | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          apk="build/app/outputs/flutter-apk/app-release.apk"
+          if [ -s "$apk" ]; then
+            echo "APK size: $(stat -c %s "$apk") bytes ($(du -h "$apk" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+            echo "SHA-256: $(sha256sum "$apk" | cut -d ' ' -f 1)" >> "$GITHUB_STEP_SUMMARY"
+            echo "Installable APK: https://github.com/${GITHUB_REPOSITORY}/releases/download/mobile-latest/app-release.apk" >> "$GITHUB_STEP_SUMMARY"
+            echo "Note: the Actions artifact is a ZIP container; install the standalone app-release.apk from the release." >> "$GITHUB_STEP_SUMMARY"
           fi

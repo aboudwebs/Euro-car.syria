@@ -141,6 +141,30 @@ void main() {
     });
   });
 
+  group('guest catalog', () {
+    testWidgets('guest can browse parts but sees no account tabs or purchase actions', (WidgetTester tester) async {
+      usePhoneScreen(tester);
+      final FakeServer server = FakeServer()
+        ..reply('GET', '/api/parts', <String, dynamic>{'parts': catalogJson()});
+      await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: server.client));
+      await settle(tester);
+
+      await tester.tap(find.text('متابعة كضيف — تصفح الكتالوج فقط'));
+      await settle(tester);
+
+      expect(find.text('الكتالوج'), findsOneWidget);
+      expect(find.text('السلة'), findsNothing);
+      expect(find.text('طلباتي'), findsNothing);
+      expect(find.text('لوحتي'), findsNothing);
+      expect(find.text('فلتر زيت'), findsWidgets);
+      expect(find.text('تسجيل الدخول للشراء'), findsWidgets);
+      expect(server.requestsTo('GET', '/api/parts'), hasLength(1));
+      expect(server.requests.where((request) => request.method != 'GET'), isEmpty);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
   group('signed in', () {
     FakeServer serverFor(Map<String, dynamic> account) {
       return FakeServer()

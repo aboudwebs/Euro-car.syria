@@ -385,6 +385,17 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       PasswordField(controller: _password, label: 'كلمة المرور (للدخول بالبريد فقط)', radius: 10),
       if (_role == 'workshop') ...[
         const SizedBox(height: 8),
+        AppTextField(controller: _license, label: 'السجل التجاري / ترخيص الورشة (اختياري)', radius: 10),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: _city.text,
+          decoration: const InputDecoration(labelText: 'المحافظة (اختياري)'),
+          items: governorates.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList(),
+          onChanged: (value) { if (!_busy && value != null) setState(() => _city.text = value); },
+        ),
+        const SizedBox(height: 8),
+        AppTextField(controller: _spec, label: 'اختصاص الورشة (اختياري)', radius: 10),
+        const SizedBox(height: 8),
         AppTextField(controller: _referral, label: 'كود المسوّق (اختياري)',
             readOnly: _signedReferral?.isSigned == true, ltr: true, radius: 10),
       ],

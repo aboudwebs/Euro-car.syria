@@ -146,22 +146,14 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
   Future<void> _authenticate(String provider) async {
     if (_busy) return;
-    if (_mode == _Mode.register && _name.text.trim().length < 2) {
-      setState(() => _error = 'أدخل الاسم الكامل قبل إنشاء الحساب.');
-      return;
-    }
     if (provider == 'email' && (_email.text.trim().isEmpty || _password.text.length < 6)) {
       setState(() => _error = 'أدخل البريد وكلمة مرور من 6 أحرف على الأقل.');
-      return;
-    }
-    if (_mode == _Mode.register && _role == 'workshop' && _spec.text.trim().isEmpty) {
-      setState(() => _error = 'أدخل اختصاص الورشة.');
       return;
     }
 
     setState(() { _busy = true; _error = null; _pending = null; });
     try {
-      if (!_identityReady && !_firebaseAttemptStarted) {
+      if (!_firebaseAttemptStarted) {
         if (_firebase.currentUser != null) await _firebase.signOut();
         if (provider == 'email') {
           if (_mode == _Mode.register) {
@@ -177,22 +169,50 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         _firebaseAttemptStarted = true;
       }
 
-      final user = _firebase.currentUser;
-      if (user == null) throw FirebaseAuthException(code: 'no-current-user');
-      if (_identityReady && _verifiedOtpCode != null && _otpToken != null) {
-        await _submitIdentity(otpCode: _verifiedOtpCode!, otpToken: _otpToken!);
-        return;
+      if (_firebase.currentUser == null) {
+        throw FirebaseAuthException(code: 'no-current-user');
       }
-      if (_phone.text.trim().isEmpty) {
-        if (mounted) setState(() { _busy = false; _error = 'أدخل رقم الهاتف الذي تريد توثيقه عبر واتساب.'; });
-        return;
+      final String idToken = await _firebase.freshIdToken();
+      final AppState state = AppScope.read(context);
+      final AuthResult result;
+
+      if (_mode == _Mode.register || _registrationFromLogin) {
+        final referral = _signedReferral ?? parseReferral(_referral.text);
+        result = await state.registerFirebase(
+          idToken: idToken,
+          role: _role,
+          name: _name.text,
+          license: _license.text,
+          city: _city.text,
+          specs: _spec.text,
+          refCode: referral.code,
+          refSignature: referral.signature,
+        );
+      } else {
+        final login = await state.exchangeFirebaseIdentity(idToken: idToken);
+        if (login.needsRegistration) {
+          if (mounted) {
+            setState(() {
+              _mode = _Mode.register;
+              _registrationFromLogin = true;
+              _identityReady = true;
+              _busy = false;
+              _notice = 'تم التحقق من هويتك. اختر نوع الحساب لإنشاء حساب EURO.';
+            });
+          }
+          return;
+        }
+        result = login;
       }
-      final otpToken = await AppScope.read(context).requestRegistrationOtp(phone: _phone.text);
+
       if (!mounted) return;
       setState(() {
-        _otpToken = otpToken;
         _busy = false;
-        _notice = 'أرسلنا رمز التحقق إلى واتساب. أدخله لإكمال توثيق الهاتف.';
+        if (result.isPending) {
+          _pending = result.message;
+        } else if (!result.isSignedIn) {
+          _error = result.message;
+        }
       });
     } on FirebaseAuthException catch (error) {
       if (mounted) setState(() { _busy = false; _error = _firebaseError(error); });

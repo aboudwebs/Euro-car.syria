@@ -1,6 +1,6 @@
 name: Build EURO CARS APK (main)
-# Release validation includes unified Firebase authentication and SMS phone verification.
-# Covers the unified Firebase sign-in flow and the read-only guest catalog.
+# Release validation includes unified Firebase authentication and WhatsApp phone verification.
+# Covers the unified Firebase sign-in flow, WhatsApp phone verification, and the read-only guest catalog.
 
 on:
   workflow_dispatch:

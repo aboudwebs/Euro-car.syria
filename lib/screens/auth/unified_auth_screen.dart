@@ -40,7 +40,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
   _Mode _mode = _Mode.welcome;
   String _role = 'workshop';
-  String? _verificationId;
+  String? _otpToken;
   String? _error;
   String? _notice;
   String? _pending;
@@ -90,7 +90,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       _registrationFromLogin = false;
       _identityReady = false;
       _firebaseAttemptStarted = false;
-      _verificationId = null;
+      _otpToken = null;
       _sms.clear();
     });
   }
@@ -176,22 +176,16 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
       final user = _firebase.currentUser;
       if (user == null) throw FirebaseAuthException(code: 'no-current-user');
-      if (user.phoneNumber?.isNotEmpty == true) {
-        _phone.text = user.phoneNumber!;
-        _identityReady = true;
-        await _submitIdentity();
-        return;
-      }
       if (_phone.text.trim().isEmpty) {
-        if (mounted) setState(() { _busy = false; _error = 'أدخل رقم الهاتف الذي تريد توثيقه.'; });
+        if (mounted) setState(() { _busy = false; _error = 'أدخل رقم الهاتف الذي تريد توثيقه عبر واتساب.'; });
         return;
       }
-      final verificationId = await _firebase.requestPhoneCode(_phone.text);
+      final otpToken = await AppScope.read(context).requestRegistrationOtp(phone: _phone.text);
       if (!mounted) return;
       setState(() {
-        _verificationId = verificationId;
+        _otpToken = otpToken;
         _busy = false;
-        _notice = 'أرسلنا رمز SMS إلى رقمك. أدخله لإكمال توثيق الهاتف.';
+        _notice = 'أرسلنا رمز التحقق إلى واتساب. أدخله لإكمال توثيق الهاتف.';
       });
     } on FirebaseAuthException catch (error) {
       if (mounted) setState(() { _busy = false; _error = _firebaseError(error); });
@@ -201,17 +195,16 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   }
 
   Future<void> _confirmPhone() async {
-    final verificationId = _verificationId;
-    if (_busy || verificationId == null) return;
+    final otpToken = _otpToken;
+    if (_busy || otpToken == null) return;
     if (toWesternDigits(_sms.text).trim().length != 6) {
       setState(() => _error = 'أدخل رمز التحقق المكوّن من 6 أرقام.');
       return;
     }
     setState(() { _busy = true; _error = null; });
     try {
-      await _firebase.linkVerifiedPhone(verificationId: verificationId, smsCode: _sms.text);
       _identityReady = true;
-      await _submitIdentity();
+      await _submitIdentity(otpCode: _sms.text, otpToken: otpToken);
     } on FirebaseAuthException catch (error) {
       if (mounted) setState(() { _busy = false; _error = _firebaseError(error); });
     } catch (error) {
@@ -219,7 +212,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     }
   }
 
-  Future<void> _submitIdentity() async {
+  Future<void> _submitIdentity({required String otpCode, required String otpToken}) async {
     final AppState state = AppScope.read(context);
     final String token = await _firebase.freshIdToken();
     final AuthResult result;
@@ -230,6 +223,8 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         role: _role,
         name: _name.text,
         phone: _phone.text,
+        otpCode: otpCode,
+        otpToken: otpToken,
         license: _license.text,
         manualVerification: _role == 'workshop' && _license.text.trim().isEmpty,
         city: _city.text,
@@ -238,7 +233,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         refSignature: referral.signature,
       );
     } else {
-      final login = await state.exchangeFirebaseIdentity(idToken: token);
+      final login = await state.exchangeFirebaseIdentity(idToken: token, phone: _phone.text, otpCode: otpCode, otpToken: otpToken);
       if (login.needsRegistration) {
         if (mounted) {
           setState(() {
@@ -389,10 +384,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   Widget _otp(Palette p) => AuthFormCard(
     title: 'توثيق رقم الهاتف',
     children: [
-      Text('أدخل رمز SMS الذي وصل إلى رقمك. لن نطلب الرمز في كل تسجيل دخول لاحق.',
+      Text('أدخل رمز واتساب الذي وصل إلى رقمك. لن نطلب الرمز في كل تسجيل دخول لاحق.',
           textAlign: TextAlign.center, style: TextStyle(color: p.muted)),
       const SizedBox(height: 10),
-      AppTextField(controller: _sms, label: 'رمز التحقق', hint: '000000',
+      AppTextField(controller: _sms, label: 'رمز واتساب', hint: '000000',
           keyboardType: TextInputType.number, ltr: true, maxLength: 6, radius: 10),
       const SizedBox(height: 10),
       PrimaryButton(label: 'تأكيد الهاتف والمتابعة', busy: _busy, onPressed: _confirmPhone),

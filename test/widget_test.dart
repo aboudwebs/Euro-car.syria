@@ -154,7 +154,7 @@ void main() {
       await tester.tap(find.text('متابعة كضيف — تصفح الكتالوج فقط'));
       await settle(tester);
 
-      expect(find.text('الكتالوج'), findsOneWidget);
+      expect(find.text('متجر اليورو'), findsOneWidget);
       expect(find.text('السلة'), findsNothing);
       expect(find.text('طلباتي'), findsNothing);
       expect(find.text('لوحتي'), findsNothing);

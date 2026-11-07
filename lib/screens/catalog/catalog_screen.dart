@@ -254,7 +254,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
             onRetry: () => state.loadParts(),
           ),
         ),
-      if (isVinLike(query))
+      if (isVinLike(query) && !state.isGuest)
         Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: NoticeBanner(
@@ -292,6 +292,13 @@ class _CatalogScreenState extends State<CatalogScreen> {
   }
 
   Widget _emptyResult(AppState state, String query) {
+    if (state.isGuest) {
+      return EmptyState(
+        icon: Icons.search_off_rounded,
+        title: 'لا توجد قطع مطابقة',
+        message: 'يمكنك متابعة تصفح الكتالوج أو تسجيل الدخول للوصول إلى الطلبات والشراء.',
+      );
+    }
     if (state.parts.isEmpty) {
       return EmptyState(
         icon: Icons.inventory_2_outlined,

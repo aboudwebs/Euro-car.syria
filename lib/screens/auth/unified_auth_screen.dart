@@ -120,8 +120,11 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     if (!mounted) return;
     setState(() {
       _busy = false;
-      if (result.isPending) _pending = result.message;
-      else if (!result.isSignedIn) _error = result.message;
+      if (result.isPending) {
+        _pending = result.message;
+      } else if (!result.isSignedIn) {
+        _error = result.message;
+      }
     });
   }
 
@@ -204,8 +207,8 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   }
 
   Future<void> _submitIdentity() async {
-    final token = await _firebase.freshIdToken();
-    final state = AppScope.read(context);
+    final AppState state = AppScope.read(context);
+    final String token = await _firebase.freshIdToken();
     final AuthResult result;
     if (_mode == _Mode.register || _registrationFromLogin) {
       final referral = _signedReferral ?? parseReferral(_referral.text);
@@ -224,12 +227,14 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     } else {
       final login = await state.exchangeFirebaseIdentity(idToken: token);
       if (login.needsRegistration) {
-        if (mounted) setState(() {
-          _mode = _Mode.register;
-          _registrationFromLogin = true;
-          _busy = false;
-          _notice = 'تم توثيق هويتك ورقم هاتفك. أكمل البيانات لإنشاء حساب EURO.';
-        });
+        if (mounted) {
+          setState(() {
+            _mode = _Mode.register;
+            _registrationFromLogin = true;
+            _busy = false;
+            _notice = 'تم توثيق هويتك ورقم هاتفك. أكمل البيانات لإنشاء حساب EURO.';
+          });
+        }
         return;
       }
       result = login;
@@ -237,8 +242,11 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     if (!mounted) return;
     setState(() {
       _busy = false;
-      if (result.isPending) _pending = result.message;
-      else if (!result.isSignedIn) _error = result.message;
+      if (result.isPending) {
+        _pending = result.message;
+      } else if (!result.isSignedIn) {
+        _error = result.message;
+      }
     });
   }
 
@@ -344,7 +352,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         AppTextField(controller: _license, label: 'السجل التجاري / ترخيص الورشة (اختياري)', radius: 10),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: _city.text,
+          initialValue: _city.text,
           decoration: const InputDecoration(labelText: 'المحافظة'),
           items: governorates.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList(),
           onChanged: (value) { if (!_busy && value != null) setState(() => _city.text = value); },

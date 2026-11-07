@@ -515,7 +515,7 @@ class AppState extends ChangeNotifier {
         '/api/auth/firebase',
         <String, dynamic>{
           'idToken': idToken,
-          if (phone.trim().isNotEmpty) 'phone': canonicalPhone(phone),
+          if (phone.trim().isNotEmpty) 'contactPhone': canonicalPhone(phone),
           if (otpCode.trim().isNotEmpty) 'otpCode': toWesternDigits(otpCode).trim(),
           if (otpToken.trim().isNotEmpty) 'otpToken': otpToken,
         },

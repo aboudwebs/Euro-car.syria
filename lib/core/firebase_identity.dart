@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import 'config.dart';
@@ -9,11 +10,24 @@ import 'text_utils.dart';
 /// Firebase identity-provider and phone-verification operations used by the EURO sign-in flow.
 class FirebaseIdentityService {
   static Future<void>? _googleInitialization;
-  FirebaseIdentityService({FirebaseAuth? auth}) : _auth = auth ?? FirebaseAuth.instance;
+  FirebaseIdentityService({FirebaseAuth? auth}) : _providedAuth = auth;
 
-  final FirebaseAuth _auth;
+  final FirebaseAuth? _providedAuth;
 
-  User? get currentUser => _auth.currentUser;
+  FirebaseAuth get _auth {
+    if (Firebase.apps.isEmpty && _providedAuth == null) {
+      throw FirebaseAuthException(
+        code: 'no-app',
+        message: 'إعداد Firebase غير مكتمل على هذا الجهاز.',
+      );
+    }
+    return _providedAuth ?? FirebaseAuth.instance;
+  }
+
+  User? get currentUser {
+    if (Firebase.apps.isEmpty && _providedAuth == null) return null;
+    return _auth.currentUser;
+  }
 
   Future<UserCredential> signInWithEmail(String email, String password) {
     return _auth.signInWithEmailAndPassword(email: email.trim(), password: password);

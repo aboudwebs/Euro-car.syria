@@ -140,6 +140,11 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       setState(() => _error = 'أدخل البريد وكلمة مرور من 6 أحرف على الأقل.');
       return;
     }
+    if (_mode == _Mode.register && _role == 'workshop' &&
+        _phone.text.replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
+      setState(() => _error = 'رقم هاتف الورشة إلزامي، أدخل رقماً صحيحاً للتواصل معك.');
+      return;
+    }
 
     setState(() { _busy = true; _error = null; _pending = null; });
     try {
@@ -173,6 +178,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           idToken: idToken,
           role: _role,
           name: _name.text,
+          phone: _role == 'workshop' ? _phone.text : '',
           license: _license.text,
           city: _city.text,
           specs: _spec.text,
@@ -298,8 +304,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       RoleSelector(role: _role, registering: true,
           onChanged: (value) { if (!_busy) setState(() { _role = value; _error = null; }); }),
       const SizedBox(height: 12),
-      const Text(
-        'اختر طريقة إنشاء الحساب. ستتمكن من الدخول مباشرة، وسنطلب الاسم ورقم الهاتف وتوثيقه عبر واتساب عند أول عملية شراء.',
+      Text(
+        _role == 'workshop'
+            ? 'أدخل رقم هاتف الورشة ليظهر للإدارة ضمن طلب التسجيل. توثيق الرقم عبر واتساب يبقى مطلوباً عند أول عملية شراء.'
+            : 'اختر طريقة إنشاء الحساب. ستتمكن من الدخول مباشرة، وسنطلب الاسم ورقم الهاتف وتوثيقه عبر واتساب عند أول عملية شراء.',
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 14),
@@ -308,6 +316,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       const SizedBox(height: 8),
       PasswordField(controller: _password, label: 'كلمة المرور (للدخول بالبريد فقط)', radius: 10),
       if (_role == 'workshop') ...[
+        const SizedBox(height: 8),
+        AppTextField(controller: _phone, label: 'رقم هاتف الورشة (إلزامي)', hint: '+963 9XXXXXXXX',
+            keyboardType: TextInputType.phone, ltr: true, radius: 10),
         const SizedBox(height: 8),
         AppTextField(controller: _license, label: 'السجل التجاري / ترخيص الورشة (اختياري)', radius: 10),
         const SizedBox(height: 8),

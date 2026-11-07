@@ -41,6 +41,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   _Mode _mode = _Mode.welcome;
   String _role = 'workshop';
   String? _otpToken;
+  String? _verifiedOtpCode;
   String? _error;
   String? _notice;
   String? _pending;
@@ -91,6 +92,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       _identityReady = false;
       _firebaseAttemptStarted = false;
       _otpToken = null;
+      _verifiedOtpCode = null;
       _sms.clear();
     });
   }
@@ -176,6 +178,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
       final user = _firebase.currentUser;
       if (user == null) throw FirebaseAuthException(code: 'no-current-user');
+      if (_identityReady && _verifiedOtpCode != null && _otpToken != null) {
+        await _submitIdentity(otpCode: _verifiedOtpCode!, otpToken: _otpToken!);
+        return;
+      }
       if (_phone.text.trim().isEmpty) {
         if (mounted) setState(() { _busy = false; _error = 'أدخل رقم الهاتف الذي تريد توثيقه عبر واتساب.'; });
         return;
@@ -203,7 +209,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     }
     setState(() { _busy = true; _error = null; });
     try {
-      _identityReady = true;
       await _submitIdentity(otpCode: _sms.text, otpToken: otpToken);
     } on FirebaseAuthException catch (error) {
       if (mounted) setState(() { _busy = false; _error = _firebaseError(error); });
@@ -239,6 +244,8 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           setState(() {
             _mode = _Mode.register;
             _registrationFromLogin = true;
+            _identityReady = true;
+            _verifiedOtpCode = otpCode;
             _busy = false;
             _notice = 'تم توثيق هويتك ورقم هاتفك. أكمل البيانات لإنشاء حساب EURO.';
           });

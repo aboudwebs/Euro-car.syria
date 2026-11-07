@@ -6,7 +6,6 @@ import '../../core/config.dart';
 import '../../core/firebase_identity.dart';
 import '../../core/models.dart';
 import '../../core/referral.dart';
-import '../../core/text_utils.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
 import '../../widgets/inputs.dart';

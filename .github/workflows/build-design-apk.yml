@@ -1,4 +1,5 @@
 name: Build EURO CARS APK (main)
+# Covers the unified Firebase sign-in flow and the read-only guest catalog.
 
 on:
   workflow_dispatch:

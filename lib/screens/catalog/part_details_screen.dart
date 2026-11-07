@@ -42,7 +42,9 @@ class PartDetailsScreen extends StatelessWidget {
         body: SafeArea(
           child: found == null ? _missing(context, state) : _Details(part: found),
         ),
-        bottomNavigationBar: found == null ? null : _BuyBar(part: found),
+        bottomNavigationBar: found == null || state.isGuest
+            ? null
+            : _BuyBar(part: found),
       ),
     );
   }
@@ -215,13 +217,14 @@ class _Details extends StatelessWidget {
                           ),
                         ],
                         const SizedBox(height: 6),
-                        TextButton(
-                          onPressed: () => openSpecialRequestForPart(context, part),
-                          child: const Text(
-                            'طلب مطابقة أو قطعة خاصة',
-                            style: TextStyle(fontWeight: FontWeight.w700),
+                        if (!AppScope.of(context).isGuest)
+                          TextButton(
+                            onPressed: () => openSpecialRequestForPart(context, part),
+                            child: const Text(
+                              'طلب مطابقة أو قطعة خاصة',
+                              style: TextStyle(fontWeight: FontWeight.w700),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),

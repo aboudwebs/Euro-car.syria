@@ -506,11 +506,21 @@ class AppState extends ChangeNotifier {
 
   /// Exchanges a phone-verified Firebase identity for an existing EURO account session.
   /// A new identity is returned to the registration form without creating a partial EURO user.
-  Future<AuthResult> exchangeFirebaseIdentity({required String idToken, required String phone, required String otpCode, required String otpToken}) async {
+  Future<AuthResult> exchangeFirebaseIdentity({
+    required String idToken,
+    String phone = '',
+    String otpCode = '',
+    String otpToken = '',
+  }) async {
     try {
       final Map<String, dynamic> data = await api.postJson(
         '/api/auth/firebase',
-        <String, dynamic>{'idToken': idToken, 'phone': canonicalPhone(phone), 'otpCode': toWesternDigits(otpCode).trim(), 'otpToken': otpToken},
+        <String, dynamic>{
+          'idToken': idToken,
+          if (phone.trim().isNotEmpty) 'phone': canonicalPhone(phone),
+          if (otpCode.trim().isNotEmpty) 'otpCode': toWesternDigits(otpCode).trim(),
+          if (otpToken.trim().isNotEmpty) 'otpToken': otpToken,
+        },
         auth: false,
       );
       if (data['registrationRequired'] == true) {
@@ -535,10 +545,10 @@ class AppState extends ChangeNotifier {
   Future<AuthResult> registerFirebase({
     required String idToken,
     required String role,
-    required String name,
-    required String phone,
-    required String otpCode,
-    required String otpToken,
+    String name = '',
+    String phone = '',
+    String otpCode = '',
+    String otpToken = '',
     String license = '',
     bool manualVerification = false,
     String city = '',
@@ -552,11 +562,11 @@ class AppState extends ChangeNotifier {
         <String, dynamic>{
           'idToken': idToken,
           'role': role,
-          'name': name.trim(),
-          'phone': canonicalPhone(phone),
-          'otpCode': toWesternDigits(otpCode).trim(),
-          'otpToken': otpToken,
-          if (role == 'workshop') 'license': license.trim(),
+          if (name.trim().isNotEmpty) 'name': name.trim(),
+          if (phone.trim().isNotEmpty) 'phone': canonicalPhone(phone),
+          if (otpCode.trim().isNotEmpty) 'otpCode': toWesternDigits(otpCode).trim(),
+          if (otpToken.trim().isNotEmpty) 'otpToken': otpToken,
+          if (role == 'workshop' && license.trim().isNotEmpty) 'license': license.trim(),
           if (role == 'workshop' && manualVerification) 'manualVerification': true,
           if (role == 'workshop') 'city': city.trim(),
           if (role == 'workshop') 'spec': specs.trim(),
@@ -577,6 +587,28 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       return const AuthResult(AuthResultKind.failed, unexpectedMessage);
     }
+  }
+
+  /// Completes an OAuth account's profile after the WhatsApp code has been verified by the server.
+  Future<void> completeFirebaseProfile({
+    required String idToken,
+    required String name,
+    required String phone,
+    required String otpCode,
+    required String otpToken,
+  }) async {
+    final Map<String, dynamic> data = await api.postJson(
+      '/api/auth/firebase/complete-profile',
+      <String, dynamic>{
+        'idToken': idToken,
+        'name': name.trim(),
+        'phone': canonicalPhone(phone),
+        'otpCode': toWesternDigits(otpCode).trim(),
+        'otpToken': otpToken,
+      },
+      auth: false,
+    );
+    await _completeSignIn(data);
   }
 
   /// Opens the public, read-only catalog without creating a user session.

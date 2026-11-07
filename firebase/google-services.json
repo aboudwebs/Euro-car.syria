@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "189528496462-45vvfg1boikd02b753pcle1nt7n06emb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.eurocars.euro_cars",
+            "certificate_hash": "e3ffc8fffe3d915e81e9c8ff77f10f10d957813d"
+          }
+        },
+        {
           "client_id": "189528496462-0ics7rrrqlf6rcj3pu6u351stkr0ah7s.apps.googleusercontent.com",
           "client_type": 3
         }

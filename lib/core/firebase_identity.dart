@@ -58,7 +58,7 @@ class FirebaseIdentityService {
   }
 
   /// Links the verified phone to the currently authenticated email / Google / Apple identity.
-  Future<UserCredential> linkVerifiedPhone({
+  Future<void> linkVerifiedPhone({
     required String verificationId,
     required String smsCode,
   }) async {
@@ -68,13 +68,13 @@ class FirebaseIdentityService {
     }
     final String? existingPhone = user.phoneNumber;
     if (existingPhone != null && existingPhone.isNotEmpty) {
-      return UserCredential(user: user, additionalUserInfo: null, credential: null);
+      return;
     }
     final PhoneAuthCredential credential = PhoneAuthProvider.credential(
       verificationId: verificationId,
       smsCode: toWesternDigits(smsCode).trim(),
     );
-    return user.linkWithCredential(credential);
+    await user.linkWithCredential(credential);
   }
 
   Future<String> freshIdToken() async {

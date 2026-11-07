@@ -52,22 +52,22 @@ void main() {
       await settle(tester);
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.text('رقم الموبايل'), findsOneWidget);
-      expect(find.text('كلمة المرور'), findsOneWidget);
-      expect(find.text('تسجيل دخول الورشة / الشركة'), findsOneWidget);
+      expect(find.text('مرحباً بك في EURO CARS'), findsOneWidget);
+      expect(find.text('تسجيل الدخول'), findsOneWidget);
       expect(find.text('إنشاء حساب جديد'), findsOneWidget);
+      expect(find.text('متابعة كضيف — تصفح الكتالوج فقط'), findsOneWidget);
     });
 
-    testWidgets('choosing the marketer role changes the sign-in button', (WidgetTester tester) async {
+    testWidgets('registration offers only workshop and marketer roles', (WidgetTester tester) async {
       usePhoneScreen(tester);
       await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: FakeServer().client));
       await settle(tester);
 
-      await tester.tap(find.text('حساب عميل / مسوّق'));
+      await tester.tap(find.text('إنشاء حساب جديد').first);
       await settle(tester);
 
-      expect(find.text('تسجيل دخول المسوّق'), findsOneWidget);
-      expect(find.text('تسجيل دخول الورشة / الشركة'), findsNothing);
+      expect(find.text('حساب ورشة / شركة'), findsOneWidget);
+      expect(find.text('حساب عميل / مسوّق'), findsOneWidget);
     });
 
     testWidgets('an empty form is rejected before any request is sent', (WidgetTester tester) async {
@@ -76,11 +76,13 @@ void main() {
       await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: server.client));
       await settle(tester);
 
-      await tester.ensureVisible(find.text('تسجيل دخول الورشة / الشركة'));
-      await tester.tap(find.text('تسجيل دخول الورشة / الشركة'));
+      await tester.tap(find.text('تسجيل الدخول').first);
+      await settle(tester);
+      await tester.ensureVisible(find.text('الدخول برقم الهاتف وكلمة المرور'));
+      await tester.tap(find.text('الدخول برقم الهاتف وكلمة المرور'));
       await settle(tester);
 
-      expect(find.text('يرجى إدخال رقم الموبايل وكلمة مرور من 4 أحرف على الأقل'), findsOneWidget);
+      expect(find.text('أدخل رقم الهاتف وكلمة المرور القديمة.'), findsOneWidget);
       expect(server.requests, isEmpty);
     });
 
@@ -91,10 +93,12 @@ void main() {
       await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: server.client));
       await settle(tester);
 
+      await tester.tap(find.text('تسجيل الدخول').first);
+      await settle(tester);
       await tester.enterText(find.byType(TextField).at(0), '0982026134');
       await tester.enterText(find.byType(TextField).at(1), 'wrong-password');
-      await tester.ensureVisible(find.text('تسجيل دخول الورشة / الشركة'));
-      await tester.tap(find.text('تسجيل دخول الورشة / الشركة'));
+      await tester.ensureVisible(find.text('الدخول برقم الهاتف وكلمة المرور'));
+      await tester.tap(find.text('الدخول برقم الهاتف وكلمة المرور'));
       await settle(tester);
 
       expect(find.text('بيانات الدخول غير صحيحة'), findsOneWidget);
@@ -107,8 +111,10 @@ void main() {
       await tester.pumpWidget(EuroApp(store: MemoryStore(), httpClient: server.client));
       await settle(tester);
 
-      await tester.ensureVisible(find.text('نسيت كلمة المرور؟'));
-      await tester.tap(find.text('نسيت كلمة المرور؟'));
+      await tester.tap(find.text('تسجيل الدخول').first);
+      await settle(tester);
+      await tester.ensureVisible(find.text('نسيت كلمة المرور القديمة؟'));
+      await tester.tap(find.text('نسيت كلمة المرور القديمة؟'));
       await settle(tester);
 
       expect(find.text('استعادة كلمة المرور عبر واتساب'), findsOneWidget);
@@ -130,7 +136,8 @@ void main() {
       await tester.tap(find.text('إنشاء حساب جديد'));
       await settle(tester);
 
-      expect(find.text('بيانات اعتماد الورشة الجديدة'), findsOneWidget);
+      expect(find.text('اختصاص الورشة / الماركات'), findsOneWidget);
+      expect(find.text('السجل التجاري / ترخيص الورشة (اختياري)'), findsOneWidget);
     });
   });
 

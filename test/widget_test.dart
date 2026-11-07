@@ -103,6 +103,8 @@ void main() {
 
       expect(find.text('بيانات الدخول غير صحيحة'), findsOneWidget);
       expect(server.requestsTo('POST', '/api/auth'), hasLength(1));
+      final Map<String, dynamic> sent = jsonDecode(utf8.decode(server.requestsTo('POST', '/api/auth').single.bodyBytes)) as Map<String, dynamic>;
+      expect(sent.containsKey('role'), isFalse);
     });
 
     testWidgets('forgot password opens the WhatsApp recovery page and asks for the number first', (WidgetTester tester) async {

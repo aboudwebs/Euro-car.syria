@@ -73,7 +73,7 @@ jobs:
         run: flutter test --no-pub
 
       - name: Build release APK (ARM32 + ARM64)
-        run: flutter build apk --release --target-platform android-arm,android-arm64 --dart-define=EURO_API_URL=https://control-panel-euro-cars.onrender.com
+        run: flutter build apk --release --target-platform android-arm,android-arm64 --dart-define=EURO_API_URL=https://control-panel-euro-cars.onrender.com --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ vars.GOOGLE_SERVER_CLIENT_ID }}
 
       - name: Verify APK
         run: bash tool/verify_apk.sh build/app/outputs/flutter-apk/app-release.apk

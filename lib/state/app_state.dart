@@ -22,7 +22,7 @@ import '../core/referral.dart';
 import '../core/session_store.dart';
 import '../core/text_utils.dart';
 
-enum SessionStatus { restoring, signedOut, signedIn }
+enum SessionStatus { restoring, signedOut, signedIn, guest }
 
 /// Positions of the main tabs in the bottom navigation bar.
 const int tabCatalog = 0;
@@ -121,6 +121,7 @@ class AppState extends ChangeNotifier {
   SessionStatus get status => _status;
   AppUser? get user => _user;
   bool get isSignedIn => _status == SessionStatus.signedIn && _user != null;
+  bool get isGuest => _status == SessionStatus.guest;
   String? get sessionNotice => _sessionNotice;
 
   void setPendingReferral(ReferralInput referral) {
@@ -474,7 +475,7 @@ class AppState extends ChangeNotifier {
   // ---------------------------------------------------------------- sign in / register / sign out
 
   Future<AuthResult> login({
-    required String role,
+    String? role,
     required String phone,
     required String password,
   }) async {
@@ -484,7 +485,7 @@ class AppState extends ChangeNotifier {
         <String, dynamic>{
           'mode': 'login',
           'client': 'mobile',
-          'role': role,
+          if (role != null && role.isNotEmpty) 'role': role,
           'phone': phone.trim(),
           'password': password,
         },
@@ -499,6 +500,101 @@ class AppState extends ChangeNotifier {
     } catch (_) {
       return const AuthResult(AuthResultKind.failed, unexpectedMessage);
     }
+  }
+
+  /// Exchanges a phone-verified Firebase identity for an existing EURO account session.
+  /// A new identity is returned to the registration form without creating a partial EURO user.
+  Future<AuthResult> exchangeFirebaseIdentity({required String idToken}) async {
+    try {
+      final Map<String, dynamic> data = await api.postJson(
+        '/api/auth/firebase',
+        <String, dynamic>{'idToken': idToken},
+        auth: false,
+      );
+      if (data['registrationRequired'] == true) {
+        return const AuthResult(AuthResultKind.registrationRequired);
+      }
+      if (data['pendingApproval'] == true) {
+        return AuthResult(
+          AuthResultKind.pendingApproval,
+          asString(data['error'], 'حسابك قيد المراجعة من قِبل الإدارة.'),
+        );
+      }
+      return await _completeSignIn(data);
+    } on ApiException catch (error) {
+      if (error.pendingApproval) return AuthResult(AuthResultKind.pendingApproval, error.message);
+      return AuthResult(AuthResultKind.failed, error.message);
+    } catch (_) {
+      return const AuthResult(AuthResultKind.failed, unexpectedMessage);
+    }
+  }
+
+  /// Creates a EURO workshop / marketer account after Firebase has verified and linked the phone.
+  Future<AuthResult> registerFirebase({
+    required String idToken,
+    required String role,
+    required String name,
+    required String phone,
+    String license = '',
+    bool manualVerification = false,
+    String city = '',
+    String specs = '',
+    String refCode = '',
+    String refSignature = '',
+  }) async {
+    try {
+      final Map<String, dynamic> data = await api.postJson(
+        '/api/auth/firebase/register',
+        <String, dynamic>{
+          'idToken': idToken,
+          'role': role,
+          'name': name.trim(),
+          'phone': phone.trim(),
+          if (role == 'workshop') 'license': license.trim(),
+          if (role == 'workshop' && manualVerification) 'manualVerification': true,
+          if (role == 'workshop') 'city': city.trim(),
+          if (role == 'workshop') 'spec': specs.trim(),
+          if (role == 'workshop' && refCode.trim().isNotEmpty) 'refCode': refCode.trim(),
+          if (role == 'workshop' && refSignature.trim().isNotEmpty) 'refSignature': refSignature.trim(),
+        },
+        auth: false,
+      );
+      if (data['pendingApproval'] == true) {
+        return AuthResult(
+          AuthResultKind.pendingApproval,
+          asString(data['message'], 'تم إرسال طلب تسجيل الورشة للإدارة للمراجعة.'),
+        );
+      }
+      return await _completeSignIn(data);
+    } on ApiException catch (error) {
+      return AuthResult(AuthResultKind.failed, error.message);
+    } catch (_) {
+      return const AuthResult(AuthResultKind.failed, unexpectedMessage);
+    }
+  }
+
+  /// Opens the public, read-only catalog without creating a user session.
+  void startGuestSession() {
+    if (_status == SessionStatus.guest) return;
+    _epoch++;
+    api.token = null;
+    _user = null;
+    _sessionNotice = null;
+    _status = SessionStatus.guest;
+    _resetData();
+    notifyListeners();
+    unawaited(loadParts());
+  }
+
+  /// Leaves guest browsing and returns to the welcome / sign-in screen.
+  void exitGuestSession() {
+    if (_status != SessionStatus.guest) return;
+    _epoch++;
+    api.token = null;
+    _user = null;
+    _status = SessionStatus.signedOut;
+    _resetData();
+    notifyListeners();
   }
 
   /// Requests a WhatsApp verification code before account creation.
@@ -828,6 +924,7 @@ class AppState extends ChangeNotifier {
 
   /// Adds one unit. Returns a message when it cannot be added, otherwise null.
   String? addToCart(Part part) {
+    if (!isSignedIn) return 'سجّل الدخول أولاً لإضافة القطع إلى السلة.';
     if (!part.inStock) {
       return 'هذه القطعة غير متوفرة حالياً.';
     }
@@ -846,6 +943,7 @@ class AppState extends ChangeNotifier {
   }
 
   void decrementCart(String partId) {
+    if (!isSignedIn) return;
     final int current = _cart[partId] ?? 0;
     if (current <= 1) {
       _cart.remove(partId);
@@ -857,6 +955,7 @@ class AppState extends ChangeNotifier {
   }
 
   void removeFromCart(String partId) {
+    if (!isSignedIn) return;
     if (_cart.remove(partId) != null) {
       _persistCart();
       notifyListeners();
@@ -864,6 +963,7 @@ class AppState extends ChangeNotifier {
   }
 
   void clearCart() {
+    if (!isSignedIn) return;
     if (_cart.isEmpty && _cartNotice == null) {
       return;
     }

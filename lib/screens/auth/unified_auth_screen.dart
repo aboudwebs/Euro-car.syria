@@ -135,6 +135,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     if (!mounted) return;
     setState(() {
       _busy = false;
+      _identityReady = result.isPending || result.isSignedIn;
       if (result.isPending) {
         _pending = result.message;
       } else if (!result.isSignedIn) {

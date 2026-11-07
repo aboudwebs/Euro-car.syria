@@ -274,7 +274,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           if (_mode == _Mode.welcome) _welcome(),
           if (_mode == _Mode.login) _login(),
           if (_mode == _Mode.register) _register(p),
-          if (_verificationId != null && !_identityReady) _otp(p),
+          if (_otpToken != null && !_identityReady) _otp(p),
           if (_pending != null) ...[
             const SizedBox(height: 12),
             PendingApprovalCard(message: _pending!, onBack: () => _modeTo(_Mode.login)),

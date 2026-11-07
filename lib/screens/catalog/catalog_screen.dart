@@ -128,13 +128,14 @@ class _CatalogScreenState extends State<CatalogScreen> {
           title: 'متجر اليورو',
           subtitle: 'ابحث برقم القطعة أو رقم الشاصي واحصل على السعر فورًا',
           actions: <Widget>[
-            RoundIconButton(
-              onTap: () => openSpecialRequest(context),
-              tooltip: 'طلب قطعة خاصة',
-              icon: Icons.playlist_add_rounded,
-              iconColor: p.primary,
-              size: 44,
-            ),
+            if (!state.isGuest)
+              RoundIconButton(
+                onTap: () => openSpecialRequest(context),
+                tooltip: 'طلب قطعة خاصة',
+                icon: Icons.playlist_add_rounded,
+                iconColor: p.primary,
+                size: 44,
+              ),
           ],
         ),
         Padding(
@@ -152,22 +153,24 @@ class _CatalogScreenState extends State<CatalogScreen> {
                   },
                 ),
               ),
-              const SizedBox(width: 8),
-              RoundIconButton(
-                onTap: _scan,
-                tooltip: 'مسح رقم الشاصي بالكاميرا',
-                icon: Icons.document_scanner_outlined,
-                iconColor: p.primary,
-                size: 44,
-              ),
-              const SizedBox(width: 6),
-              RoundIconButton(
-                onTap: () => pickVehicleAndSearch(context),
-                tooltip: 'البحث بمركبة محفوظة',
-                icon: Icons.directions_car_outlined,
-                iconColor: p.primary,
-                size: 44,
-              ),
+              if (!state.isGuest) ...<Widget>[
+                const SizedBox(width: 8),
+                RoundIconButton(
+                  onTap: _scan,
+                  tooltip: 'مسح رقم الشاصي بالكاميرا',
+                  icon: Icons.document_scanner_outlined,
+                  iconColor: p.primary,
+                  size: 44,
+                ),
+                const SizedBox(width: 6),
+                RoundIconButton(
+                  onTap: () => pickVehicleAndSearch(context),
+                  tooltip: 'البحث بمركبة محفوظة',
+                  icon: Icons.directions_car_outlined,
+                  iconColor: p.primary,
+                  size: 44,
+                ),
+              ],
             ],
           ),
         ),

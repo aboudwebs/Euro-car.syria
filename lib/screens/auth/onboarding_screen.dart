@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart' hide Text;
+import 'package:flutter/material.dart';
 
 import '../../core/referral.dart';
 import '../../state/app_state.dart';

@@ -75,7 +75,13 @@ to_int() {
 }
 
 say "APK: $APK"
-say "Size: $(stat -c %s "$APK") bytes"
+apk_size="$(stat -c %s "$APK")"
+say "Size: $apk_size bytes"
+if [ "$apk_size" -ge 50000000 ]; then
+  pass "APK size is at least 50 MB (complete universal release package)"
+else
+  fail "APK is unexpectedly small ($apk_size bytes; expected at least 50 MB)"
+fi
 say "Build tools: ${tools_dir:-not found}"
 say ""
 

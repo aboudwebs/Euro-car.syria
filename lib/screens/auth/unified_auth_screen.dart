@@ -13,6 +13,7 @@ import '../../widgets/inputs.dart';
 import '../../widgets/part_plate.dart';
 import '../../widgets/tx.dart';
 import 'auth_widgets.dart';
+import 'forgot_password_screen.dart';
 
 class UnifiedAuthScreen extends StatefulWidget {
   const UnifiedAuthScreen({super.key, this.initialReferral});
@@ -101,6 +102,11 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       default:
         return error.message?.trim().isNotEmpty == true ? error.message! : 'تعذر إكمال التحقق من الهوية.';
     }
+  }
+
+  Future<void> _forgotOldPassword() async {
+    final String? message = await openForgotPassword(context, phone: _phone.text.trim());
+    if (message != null && mounted) setState(() { _notice = message; _error = null; });
   }
 
   Future<void> _legacyLogin() async {
@@ -298,6 +304,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       PasswordField(controller: _oldPassword, label: 'كلمة المرور القديمة', radius: 10),
       const SizedBox(height: 10),
       PrimaryButton(label: 'الدخول برقم الهاتف وكلمة المرور', busy: _busy, onPressed: _legacyLogin),
+      Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: TextButton(onPressed: _busy ? null : _forgotOldPassword, child: const Text('نسيت كلمة المرور القديمة؟')),
+      ),
       const Divider(height: 26),
       AppTextField(controller: _email, label: 'البريد الإلكتروني', keyboardType: TextInputType.emailAddress,
           ltr: true, radius: 10),

@@ -1728,10 +1728,21 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Starts the 30-day countdown. The password is asked again; throws [ApiException] with a message for the user.
-  Future<void> requestAccountDeletion(String password) async {
+  /// Sends a one-time deletion confirmation code to the verified email linked to this account.
+  Future<String> sendAccountDeletionCode() async {
     final Map<String, dynamic> data = await _guard(
-      () => api.postJson('/api/account/deletion', <String, dynamic>{'password': password}),
+      () => api.postJson('/api/account/deletion', <String, dynamic>{'action': 'send-code'}),
+    );
+    return asString(data['message'], 'تم إرسال رمز التحقق إلى بريدك الإلكتروني.');
+  }
+
+  /// Confirms the email code and starts the existing 30-day deletion countdown.
+  Future<void> confirmAccountDeletion(String code) async {
+    final Map<String, dynamic> data = await _guard(
+      () => api.postJson('/api/account/deletion', <String, dynamic>{
+        'action': 'confirm-code',
+        'code': code.trim(),
+      }),
     );
     final Object? request = data['request'];
     _deletion = request is Map ? DeletionRequest.fromJson(asMap(request)) : null;

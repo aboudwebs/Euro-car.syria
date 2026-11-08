@@ -791,7 +791,7 @@ class _DeletionBanner extends StatelessWidget {
   }
 }
 
-/// Asks for the password again and starts the 30-day deletion countdown.
+/// Confirms account deletion with a one-time code sent to the account's verified email.
 class _DeleteAccountDialog extends StatefulWidget {
   const _DeleteAccountDialog();
 
@@ -800,48 +800,38 @@ class _DeleteAccountDialog extends StatefulWidget {
 }
 
 class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
-  final TextEditingController _password = TextEditingController();
+  final TextEditingController _code = TextEditingController();
   bool _busy = false;
+  bool _codeSent = false;
+  String? _message;
   String? _error;
 
   @override
   void dispose() {
-    _password.dispose();
+    _code.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    if (_busy) {
-      return;
-    }
-    if (_password.text.isEmpty) {
-      setState(() => _error = 'أدخل كلمة المرور لتأكيد الحذف.');
+    if (_busy) return;
+    if (_codeSent && !RegExp(r'^\d{6}$').hasMatch(_code.text.trim())) {
+      setState(() => _error = 'أدخل الرمز المكوّن من 6 أرقام.');
       return;
     }
     final AppState state = AppScope.read(context);
-    setState(() {
-      _busy = true;
-      _error = null;
-    });
+    setState(() { _busy = true; _error = null; _message = null; });
     try {
-      await state.requestAccountDeletion(_password.text);
-      if (mounted) {
-        Navigator.of(context).pop(true);
+      if (!_codeSent) {
+        final String message = await state.sendAccountDeletionCode();
+        if (mounted) setState(() { _codeSent = true; _message = message; _busy = false; });
+        return;
       }
+      await state.confirmAccountDeletion(_code.text);
+      if (mounted) Navigator.of(context).pop(true);
     } on ApiException catch (error) {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _error = error.message;
-        });
-      }
+      if (mounted) setState(() { _busy = false; _error = error.message; });
     } catch (_) {
-      if (mounted) {
-        setState(() {
-          _busy = false;
-          _error = unexpectedMessage;
-        });
-      }
+      if (mounted) setState(() { _busy = false; _error = unexpectedMessage; });
     }
   }
 
@@ -857,18 +847,34 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
-              'سيُحذف حسابك بعد $accountDeletionGraceDays يوماً من الآن، ويمكنك إلغاء الطلب خلال هذه المدة من صفحة حسابي. '
-              'بعد انتهاء المدة تُزال بياناتك الشخصية، وتبقى سجلات الطلبات والمبالغ لأغراض المحاسبة دون بياناتك.',
+              'سيُحذف حسابك بعد $accountDeletionGraceDays يوماً من تأكيد الطلب، ويمكنك إلغاء الحذف خلال هذه المدة. '
+              'بعد انتهاء المدة تُزال بياناتك الشخصية، وتبقى السجلات المالية اللازمة للمحاسبة.',
               style: TextStyle(color: p.text, fontSize: 13.5, height: 1.6),
             ),
             const SizedBox(height: 14),
-            PasswordField(
-              controller: _password,
-              label: 'كلمة المرور',
-              radius: 12,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (String value) => _submit(),
-            ),
+            if (!_codeSent)
+              Text(
+                'سنرسل رمز تأكيد إلى البريد الإلكتروني الموثّق المرتبط بحسابك.',
+                style: TextStyle(color: p.muted, fontSize: 13, height: 1.5),
+              )
+            else ...<Widget>[
+              if (_message != null)
+                Text(_message!, style: TextStyle(color: p.primary, fontSize: 13, height: 1.5)),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _code,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                maxLength: 6,
+                onSubmitted: (_) => _submit(),
+                decoration: const InputDecoration(labelText: 'رمز التحقق', hintText: '000000', counterText: ''),
+              ),
+              Text(
+                'الرمز صالح لمدة 10 دقائق، وبعد 5 محاولات خاطئة ستحتاج لطلب رمز جديد.',
+                style: TextStyle(color: p.muted, fontSize: 12, height: 1.5),
+              ),
+            ],
             if (error != null) ...<Widget>[
               const SizedBox(height: 10),
               NoticeBanner(message: error, kind: NoticeKind.error),
@@ -877,16 +883,13 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
         ),
       ),
       actions: <Widget>[
-        TextButton(
-          onPressed: _busy ? null : () => Navigator.of(context).pop(false),
-          child: const Text('إلغاء'),
-        ),
+        TextButton(onPressed: _busy ? null : () => Navigator.of(context).pop(false), child: const Text('إلغاء')),
         TextButton(
           onPressed: _busy ? null : _submit,
           style: TextButton.styleFrom(foregroundColor: p.errText),
           child: _busy
               ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2))
-              : const Text('تأكيد حذف الحساب'),
+              : Text(_codeSent ? 'تأكيد وحذف الحساب' : 'إرسال رمز التحقق'),
         ),
       ],
     );

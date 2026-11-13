@@ -141,8 +141,8 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
     String? problem;
     if (current.isEmpty) {
       problem = 'أدخل كلمة المرور الحالية.';
-    } else if (next.length < 4) {
-      problem = 'كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل.';
+    } else if (next.length < minNewPasswordLength) {
+      problem = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.';
     } else if (next != _confirmPassword.text) {
       problem = 'كلمتا المرور الجديدتان غير متطابقتين.';
     } else if (next == current) {

@@ -11,6 +11,7 @@ import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 
 import '../../core/api_client.dart';
+import '../../core/config.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
 import '../../widgets/app_bar.dart';
@@ -112,8 +113,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       setState(() => _error = 'أدخل رمز التحقق المكوّن من 6 أرقام.');
       return;
     }
-    if (password.length < 4) {
-      setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل.');
+    if (password.length < minNewPasswordLength) {
+      setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
       return;
     }
     if (password != _confirm.text) {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -204,6 +205,71 @@ void main() {
       );
 
       expect(fired, 0);
+    });
+
+    test('a sign-in 401 without a server message says the details are wrong, not that the session ended', () async {
+      final FakeServer server = FakeServer()
+        ..on('POST', '/api/auth', (http.Request _) => http.Response('', 401));
+      final ApiClient api = makeClient(server, token: null);
+      int fired = 0;
+      api.onUnauthorized = () => fired++;
+
+      await expectLater(
+        api.postJson('/api/auth', <String, dynamic>{}, auth: false),
+        throwsA(apiError(
+          status: 401,
+          unauthorized: false,
+          message: 'بيانات الدخول غير صحيحة، تحقق منها وحاول مجدداً.',
+        )),
+      );
+
+      expect(fired, 0);
+    });
+
+    test('a 401 for a request sent with a token that was replaced meanwhile does not end the session', () async {
+      final Completer<http.Response> gate = Completer<http.Response>();
+      final FakeServer server = FakeServer()..on('GET', '/api/orders', (http.Request _) => gate.future);
+      final ApiClient api = makeClient(server, token: 'old');
+      int fired = 0;
+      api.onUnauthorized = () => fired++;
+
+      final Future<Map<String, dynamic>> pending = api.getJson('/api/orders');
+      final Future<void> check = expectLater(pending, throwsA(apiError(status: 401, unauthorized: true)));
+      await pumpEventQueue();
+      expect(server.requests.single.headers['authorization'], 'Bearer old');
+
+      api.token = 'new'; // a password change handed out a fresh token
+      gate.complete(jsonResponse(<String, dynamic>{'error': 'الجلسة غير صالحة'}, 401));
+      await check;
+
+      expect(fired, 0);
+    });
+
+    test('a 429 shows the server text, a 429 without one the generic text, and neither is retried', () async {
+      final FakeServer server = FakeServer()
+        ..on('POST', '/api/auth', (http.Request _) {
+          return http.Response.bytes(
+            utf8.encode(jsonEncode(<String, dynamic>{'error': 'محاولات كثيرة، انتظر 60 ثانية.'})),
+            429,
+            headers: const <String, String>{'content-type': 'application/json', 'retry-after': '60'},
+          );
+        })
+        ..on('GET', '/api/parts', (http.Request _) => http.Response('', 429, headers: const <String, String>{'retry-after': '30'}));
+      final ApiClient api = makeClient(server, token: null);
+      int fired = 0;
+      api.onUnauthorized = () => fired++;
+
+      await expectLater(
+        api.postJson('/api/auth', <String, dynamic>{}, auth: false),
+        throwsA(apiError(status: 429, unauthorized: false, message: 'محاولات كثيرة، انتظر 60 ثانية.')),
+      );
+      await expectLater(
+        api.getJson('/api/parts'),
+        throwsA(apiError(status: 429, message: 'محاولات كثيرة، حاول مجدداً بعد قليل.')),
+      );
+
+      expect(fired, 0);
+      expect(server.requests, hasLength(2), reason: 'a 429 is not retried');
     });
 
     test('the pending approval flag is read from the body', () async {
@@ -447,6 +513,48 @@ void main() {
   group('ApiException', () {
     test('prints its message', () {
       expect(const ApiException('مرحبا').toString(), 'مرحبا');
+    });
+  });
+
+  group('best-effort logout', () {
+    test('sends DELETE /api/auth with the token and the session cookie', () async {
+      final FakeServer server = FakeServer()..reply('DELETE', '/api/auth', <String, dynamic>{'ok': true});
+      final ApiClient api = makeClient(server, token: 'tok-1');
+
+      await api.logoutBestEffort();
+
+      final http.Request request = server.requestsTo('DELETE', '/api/auth').single;
+      expect(request.headers['authorization'], 'Bearer tok-1');
+      expect(request.headers['cookie'], 'euro_session=tok-1');
+    });
+
+    test('never throws, never fires onUnauthorized and sends nothing without a token', () async {
+      final FakeServer server = FakeServer()
+        ..reply('DELETE', '/api/auth', <String, dynamic>{'error': 'expired'}, 401);
+      final ApiClient api = makeClient(server, token: 'tok-1');
+      int fired = 0;
+      api.onUnauthorized = () => fired++;
+
+      await api.logoutBestEffort();
+      expect(fired, 0);
+
+      final FakeServer offline = FakeServer()
+        ..on('DELETE', '/api/auth', (http.Request _) => throw http.ClientException('offline'));
+      await makeClient(offline, token: 'tok-1').logoutBestEffort();
+
+      final FakeServer none = FakeServer();
+      await makeClient(none, token: null).logoutBestEffort();
+      expect(none.requests, isEmpty);
+    });
+
+    test('gives up after the timeout instead of waiting for a slow server', () async {
+      final Completer<http.Response> never = Completer<http.Response>();
+      final FakeServer server = FakeServer()..on('DELETE', '/api/auth', (http.Request _) => never.future);
+      final ApiClient api = makeClient(server, token: 'tok-1');
+
+      await api.logoutBestEffort(timeout: const Duration(milliseconds: 20));
+
+      expect(server.requests, hasLength(1));
     });
   });
 }

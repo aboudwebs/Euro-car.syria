@@ -6,7 +6,11 @@
 // * GET and PUT /api/auth only read the session from the euro_session cookie, so those two calls also send the
 //   same signed token as a Cookie header. Everything else uses "Authorization: Bearer".
 // * A 401 on an authenticated call means the 30-day token expired or is invalid: onUnauthorized fires once per
-//   response so the app can return to the sign-in screen.
+//   response so the app can return to the sign-in screen. It does NOT fire when the token was replaced after the
+//   request left (a password change rotates the token on the server, so requests still in flight with the old one
+//   are refused; the app already holds the new token by then).
+// * A 401 on a call made without auth (sign-in with a wrong phone or password) is only a message for the user: it
+//   shows the server's text and never ends a session. A 429 (rate limit) shows the server's text as well.
 
 import 'dart:async';
 import 'dart:convert';
@@ -212,6 +216,7 @@ class ApiClient {
 
   /// The signed-in user's avatar bytes, or null when none was uploaded.
   Future<Uint8List?> fetchAvatar() async {
+    final String? sentToken = token;
     final http.Response response = await _perform(
       () => _client.get(_uri('/api/account/avatar'), headers: _headers()),
       requestTimeout,
@@ -223,8 +228,23 @@ class ApiClient {
     if (status >= 200 && status < 300) {
       return response.bodyBytes.isEmpty ? null : response.bodyBytes;
     }
-    _decode(response, auth: true);
+    _decode(response, auth: true, sentToken: sentToken);
     return null;
+  }
+
+  /// Best-effort DELETE /api/auth on sign-out (the server clears the session cookie). It never throws, never waits
+  /// longer than [timeout], and a 401 or any other answer is ignored (it cannot sign anyone out, the caller already
+  /// is). The request is built before this returns, so the caller may clear [token] right after calling it.
+  Future<void> logoutBestEffort({Duration timeout = const Duration(seconds: 4)}) async {
+    final String? current = token;
+    if (current == null || current.isEmpty) {
+      return;
+    }
+    try {
+      await _client.delete(_uri('/api/auth'), headers: _headers(cookie: true)).timeout(timeout);
+    } catch (_) {
+      // Sign-out must complete even if the server is offline or slow.
+    }
   }
 
   /// Uploads a JPEG avatar (the server only accepts image/jpeg up to 1.5 MB).
@@ -249,15 +269,18 @@ class ApiClient {
     required Duration timeout,
     required bool retry,
   }) async {
+    // The token the request is sent with (send() builds its headers synchronously, right here).
+    String? sentToken = token;
     try {
       final http.Response response = await _perform(send, timeout);
-      return _decode(response, auth: auth);
+      return _decode(response, auth: auth, sentToken: sentToken);
     } on ApiException catch (error) {
       if (retry && _isTransient(error)) {
         // The hosted API may still be waking up: one more attempt is enough for a read.
         await Future<void>.delayed(retryDelay);
+        sentToken = token;
         final http.Response again = await _perform(send, timeout);
-        return _decode(again, auth: auth);
+        return _decode(again, auth: auth, sentToken: sentToken);
       }
       rethrow;
     }
@@ -284,7 +307,7 @@ class ApiClient {
     }
   }
 
-  Map<String, dynamic> _decode(http.Response response, {required bool auth}) {
+  Map<String, dynamic> _decode(http.Response response, {required bool auth, String? sentToken}) {
     final int status = response.statusCode;
     final Map<String, dynamic>? body = _parseBody(response);
     if (status >= 200 && status < 300) {
@@ -301,9 +324,10 @@ class ApiClient {
       message = error.trim();
     }
     if (message.isEmpty) {
-      message = _fallbackMessage(status);
+      message = _fallbackMessage(status, auth: auth);
     }
-    if (unauthorized) {
+    // A 401 for a request sent with a token that has since been replaced says nothing about the new token.
+    if (unauthorized && sentToken == token) {
       onUnauthorized?.call();
     }
     throw ApiException(
@@ -331,12 +355,13 @@ class ApiClient {
     }
   }
 
-  String _fallbackMessage(int status) {
+  String _fallbackMessage(int status, {bool auth = true}) {
     if (status == 502 || status == 503 || status == 504) {
       return 'الخادم غير متاح حالياً أو قيد التشغيل، حاول مجدداً بعد لحظات.';
     }
     if (status == 401) {
-      return 'انتهت الجلسة، سجّل الدخول مجدداً.';
+      // Without a session (sign-in) a 401 means wrong credentials, not an expired session.
+      return auth ? 'انتهت الجلسة، سجّل الدخول مجدداً.' : 'بيانات الدخول غير صحيحة، تحقق منها وحاول مجدداً.';
     }
     if (status == 403) {
       return 'غير مصرح بهذه العملية.';

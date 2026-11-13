@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart' hide Text;
 
+import '../../core/config.dart';
 import '../../core/models.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
@@ -46,7 +47,8 @@ class _LoginScreenState extends State<LoginScreen> {
     final AppState state = AppScope.read(context);
     final String phone = _phone.text.trim();
     final String password = _password.text;
-    if (phone.isEmpty || password.length < 4) {
+    // Sign-in keeps the old minimum: accounts created before the 8-character rule must still be able to log in.
+    if (phone.isEmpty || password.length < minLoginPasswordLength) {
       setState(() {
         _error = 'يرجى إدخال رقم الموبايل وكلمة مرور من 4 أحرف على الأقل';
         _pendingMessage = null;

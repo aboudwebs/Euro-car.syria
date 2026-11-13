@@ -240,6 +240,40 @@ void main() {
       expect(h.state.sessionNotice, isNull);
     });
 
+    test('an unknown account answers 401 like a wrong password: the message is shown, nothing else happens', () async {
+      final Harness h = Harness();
+      h.server.reply('POST', '/api/auth', <String, dynamic>{'error': 'رقم الهاتف أو كلمة المرور غير صحيحة'}, 401);
+      await h.state.restore();
+
+      final AuthResult result = await h.state.login(role: 'workshop', phone: '0911111111', password: 'whatever1');
+      await pumpEventQueue();
+
+      expect(result.kind, AuthResultKind.failed);
+      expect(result.needsRegistration, isFalse);
+      expect(result.message, 'رقم الهاتف أو كلمة المرور غير صحيحة');
+      expect(h.state.status, SessionStatus.signedOut);
+      expect(h.state.sessionNotice, isNull);
+      expect(h.server.requests, hasLength(1));
+      expect(h.server.requestsTo('DELETE', '/api/auth'), isEmpty);
+    });
+
+    test('a rate-limited sign-in (429) shows the server message and can be tried again', () async {
+      final Harness h = Harness();
+      h.server.on('POST', '/api/auth', (http.Request _) => jsonResponse(<String, dynamic>{'error': 'محاولات كثيرة، انتظر دقيقة.'}, 429));
+      await h.state.restore();
+
+      final AuthResult limited = await h.state.login(role: 'workshop', phone: '0982026134', password: 'secret');
+
+      expect(limited.kind, AuthResultKind.failed);
+      expect(limited.message, 'محاولات كثيرة، انتظر دقيقة.');
+      expect(h.state.sessionNotice, isNull);
+      expect(h.server.requests, hasLength(1), reason: 'a 429 is not retried automatically');
+
+      h.serveLogin(workshopJson());
+      final AuthResult again = await h.state.login(role: 'workshop', phone: '0982026134', password: 'secret');
+      expect(again.isSignedIn, isTrue);
+    });
+
     test('an answer without a session, an admin account or a dead network all fail cleanly', () async {
       final Harness noSession = Harness();
       noSession.server.reply('POST', '/api/auth', <String, dynamic>{'user': workshopJson()});
@@ -430,6 +464,68 @@ void main() {
       expect(h.store.data.containsKey(tokenKey), isFalse);
       expect(h.store.data.containsKey(userKey), isFalse);
       expect(h.store.data.containsKey(cartKey), isFalse);
+    });
+
+    test('signing out tells the server with the token that is being cleared, and works when it is offline', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('DELETE', '/api/auth', <String, dynamic>{'ok': true});
+
+      await h.state.logout();
+      await pumpEventQueue();
+
+      final http.Request request = h.server.requestsTo('DELETE', '/api/auth').single;
+      expect(request.headers['authorization'], 'Bearer tok-1');
+      expect(h.state.status, SessionStatus.signedOut);
+      expect(h.api.token, isNull);
+
+      final Harness offline = await signedInHarness();
+      offline.server.on('DELETE', '/api/auth', (http.Request _) => throw http.ClientException('offline'));
+      await offline.state.logout();
+      await pumpEventQueue();
+      expect(offline.state.status, SessionStatus.signedOut);
+      expect(offline.store.data.containsKey(tokenKey), isFalse);
+    });
+
+    test('an expired session does not call DELETE /api/auth', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('GET', '/api/orders', <String, dynamic>{'error': 'غير مصرح'}, 401);
+
+      await h.state.loadOrders();
+      await pumpEventQueue();
+
+      expect(h.state.status, SessionStatus.signedOut);
+      expect(h.server.requestsTo('DELETE', '/api/auth'), isEmpty);
+    });
+
+    test('signing out of all devices calls the server first and then ends the session', () async {
+      final Harness h = await signedInHarness(
+        extraStore: <String, String>{cartKey: cartJson('w1', <String, Object?>{'p1': 2})},
+      );
+      h.server.reply('POST', '/api/auth/logout-all', <String, dynamic>{'ok': true});
+
+      await h.state.logoutAllDevices();
+      await pumpEventQueue();
+
+      final http.Request request = h.server.requestsTo('POST', '/api/auth/logout-all').single;
+      expect(request.headers['authorization'], 'Bearer tok-1');
+      expect(h.state.status, SessionStatus.signedOut);
+      expect(h.api.token, isNull);
+      expect(h.store.data.containsKey(tokenKey), isFalse);
+      expect(h.store.data.containsKey(cartKey), isFalse);
+    });
+
+    test('a failed sign-out of all devices keeps the user signed in and reports the reason', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('POST', '/api/auth/logout-all', <String, dynamic>{'error': 'محاولات كثيرة، حاول لاحقاً.'}, 429);
+
+      await expectLater(
+        h.state.logoutAllDevices(),
+        throwsA(apiError(status: 429, message: 'محاولات كثيرة، حاول لاحقاً.')),
+      );
+
+      expect(h.state.isSignedIn, isTrue);
+      expect(h.api.token, 'tok-1');
+      expect(h.store.data[tokenKey], 'tok-1');
     });
 
     test('a 401 on an authenticated call ends the session but keeps the saved cart', () async {
@@ -1089,11 +1185,32 @@ void main() {
       expect(h.state.user!.name, 'اسم جديد');
       expect((jsonDecode(h.store.data[userKey]!) as Map<String, dynamic>)['name'], 'اسم جديد');
 
-      await h.state.updateProfile(name: 'اسم جديد', city: '', newPassword: 'abcd1234');
+      await h.state.updateProfile(name: 'اسم جديد', city: '', newPassword: 'abcd1234', currentPassword: 'old-pass');
       expect(bodyOf(h.server.requestsTo('PUT', '/api/auth').last), <String, dynamic>{
         'name': 'اسم جديد',
         'newPassword': 'abcd1234',
+        'currentPassword': 'old-pass',
       });
+    });
+
+    test('a new password through PUT /api/auth needs the current one and adopts the fresh token', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('PUT', '/api/auth', <String, dynamic>{
+        'user': workshopJson(),
+        'accessToken': 'tok-fresh',
+      });
+
+      await expectLater(
+        h.state.updateProfile(name: 'x', city: '', newPassword: 'abcd1234'),
+        throwsA(apiError(message: 'أدخل كلمة المرور الحالية.')),
+      );
+      expect(h.server.requestsTo('PUT', '/api/auth'), isEmpty);
+
+      await h.state.updateProfile(name: 'x', city: '', newPassword: 'abcd1234', currentPassword: 'old-pass');
+
+      expect(h.api.token, 'tok-fresh');
+      expect(h.store.data[tokenKey], 'tok-fresh');
+      expect(h.state.isSignedIn, isTrue);
     });
 
     test('a refused change is passed on and the account stays as it was', () async {
@@ -1101,7 +1218,7 @@ void main() {
       h.server.reply('PUT', '/api/auth', <String, dynamic>{'error': 'كلمة المرور قصيرة'}, 400);
 
       await expectLater(
-        h.state.updateProfile(name: 'x', city: 'حلب', newPassword: 'ab'),
+        h.state.updateProfile(name: 'x', city: 'حلب', newPassword: 'ab', currentPassword: 'old-pass'),
         throwsA(apiError(status: 400, message: 'كلمة المرور قصيرة')),
       );
 

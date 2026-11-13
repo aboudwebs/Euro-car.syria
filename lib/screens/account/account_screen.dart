@@ -186,6 +186,52 @@ class _AccountScreenState extends State<AccountScreen> {
     }
   }
 
+  Future<void> _confirmLogoutAll() async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        final Palette p = Palette.of(dialogContext);
+        return AlertDialog(
+          title: const Text('تسجيل الخروج من جميع الأجهزة'),
+          content: const Text(
+            'سيتم إنهاء جلسة حسابك على كل الأجهزة المسجّل دخولها، بما فيها هذا الجهاز، وستحتاج إلى تسجيل الدخول مجدداً. هل تريد المتابعة؟',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: TextButton.styleFrom(foregroundColor: p.errText),
+              child: const Text('تسجيل الخروج من الكل'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) {
+      return;
+    }
+    try {
+      await AppScope.read(context).logoutAllDevices();
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() {
+          _notice = null;
+          _error = error.message;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _notice = null;
+          _error = unexpectedMessage;
+        });
+      }
+    }
+  }
+
   Future<void> _confirmDeleteAccount() async {
     final bool? requested = await showDialog<bool>(
       context: context,
@@ -285,6 +331,15 @@ class _AccountScreenState extends State<AccountScreen> {
               ),
               const SizedBox(height: 10),
               _LogoutButton(onPressed: _confirmLogout),
+              Center(
+                child: TextButton(
+                  onPressed: _confirmLogoutAll,
+                  child: Text(
+                    'تسجيل الخروج من جميع الأجهزة',
+                    style: TextStyle(color: p.muted, fontSize: 13),
+                  ),
+                ),
+              ),
               const SizedBox(height: 10),
               if (deletion == null)
                 Center(

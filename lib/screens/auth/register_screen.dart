@@ -106,8 +106,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_name.text.trim().isEmpty) {
       return 'الاسم مطلوب لإنشاء الحساب';
     }
-    if (_phone.text.trim().isEmpty || _password.text.length < 4) {
-      return 'يرجى إدخال رقم الموبايل وكلمة مرور من 4 أحرف على الأقل';
+    if (_phone.text.trim().isEmpty || _password.text.length < minNewPasswordLength) {
+      return 'يرجى إدخال رقم الموبايل وكلمة مرور من 8 أحرف على الأقل';
     }
     if (_isWorkshop) {
       if (_specs.isEmpty) {
@@ -254,7 +254,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       const SizedBox(height: 12),
       PasswordField(
         controller: _password,
-        label: 'كلمة المرور (4 أحرف على الأقل)',
+        label: 'كلمة المرور (8 أحرف على الأقل)',
         textInputAction: _isWorkshop ? TextInputAction.next : TextInputAction.done,
         radius: 10,
         onSubmitted: (String _) {

@@ -1,6 +1,7 @@
 // The profile features: saved addresses and vehicles, the VIN search hand-off, password recovery, account deletion,
 // currency and language. A scripted server answers; nothing touches the network or the keystore.
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:euro_cars/core/display.dart';
@@ -178,13 +179,93 @@ void main() {
       expect(body, <String, dynamic>{'currentPassword': 'old1', 'newPassword': 'new22'});
     });
 
-    test('a wrong current password is reported', () async {
+    test('the fresh access token from a password change replaces the old one, so the user stays signed in', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('POST', '/api/account/password', <String, dynamic>{'ok': true, 'accessToken': 'tok-after-change'});
+
+      await h.state.changePassword(currentPassword: 'old1', newPassword: 'new22222');
+      await pumpEventQueue();
+
+      expect(h.api.token, 'tok-after-change');
+      expect(h.store.data[tokenKey], 'tok-after-change');
+      expect(h.state.isSignedIn, isTrue);
+
+      h.server.reply('GET', '/api/orders', <String, dynamic>{'orders': <Object>[]});
+      await h.state.loadOrders();
+      expect(h.server.requestsTo('GET', '/api/orders').last.headers['authorization'], 'Bearer tok-after-change');
+    });
+
+    test('without an accessToken in the answer the old token stays (older servers)', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('POST', '/api/account/password', <String, dynamic>{'ok': true});
+
+      await h.state.changePassword(currentPassword: 'old1', newPassword: 'new22222');
+
+      expect(h.api.token, 'tok-1');
+      expect(h.store.data[tokenKey], 'tok-1');
+      expect(h.state.isSignedIn, isTrue);
+    });
+
+    test('a 401 that a background refresh gets while the password is being changed does not sign the user out', () async {
+      final Harness h = await signedInHarness();
+      final Completer<http.Response> gate = Completer<http.Response>();
+      h.server.on('POST', '/api/account/password', (http.Request _) => gate.future);
+      h.server.reply('GET', '/api/orders', <String, dynamic>{'error': 'الجلسة غير صالحة'}, 401);
+
+      final Future<void> change = h.state.changePassword(currentPassword: 'old1', newPassword: 'new22222');
+      await pumpEventQueue();
+      await h.state.loadOrders(); // the old token is already refused by the server
+      await pumpEventQueue();
+      expect(h.state.isSignedIn, isTrue, reason: 'the 401 is held back while the change is in flight');
+
+      gate.complete(jsonResponse(<String, dynamic>{'ok': true, 'accessToken': 'tok-after-change'}));
+      await change;
+      await pumpEventQueue();
+
+      expect(h.state.isSignedIn, isTrue);
+      expect(h.api.token, 'tok-after-change');
+    });
+
+    test('a held 401 is acted on when the password change brings no new token', () async {
+      final Harness h = await signedInHarness();
+      final Completer<http.Response> gate = Completer<http.Response>();
+      h.server.on('POST', '/api/account/password', (http.Request _) => gate.future);
+      h.server.reply('GET', '/api/orders', <String, dynamic>{'error': 'الجلسة غير صالحة'}, 401);
+
+      final Future<void> change = h.state.changePassword(currentPassword: 'old1', newPassword: 'new22222');
+      await pumpEventQueue();
+      await h.state.loadOrders();
+      gate.complete(jsonResponse(<String, dynamic>{'ok': true}));
+      await change;
+      await pumpEventQueue();
+
+      expect(h.state.status, SessionStatus.signedOut);
+    });
+
+    test('a new token that arrives after signing out is not stored', () async {
+      final Harness h = await signedInHarness();
+      final Completer<http.Response> gate = Completer<http.Response>();
+      h.server.on('POST', '/api/account/password', (http.Request _) => gate.future);
+
+      final Future<void> change = h.state.changePassword(currentPassword: 'old1', newPassword: 'new22222');
+      await pumpEventQueue();
+      await h.state.logout();
+      gate.complete(jsonResponse(<String, dynamic>{'ok': true, 'accessToken': 'tok-late'}));
+      await change;
+
+      expect(h.api.token, isNull);
+      expect(h.store.data.containsKey(tokenKey), isFalse);
+    });
+
+    test('a wrong current password is reported and does not end the session', () async {
       final Harness h = await signedInHarness();
       h.server.reply('POST', '/api/account/password', <String, dynamic>{'error': 'كلمة المرور الحالية غير صحيحة'}, 403);
       await expectLater(
         h.state.changePassword(currentPassword: 'x', newPassword: 'new22'),
         throwsA(apiError(status: 403, message: 'كلمة المرور الحالية غير صحيحة')),
       );
+      expect(h.state.isSignedIn, isTrue);
+      expect(h.api.token, 'tok-1');
     });
 
     test('a phone change is two steps and the new session token replaces the old one', () async {

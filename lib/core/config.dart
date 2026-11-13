@@ -3,13 +3,41 @@
 // Anything that mirrors the web app (brand lists, governorates, limits) is kept here in one place so the
 // two clients stay consistent. The server remains the authority for every rule below.
 
-/// Base URL of the EURO CARS API. Override per build with --dart-define=EURO_API_URL=https://example.com
+import 'package:flutter/foundation.dart' show kReleaseMode;
+
 const String googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
 
-const String apiBase = String.fromEnvironment(
-  'EURO_API_URL',
-  defaultValue: 'https://control-panel-euro-cars.onrender.com',
-);
+/// The production API (HTTPS). Release builds never talk to anything else than an https:// URL.
+const String defaultApiBase = 'https://control-panel-euro-cars.onrender.com';
+
+/// Base URL as configured at build time. Override per build with --dart-define=EURO_API_URL=https://example.com
+const String configuredApiBase = String.fromEnvironment('EURO_API_URL', defaultValue: defaultApiBase);
+
+/// True for an absolute https:// URL with a host.
+bool isHttpsUrl(String url) {
+  final Uri? uri = Uri.tryParse(url.trim());
+  return uri != null && uri.scheme == 'https' && uri.host.isNotEmpty;
+}
+
+/// The API base URL to use. In a release build a URL that is not https:// (a mistyped --dart-define, plain http) is
+/// ignored and [defaultApiBase] is used instead, so no request, token or password can ever travel over plain http.
+/// Debug and profile builds may still point at http://localhost or http://10.0.2.2 (the Android emulator's host).
+String resolveApiBase(String configured, {required bool release}) {
+  final String url = configured.trim();
+  if (release && !isHttpsUrl(url)) {
+    return defaultApiBase;
+  }
+  return url.isEmpty ? defaultApiBase : url;
+}
+
+/// Base URL of the EURO CARS API used by the app (see [resolveApiBase]).
+final String apiBase = resolveApiBase(configuredApiBase, release: kReleaseMode);
+
+/// Shortest NEW password (registration, password reset, password change). The server enforces the same 8.
+const int minNewPasswordLength = 8;
+
+/// Sign-in still accepts the old 4-character minimum so accounts created under the previous rule can log in.
+const int minLoginPasswordLength = 4;
 
 /// Support WhatsApp number (same number the web account page links to).
 const String supportWhatsApp = '963982026134';

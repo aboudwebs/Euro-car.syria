@@ -28,8 +28,10 @@ on:
       - 'branding/**'
       - 'tool/**'
 
+# The build runs third-party actions and project scripts, so its token is read-only. Only the small `publish` job at
+# the end can write releases, and it runs no project code (it only downloads the verified artifact).
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: euro-cars-apk-${{ github.ref }}
@@ -128,25 +130,6 @@ jobs:
       - name: Verify APK
         run: bash tool/verify_apk.sh build/app/outputs/flutter-apk/app-release.apk
 
-      - name: Publish permanent APK download
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: mobile-latest
-          name: EURO CARS — Latest Android APK
-          body: |
-            Verified standalone EURO CARS Android APK (ARM32 + ARM64).
-            Download app-release.apk below to install. Do not use the Actions artifact ZIP as the installer.
-            The SHA-256 checksum and full verification report are attached.
-          prerelease: true
-          make_latest: false
-          overwrite_files: true
-          fail_on_unmatched_files: true
-          files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/app/outputs/flutter-apk/app-release.apk.sha256
-            build/app/outputs/flutter-apk/app-release.apk.verification.txt
-
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -169,3 +152,36 @@ jobs:
             echo "Installable APK: https://github.com/${GITHUB_REPOSITORY}/releases/download/mobile-latest/app-release.apk" >> "$GITHUB_STEP_SUMMARY"
             echo "Note: the Actions artifact is a ZIP container; install the standalone app-release.apk from the release." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  publish:
+    name: Publish permanent APK download
+    needs: build
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - name: Download the verified APK files
+        uses: actions/download-artifact@v4
+        with:
+          name: euro-cars-main-apk
+          path: release-files
+
+      - name: Publish permanent APK download
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-latest
+          name: EURO CARS — Latest Android APK
+          body: |
+            Verified standalone EURO CARS Android APK (ARM32 + ARM64).
+            Download app-release.apk below to install. Do not use the Actions artifact ZIP as the installer.
+            The SHA-256 checksum and full verification report are attached.
+          prerelease: true
+          make_latest: false
+          overwrite_files: true
+          fail_on_unmatched_files: true
+          files: |
+            release-files/app-release.apk
+            release-files/app-release.apk.sha256
+            release-files/app-release.apk.verification.txt

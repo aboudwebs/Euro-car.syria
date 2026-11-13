@@ -117,7 +117,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   }
 
   Future<void> _legacyLogin() async {
-    if (_phone.text.trim().isEmpty || _oldPassword.text.length < 4 || _busy) {
+    if (_phone.text.trim().isEmpty || _oldPassword.text.length < minLoginPasswordLength || _busy) {
       setState(() => _error = 'أدخل رقم الهاتف وكلمة المرور القديمة.');
       return;
     }
@@ -138,6 +138,11 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     if (_busy) return;
     if (provider == 'email' && (_email.text.trim().isEmpty || _password.text.length < 6)) {
       setState(() => _error = 'أدخل البريد وكلمة مرور من 6 أحرف على الأقل.');
+      return;
+    }
+    // A NEW e-mail account follows the 8-character rule; signing in keeps the old minimum (existing accounts).
+    if (provider == 'email' && _mode == _Mode.register && _password.text.length < minNewPasswordLength) {
+      setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
       return;
     }
     if (_mode == _Mode.register && _role == 'workshop' &&

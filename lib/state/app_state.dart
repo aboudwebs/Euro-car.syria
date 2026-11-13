@@ -49,6 +49,11 @@ class AppState extends ChangeNotifier {
   /// Bumped whenever a session starts or ends, so answers to old requests are ignored.
   int _epoch = 0;
 
+  /// Calls in flight that make the server replace the session token (a password change), and whether a 401 was
+  /// held back meanwhile (see [_rotatingSession]).
+  int _tokenRotations = 0;
+  bool _unauthorizedHeld = false;
+
   SessionStatus _status = SessionStatus.restoring;
   AppUser? _user;
   String? _sessionNotice;
@@ -440,7 +445,10 @@ class AppState extends ChangeNotifier {
   Future<void> _registerRefreshedPushToken(String pushToken) async {
     if (pushToken.isEmpty || !isSignedIn) return;
     try {
-      await api.postJson('/api/push/register', <String, dynamic>{'token': pushToken});
+      await api.postJson('/api/push/register', <String, dynamic>{
+        'token': pushToken,
+        'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+      });
     } catch (_) {
       // Push registration is best-effort; it must never block sign-in or app startup.
     }
@@ -736,11 +744,32 @@ class AppState extends ChangeNotifier {
     return const AuthResult(AuthResultKind.signedIn);
   }
 
-  /// Signs out on purpose: the saved cart is cleared too.
-  Future<void> logout() => _endSession(clearCart: true);
+  /// Signs out on purpose: the saved cart is cleared too, and the server is told (best effort, never blocking).
+  Future<void> logout() => _endSession(clearCart: true, serverLogout: true);
+
+  /// Signs this account out on every device (POST /api/auth/logout-all revokes all its tokens), then ends the
+  /// session here too. Throws [ApiException] when the server cannot be reached or refuses: the user then stays
+  /// signed in and can try again, so a security action never looks successful when it was not.
+  Future<void> logoutAllDevices() async {
+    if (_user == null) {
+      return;
+    }
+    // Unregister this device's push token first: once all tokens are revoked the call would be refused.
+    final String? pushToken = await PushNotifications.currentToken();
+    if (pushToken != null && pushToken.isNotEmpty) {
+      await _unregisterPushToken(pushToken);
+    }
+    await _guard(() => api.postJson('/api/auth/logout-all', <String, dynamic>{}));
+    await _endSession(clearCart: true);
+  }
 
   void _handleUnauthorized() {
     if (_status != SessionStatus.signedIn) {
+      return;
+    }
+    if (_tokenRotations > 0) {
+      // A password change is in flight: this 401 may only mean the old token was just replaced.
+      _unauthorizedHeld = true;
       return;
     }
     unawaited(
@@ -751,7 +780,11 @@ class AppState extends ChangeNotifier {
     );
   }
 
-  Future<void> _endSession({required bool clearCart, String? notice}) async {
+  Future<void> _endSession({required bool clearCart, String? notice, bool serverLogout = false}) async {
+    if (serverLogout && api.token != null) {
+      // Best effort and not awaited: the request is built now, with the token that is about to be cleared.
+      unawaited(api.logoutBestEffort());
+    }
     final String? pushToken = await PushNotifications.currentToken();
     if (pushToken != null && pushToken.isNotEmpty && api.token != null) {
       unawaited(_unregisterPushToken(pushToken));
@@ -1435,20 +1468,29 @@ class AppState extends ChangeNotifier {
     unawaited(_safeWrite(userKey, jsonEncode(merged.toJson())));
   }
 
-  /// Saves name, governorate and (optionally) a new password. Throws [ApiException] on failure.
+  /// Saves name, governorate and (optionally) a new password. A new password needs the current one (the server
+  /// refuses PUT /api/auth otherwise) and makes the server replace the session token: the fresh one is adopted so
+  /// the user stays signed in. Throws [ApiException] on failure.
   Future<void> updateProfile({
     required String name,
     required String city,
     String newPassword = '',
+    String currentPassword = '',
   }) async {
     final Map<String, dynamic> body = <String, dynamic>{'name': name.trim()};
     if (city.trim().isNotEmpty) {
       body['city'] = city.trim();
     }
     if (newPassword.isNotEmpty) {
+      if (currentPassword.isEmpty) {
+        throw const ApiException('أدخل كلمة المرور الحالية.');
+      }
       body['newPassword'] = newPassword;
+      body['currentPassword'] = currentPassword;
     }
-    final Map<String, dynamic> data = await _guard(() => api.putProfile(body));
+    final Map<String, dynamic> data = newPassword.isNotEmpty
+        ? await _rotatingSession(() => _guard(() => api.putProfile(body)))
+        : await _guard(() => api.putProfile(body));
     final Object? fresh = data['user'];
     if (fresh is Map) {
       _mergeUser(asMap(fresh));
@@ -1666,14 +1708,54 @@ class AppState extends ChangeNotifier {
 
   // ---------------------------------------------------------------- account data, password, deletion
 
-  /// Changes the password; the current one must be right. Throws [ApiException] with a message for the user.
+  /// Changes the password; the current one must be right. The server then replaces the session token (the old one
+  /// stops working) and returns the new one as `accessToken`: it is adopted here so the user stays signed in.
+  /// Throws [ApiException] with a message for the user.
   Future<void> changePassword({required String currentPassword, required String newPassword}) async {
-    await _guard(
-      () => api.postJson('/api/account/password', <String, dynamic>{
-        'currentPassword': currentPassword,
-        'newPassword': newPassword,
-      }),
+    await _rotatingSession(
+      () => _guard(
+        () => api.postJson('/api/account/password', <String, dynamic>{
+          'currentPassword': currentPassword,
+          'newPassword': newPassword,
+        }),
+      ),
     );
+  }
+
+  /// Runs a call after which the server hands out a new session token (`accessToken` in the answer) and adopts it
+  /// (same storage as sign-in). Without `accessToken` in the answer nothing changes. While the call is in flight a
+  /// 401 given to another request (the background refreshes) is held back, because the old token may already be
+  /// replaced; it is only acted on afterwards, when no new token arrived.
+  Future<Map<String, dynamic>> _rotatingSession(Future<Map<String, dynamic>> Function() call) async {
+    final int epoch = _epoch;
+    bool adopted = false;
+    _tokenRotations++;
+    try {
+      final Map<String, dynamic> data = await call();
+      adopted = await _adoptAccessToken(data, epoch);
+      return data;
+    } finally {
+      _tokenRotations--;
+      if (_tokenRotations == 0) {
+        final bool held = _unauthorizedHeld;
+        _unauthorizedHeld = false;
+        if (held && !adopted) {
+          _handleUnauthorized();
+        }
+      }
+    }
+  }
+
+  /// Stores the `accessToken` of an answer as the session token. Returns false when there is none, or when the
+  /// session it belonged to has ended meanwhile (a token must never be written back after sign-out).
+  Future<bool> _adoptAccessToken(Map<String, dynamic> data, int epoch) async {
+    final Object? token = data['accessToken'];
+    if (token is! String || token.isEmpty || epoch != _epoch || _user == null) {
+      return false;
+    }
+    api.token = token;
+    await _safeWrite(tokenKey, token);
+    return true;
   }
 
   /// Step 1 of a phone change: a code is sent to the NEW number on WhatsApp. Returns the server's message.
@@ -1690,18 +1772,15 @@ class AppState extends ChangeNotifier {
 
   /// Step 2: the code is checked, the number is changed and the session token is replaced (it carries the phone).
   Future<void> confirmPhoneChange({required String newPhone, required String code}) async {
-    final Map<String, dynamic> data = await _guard(
-      () => api.postJson('/api/account/phone', <String, dynamic>{
-        'mode': 'confirm',
-        'newPhone': canonicalPhone(newPhone),
-        'code': toWesternDigits(code).trim(),
-      }),
+    final Map<String, dynamic> data = await _rotatingSession(
+      () => _guard(
+        () => api.postJson('/api/account/phone', <String, dynamic>{
+          'mode': 'confirm',
+          'newPhone': canonicalPhone(newPhone),
+          'code': toWesternDigits(code).trim(),
+        }),
+      ),
     );
-    final Object? token = data['accessToken'];
-    if (token is String && token.isNotEmpty) {
-      api.token = token;
-      await _safeWrite(tokenKey, token);
-    }
     final Object? fresh = data['user'];
     if (fresh is Map) {
       _mergeUser(asMap(fresh));

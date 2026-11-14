@@ -55,7 +55,8 @@ APP_LINK_FILTER = """        <intent-filter>
 GRADLE_IMPORTS = "import java.io.FileInputStream\nimport java.util.Properties\n\n"
 
 GRADLE_KEYSTORE = """// Release signing is optional. With android/key.properties (keyAlias, keyPassword, storeFile, storePassword) the
-// APK is signed with that key; without it the debug key is used, so the APK installs but is not for the Play Store.
+// APK is signed with that key; without it the debug key is used (local test builds only: CI passes
+// --require-release-signing to tool/prepare_android.py, so a production build never falls back to the debug key).
 val keystorePropertiesFile = rootProject.file("key.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
@@ -264,6 +265,11 @@ def copy_resources(source: pathlib.Path, target: pathlib.Path) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--project", default=".", help="Flutter project folder (default: current folder)")
+    parser.add_argument(
+        "--require-release-signing",
+        action="store_true",
+        help="fail when android/key.properties is missing, so a production build can never fall back to the debug key",
+    )
     args = parser.parse_args()
 
     project = pathlib.Path(args.project).resolve()
@@ -271,6 +277,8 @@ def main() -> int:
     try:
         if not android.is_dir():
             raise PatchError(f"{android} does not exist. Run `flutter create --platforms=android .` first.")
+        if args.require_release_signing and not (android / "key.properties").is_file():
+            raise PatchError("android/key.properties is missing: a production build must not be signed with the debug key")
         manifest_changed = patch_manifest(android / "app" / "src" / "main" / "AndroidManifest.xml")
         gradle_file = android / "app" / "build.gradle.kts"
         if not gradle_file.is_file() and (android / "app" / "build.gradle").is_file():

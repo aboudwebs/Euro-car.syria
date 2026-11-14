@@ -1,5 +1,5 @@
 // Forgot password. The project has no e-mail addresses and no Supabase Auth: the account is the phone number, so the
-// recovery message goes to WhatsApp (the channel that already delivers the sign-up code).
+// recovery code is sent by SMS (MsgPlus), the same channel as the sign-up code.
 //
 //   step 1: account type + phone  ->  POST /api/password-reset/user {mode: request}
 //   step 2: 6-digit code + new password  ->  {mode: confirm}
@@ -196,11 +196,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       const SizedBox(height: 16),
                     ],
                     AuthFormCard(
-                      title: _codeStep ? 'أدخل الرمز وكلمة المرور الجديدة' : 'استعادة كلمة المرور عبر واتساب',
+                      title: _codeStep ? 'أدخل الرمز وكلمة المرور الجديدة' : 'استعادة كلمة المرور',
                       children: <Widget>[
                         if (!_codeStep) ...<Widget>[
                           Text(
-                            'اكتب رقم الموبايل المسجل في حسابك. سنرسل رمز تحقق من 6 أرقام إلى واتساب على هذا الرقم.',
+                            'اكتب رقم الموبايل المسجل في حسابك. سنرسل رمز تحقق من 6 أرقام برسالة نصية إلى هذا الرقم.',
                             style: TextStyle(color: p.muted, fontSize: 13.5, height: 1.6),
                           ),
                           const SizedBox(height: 14),

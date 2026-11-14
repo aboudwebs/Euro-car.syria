@@ -261,7 +261,7 @@ class _CartScreenState extends State<CartScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                const Text('أكمل اسمك ورقم هاتفك. سنرسل رمز التحقق إلى واتساب، وبعد تأكيده سيُستكمل طلبك.'),
+                const Text('أكمل اسمك ورقم هاتفك. سنرسل رمز التحقق برسالة نصية، وبعد تأكيده سيُستكمل طلبك.'),
                 const SizedBox(height: 12),
                 TextField(
                   controller: nameController,
@@ -281,7 +281,7 @@ class _CartScreenState extends State<CartScreen> {
                   keyboardType: TextInputType.number,
                   textDirection: TextDirection.ltr,
                   maxLength: 6,
-                  decoration: const InputDecoration(labelText: 'رمز واتساب'),
+                  decoration: const InputDecoration(labelText: 'رمز التحقق'),
                 ),
                 const SizedBox(height: 6),
                 if (localError != null)
@@ -304,11 +304,11 @@ class _CartScreenState extends State<CartScreen> {
                 try {
                   final String token = await state.requestRegistrationOtp(phone: phoneController.text);
                   if (token.isEmpty) {
-                    setDialogState(() => localError = 'إرسال رمز واتساب غير مفعّل حالياً. سيُتاح عند نشر التحديث.');
+                    setDialogState(() => localError = 'إرسال رمز التحقق غير مفعّل حالياً. سيُتاح عند نشر التحديث.');
                   } else {
                     setDialogState(() {
                       otpToken = token;
-                      localError = 'تم إرسال الرمز إلى واتساب.';
+                      localError = 'تم إرسال الرمز برسالة نصية.';
                     });
                   }
                 } catch (error) {
@@ -317,7 +317,7 @@ class _CartScreenState extends State<CartScreen> {
                   setDialogState(() => dialogBusy = false);
                 }
               },
-              child: Text(otpToken == null ? 'إرسال رمز واتساب' : 'تم الإرسال'),
+              child: Text(otpToken == null ? 'إرسال رمز التحقق' : 'تم الإرسال'),
             ),
             FilledButton(
               onPressed: dialogBusy || otpToken == null ? null : () async {

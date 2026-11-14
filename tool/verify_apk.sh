@@ -111,7 +111,11 @@ else
     fail "apksigner reported success but neither the v2 nor the v3 scheme is verified"
   fi
   if printf '%s\n' "$signer_output" | grep -qi 'Android Debug'; then
-    warn "signed with the DEBUG key: installable, but add android/key.properties for a release key"
+    if [ "${EURO_ALLOW_DEBUG_SIGNING:-}" = "1" ]; then
+      warn "signed with the DEBUG key (allowed by EURO_ALLOW_DEBUG_SIGNING=1): not for stores or distribution"
+    else
+      fail "signed with the DEBUG key: a production APK must be signed with the release key (android/key.properties)"
+    fi
   fi
 fi
 

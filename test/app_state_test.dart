@@ -311,7 +311,7 @@ void main() {
       expect(h.store.data.containsKey(tokenKey), isFalse);
     });
 
-    test('a workshop registration verifies WhatsApp before sending the cleaned fields', () async {
+    test('a workshop registration verifies the SMS code before sending the cleaned fields', () async {
       final Harness h = Harness();
       h.server.on('POST', '/api/auth', (http.Request request) {
         final Map<String, dynamic> body = jsonDecode(request.body) as Map<String, dynamic>;
@@ -390,7 +390,7 @@ void main() {
       expect(body.containsKey('refSignature'), isFalse);
     });
 
-    test('a marketer registration signs in after WhatsApp OTP and sends no workshop fields', () async {
+    test('a marketer registration signs in after the SMS code and sends no workshop fields', () async {
       final Harness h = Harness();
       h.server.on('POST', '/api/auth', (http.Request request) {
         final Map<String, dynamic> body = jsonDecode(request.body) as Map<String, dynamic>;

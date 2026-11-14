@@ -129,7 +129,7 @@ void main() {
       expect(sent.containsKey('role'), isFalse);
     });
 
-    testWidgets('forgot password opens the WhatsApp recovery page and asks for the number first', (WidgetTester tester) async {
+    testWidgets('forgot password opens the SMS recovery page and asks for the number first', (WidgetTester tester) async {
       usePhoneScreen(tester);
       final FakeServer server = FakeServer();
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: server.client));
@@ -141,7 +141,7 @@ void main() {
       await tester.tap(find.text('نسيت كلمة المرور؟'));
       await settle(tester);
 
-      expect(find.text('استعادة كلمة المرور عبر واتساب'), findsOneWidget);
+      expect(find.text('استعادة كلمة المرور'), findsOneWidget);
       expect(find.text('إرسال رمز التحقق'), findsOneWidget);
 
       // A too short number is refused on the device; nothing is sent.

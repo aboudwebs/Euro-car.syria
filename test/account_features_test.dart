@@ -324,7 +324,7 @@ void main() {
     test('the request is sent without a session and shows the same message for any number', () async {
       final Harness h = Harness();
       await h.state.restore();
-      h.server.reply('POST', '/api/password-reset/user', <String, dynamic>{'ok': true, 'message': 'إن كان الرقم مسجلاً لدينا فسيصلك رمز التحقق على واتساب خلال دقيقة.'});
+      h.server.reply('POST', '/api/password-reset/user', <String, dynamic>{'ok': true, 'message': 'إن كان الرقم مسجلاً لدينا فسيصلك رمز التحقق برسالة نصية خلال دقيقة.'});
 
       final String message = await h.state.requestPasswordReset(role: 'workshop', phone: ' 0982026134 ');
 

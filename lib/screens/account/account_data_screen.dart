@@ -3,7 +3,7 @@
 //
 //   name + governorate   PUT /api/auth                         (existing endpoint)
 //   password             POST /api/account/password            (current password required)
-//   phone number         POST /api/account/phone               (WhatsApp code to the NEW number)
+//   phone number         POST /api/account/phone               (SMS code to the NEW number)
 
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
@@ -275,7 +275,7 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
                     InfoRow(label: 'الرقم الحالي', value: user.phone, ltr: true, bold: true),
                     const SizedBox(height: 6),
                     Text(
-                      'رقم الموبايل هو اسم الدخول إلى حسابك. عند تغييره نرسل رمز تحقق إلى الرقم الجديد على واتساب.',
+                      'رقم الموبايل هو اسم الدخول إلى حسابك. عند تغييره نرسل رمز تحقق إلى الرقم الجديد برسالة نصية.',
                       style: TextStyle(color: p.muted, fontSize: 13, height: 1.6),
                     ),
                     const SizedBox(height: 14),
@@ -385,7 +385,7 @@ class _CardTitle extends StatelessWidget {
   }
 }
 
-/// The two steps of a phone change in a bottom sheet: new number + current password, then the WhatsApp code.
+/// The two steps of a phone change in a bottom sheet: new number + current password, then the SMS code.
 class _PhoneChangeSheet extends StatefulWidget {
   const _PhoneChangeSheet();
 

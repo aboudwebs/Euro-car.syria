@@ -595,7 +595,7 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Completes an OAuth account's profile after the WhatsApp code has been verified by the server.
+  /// Completes an OAuth account's profile after the SMS code has been verified by the server.
   Future<void> completeFirebaseProfile({
     required String idToken,
     required String name,
@@ -644,7 +644,7 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Requests a WhatsApp verification code before account creation.
+  /// Requests an SMS verification code before account creation.
   Future<String> requestRegistrationOtp({required String phone}) async {
     final Map<String, dynamic> data = await api.postJson(
       '/api/auth',
@@ -1758,7 +1758,7 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
-  /// Step 1 of a phone change: a code is sent to the NEW number on WhatsApp. Returns the server's message.
+  /// Step 1 of a phone change: a code is sent to the NEW number by SMS. Returns the server's message.
   Future<String> requestPhoneChange({required String newPhone, required String currentPassword}) async {
     final Map<String, dynamic> data = await _guard(
       () => api.postJson('/api/account/phone', <String, dynamic>{
@@ -1767,7 +1767,7 @@ class AppState extends ChangeNotifier {
         'currentPassword': currentPassword,
       }),
     );
-    return asString(data['message'], 'تم إرسال رمز التحقق إلى الرقم الجديد على واتساب');
+    return asString(data['message'], 'تم إرسال رمز التحقق إلى الرقم الجديد برسالة نصية');
   }
 
   /// Step 2: the code is checked, the number is changed and the session token is replaced (it carries the phone).
@@ -1839,7 +1839,7 @@ class AppState extends ChangeNotifier {
 
   // ---------------------------------------------------------------- forgot password (no session)
 
-  /// Asks for a WhatsApp recovery code. The answer is the same whether or not the number is registered.
+  /// Asks for an SMS recovery code. The answer is the same whether or not the number is registered.
   Future<String> requestPasswordReset({required String role, required String phone}) async {
     final Map<String, dynamic> data = await _guard(
       () => api.postJson(
@@ -1848,7 +1848,7 @@ class AppState extends ChangeNotifier {
         auth: false,
       ),
     );
-    return asString(data['message'], 'إن كان الرقم مسجلاً لدينا فسيصلك رمز التحقق على واتساب خلال دقيقة.');
+    return asString(data['message'], 'إن كان الرقم مسجلاً لدينا فسيصلك رمز التحقق برسالة نصية خلال دقيقة.');
   }
 
   /// Checks the code and sets the new password. The user then signs in with it.

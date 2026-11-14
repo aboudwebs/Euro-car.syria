@@ -394,7 +394,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         const SizedBox(height: 12),
         AppTextField(
           controller: _otpCode,
-          label: 'رمز التحقق المرسل إلى واتساب',
+          label: 'رمز التحقق المرسل برسالة نصية',
           hint: '000000',
           icon: Icons.password_rounded,
           keyboardType: TextInputType.number,

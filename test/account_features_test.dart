@@ -13,6 +13,7 @@ import 'package:http/http.dart' as http;
 
 import 'app_state_test.dart' show Harness, bodyOf, catalogPart, signedInHarness;
 import 'support/fake_server.dart';
+import 'support/fixtures.dart' show marketerJson;
 import 'support/matchers.dart';
 
 Map<String, dynamic> addressJson(String id, {bool isDefault = false, String label = 'الورشة'}) {
@@ -289,6 +290,145 @@ void main() {
       expect(h.api.token, 'tok-new');
       expect(h.store.data[tokenKey], 'tok-new');
       expect(h.state.user?.phone, '963933000111');
+    });
+  });
+
+  group('accounts made with e-mail (no phone and no password yet)', () {
+    Map<String, dynamic> emailMarketer() => <String, dynamic>{
+          ...marketerJson(),
+          'phone': null,
+          'has_password': false,
+          'phone_verified': false,
+        };
+
+    Map<String, dynamic> dashboardJson({required bool phoneVerified}) => <String, dynamic>{
+          'marketer': <String, dynamic>{
+            'name': 'مسوّق الشمال',
+            'code': 'MK-1A2B3C',
+            'referralUrl': phoneVerified ? 'https://example.test/r?ref=MK-1A2B3C&sig=abc' : null,
+            'phoneVerified': phoneVerified,
+          },
+          'workshops': 0,
+          'commissions': <String, dynamic>{'available': 0, 'held': 0, 'paid': 0, 'total': 0},
+        };
+
+    test('an older server sends no flags: the account counts as having a password and a confirmed phone', () {
+      final AppUser user = AppUser.fromJson(marketerJson());
+      expect(user.hasPhone, isTrue);
+      expect(user.hasPassword, isTrue);
+      expect(user.phoneVerified, isTrue);
+
+      final AppUser noPhone = AppUser.fromJson(<String, dynamic>{...marketerJson(), 'phone': null});
+      expect(noPhone.hasPhone, isFalse);
+      expect(noPhone.phoneVerified, isFalse);
+    });
+
+    test('the flags of an e-mail account choose "add" instead of "change"', () async {
+      final Harness h = await signedInHarness(account: emailMarketer());
+      final AppUser user = h.state.user!;
+      expect(user.hasPhone, isFalse);
+      expect(user.hasPassword, isFalse);
+      expect(user.phoneVerified, isFalse);
+    });
+
+    test('the marketer dashboard says whether the invitation link is locked', () {
+      final MarketerDashboard locked = MarketerDashboard.fromJson(dashboardJson(phoneVerified: false));
+      expect(locked.phoneVerified, isFalse);
+      expect(locked.referralUrl, isEmpty);
+
+      final MarketerDashboard open = MarketerDashboard.fromJson(dashboardJson(phoneVerified: true));
+      expect(open.phoneVerified, isTrue);
+      expect(open.referralUrl, contains('sig=abc'));
+
+      final Map<String, dynamic> older = dashboardJson(phoneVerified: true);
+      (older['marketer'] as Map<String, dynamic>).remove('phoneVerified');
+      expect(MarketerDashboard.fromJson(older).phoneVerified, isTrue, reason: 'older servers have no lock');
+    });
+
+    test('the first password is sent alone, keeps the user signed in and ends the "no password" state', () async {
+      final Harness h = await signedInHarness(account: emailMarketer());
+      h.server.reply('POST', '/api/account/password', <String, dynamic>{'ok': true, 'accessToken': 'tok-first', 'has_password': true});
+
+      await h.state.addPassword(newPassword: 'abcd1234');
+      await pumpEventQueue();
+
+      expect(bodyOf(h.server.requestsTo('POST', '/api/account/password').single), <String, dynamic>{'newPassword': 'abcd1234'});
+      expect(h.api.token, 'tok-first');
+      expect(h.store.data[tokenKey], 'tok-first');
+      expect(h.state.isSignedIn, isTrue);
+      expect(h.state.user!.hasPassword, isTrue);
+    });
+
+    test('a refused first password (one exists already) is reported and changes nothing', () async {
+      final Harness h = await signedInHarness(account: emailMarketer());
+      h.server.reply('POST', '/api/account/password', <String, dynamic>{'error': 'لهذا الحساب كلمة مرور بالفعل'}, 409);
+      await expectLater(h.state.addPassword(newPassword: 'abcd1234'), throwsA(apiError(status: 409)));
+      expect(h.state.user!.hasPassword, isFalse);
+      expect(h.api.token, 'tok-1');
+    });
+
+    test('a phone is added with the SMS code alone, and the invitation link unlocks afterwards', () async {
+      final Harness h = await signedInHarness(account: emailMarketer());
+      h.server.reply('POST', '/api/account/phone', <String, dynamic>{'ok': true, 'message': 'تم إرسال الرمز'});
+      await h.state.requestPhoneChange(newPhone: '0933000111');
+      final Map<String, dynamic> first = bodyOf(h.server.requestsTo('POST', '/api/account/phone').single);
+      expect(first['mode'], 'request');
+      expect(first.containsKey('currentPassword'), isFalse, reason: 'there is no password to ask for');
+
+      h.server.reply('GET', '/api/marketer/dashboard', dashboardJson(phoneVerified: true));
+      h.server.reply('POST', '/api/account/phone', <String, dynamic>{
+        'ok': true,
+        'accessToken': 'tok-new',
+        'user': <String, dynamic>{
+          'id': 'm1',
+          'role': 'marketer',
+          'name': 'مسوّق الشمال',
+          'phone': '963933000111',
+          'phone_verified': true,
+          'has_password': false,
+        },
+      });
+      await h.state.confirmPhoneChange(newPhone: '963933000111', code: '123456');
+      await pumpEventQueue();
+
+      expect(h.api.token, 'tok-new');
+      expect(h.state.user!.hasPhone, isTrue);
+      expect(h.state.user!.phoneVerified, isTrue);
+      expect(h.state.user!.hasPassword, isFalse, reason: 'adding a phone does not add a password');
+      expect(h.server.requestsTo('GET', '/api/marketer/dashboard'), hasLength(1));
+      expect(h.state.marketerDashboard?.phoneVerified, isTrue);
+      expect(h.state.marketerDashboard?.referralUrl, contains('sig=abc'));
+    });
+
+    test('forgot password while signed in: SMS code, then a new password, and this device stays signed in', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('POST', '/api/account/password', <String, dynamic>{'ok': true, 'message': 'تم إرسال الرمز'});
+      expect(await h.state.requestPasswordRecovery(), 'تم إرسال الرمز');
+      expect(bodyOf(h.server.requestsTo('POST', '/api/account/password').single), <String, dynamic>{'mode': 'forgot-request'});
+
+      h.server.reply('POST', '/api/account/password', <String, dynamic>{'ok': true, 'accessToken': 'tok-forgot', 'has_password': true});
+      await h.state.confirmPasswordRecovery(code: '١٢٣٤٥٦', newPassword: 'abcd1234');
+      await pumpEventQueue();
+
+      expect(bodyOf(h.server.requestsTo('POST', '/api/account/password').last), <String, dynamic>{
+        'mode': 'forgot-confirm',
+        'code': '123456',
+        'newPassword': 'abcd1234',
+      });
+      expect(h.api.token, 'tok-forgot');
+      expect(h.store.data[tokenKey], 'tok-forgot');
+      expect(h.state.isSignedIn, isTrue);
+    });
+
+    test('a wrong recovery code is reported with the server message', () async {
+      final Harness h = await signedInHarness();
+      h.server.reply('POST', '/api/account/password', <String, dynamic>{'error': 'الرمز غير صحيح أو انتهت صلاحيته.'}, 400);
+      await expectLater(
+        h.state.confirmPasswordRecovery(code: '000000', newPassword: 'abcd1234'),
+        throwsA(apiError(status: 400)),
+      );
+      expect(h.state.isSignedIn, isTrue);
+      expect(h.api.token, 'tok-1');
     });
   });
 

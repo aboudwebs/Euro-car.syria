@@ -2,8 +2,13 @@
 // from the app (the server ignores it and a database trigger blocks it: see supabase/updates_2026_10.sql).
 //
 //   name + governorate   PUT /api/auth                         (existing endpoint)
-//   password             POST /api/account/password            (current password required)
-//   phone number         POST /api/account/phone               (SMS code to the NEW number)
+//   password             POST /api/account/password            (current password required; an account made with
+//                                                              e-mail has none and ADDS its first one without it;
+//                                                              "forgot password" sends an SMS code to the account phone)
+//   phone number         POST /api/account/phone               (SMS code to the NEW number; an account made with
+//                                                              e-mail has no number yet and ADDS it the same way)
+
+import 'dart:async';
 
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
@@ -58,6 +63,8 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
       _name.text = user.name;
       _city = user.city ?? '';
     }
+    // The buttons depend on facts the server knows (has a password, phone confirmed): refresh them quietly.
+    unawaited(AppScope.read(context).refreshProfile());
   }
 
   @override
@@ -136,16 +143,18 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
     if (_savingPassword) {
       return;
     }
+    // An account made with e-mail has no password yet: its first one is ADDED without asking for a current one.
+    final bool first = !(AppScope.read(context).user?.hasPassword ?? true);
     final String current = _currentPassword.text;
     final String next = _newPassword.text;
     String? problem;
-    if (current.isEmpty) {
+    if (!first && current.isEmpty) {
       problem = 'أدخل كلمة المرور الحالية.';
     } else if (next.length < minNewPasswordLength) {
-      problem = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.';
+      problem = first ? 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.' : 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.';
     } else if (next != _confirmPassword.text) {
-      problem = 'كلمتا المرور الجديدتان غير متطابقتين.';
-    } else if (next == current) {
+      problem = first ? 'كلمتا المرور غير متطابقتين.' : 'كلمتا المرور الجديدتان غير متطابقتين.';
+    } else if (!first && next == current) {
       problem = 'كلمة المرور الجديدة مطابقة للحالية.';
     }
     if (problem != null) {
@@ -163,7 +172,11 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
       _passwordNotice = null;
     });
     try {
-      await state.changePassword(currentPassword: current, newPassword: next);
+      if (first) {
+        await state.addPassword(newPassword: next);
+      } else {
+        await state.changePassword(currentPassword: current, newPassword: next);
+      }
       if (!mounted) {
         return;
       }
@@ -172,7 +185,9 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
         _currentPassword.clear();
         _newPassword.clear();
         _confirmPassword.clear();
-        _passwordNotice = 'تم تغيير كلمة المرور. استخدم الجديدة في تسجيل الدخول القادم.';
+        _passwordNotice = first
+            ? 'تمت إضافة كلمة المرور. تستخدمها مع رقم موبايلك في تسجيل الدخول.'
+            : 'تم تغيير كلمة المرور. استخدم الجديدة في تسجيل الدخول القادم.';
       });
     } on ApiException catch (error) {
       if (mounted) {
@@ -192,13 +207,51 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
   }
 
   Future<void> _changePhone() async {
+    final AppUser? user = AppScope.read(context).user;
+    if (user == null) {
+      return;
+    }
+    if (user.hasPhone && !user.hasPassword) {
+      // Nothing but the session would protect the change: the server asks for a password first.
+      showSnack(context, 'أضف كلمة مرور لحسابك أولاً من قسم «إضافة كلمة مرور» أدناه، ثم غيّر رقم الموبايل.');
+      return;
+    }
+    final bool adding = !user.hasPhone;
+    final bool needsPassword = user.hasPassword;
     final bool? changed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      builder: (BuildContext sheetContext) => const _PhoneChangeSheet(),
+      builder: (BuildContext sheetContext) => _PhoneChangeSheet(adding: adding, needsPassword: needsPassword),
     );
     if (changed == true && mounted) {
-      showSnack(context, 'تم تغيير رقم الموبايل');
+      showSnack(context, adding ? 'تمت إضافة رقم الموبايل' : 'تم تغيير رقم الموبايل');
+    }
+  }
+
+  /// "Forgot my password" without signing out: an SMS code goes to the phone number of the account.
+  Future<void> _forgotPassword() async {
+    final AppUser? user = AppScope.read(context).user;
+    if (user == null) {
+      return;
+    }
+    if (!user.hasPhone) {
+      showSnack(context, 'أضف رقم الموبايل إلى حسابك أولاً لنرسل لك رمز الاستعادة برسالة نصية.');
+      return;
+    }
+    final String phone = user.phone;
+    final bool? done = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (BuildContext sheetContext) => _PasswordRecoverySheet(phone: phone),
+    );
+    if (done == true && mounted) {
+      setState(() {
+        _currentPassword.clear();
+        _newPassword.clear();
+        _confirmPassword.clear();
+        _passwordError = null;
+        _passwordNotice = 'تم تعيين كلمة المرور الجديدة وبقيت مسجّلاً في هذا الجهاز.';
+      });
     }
   }
 
@@ -272,16 +325,24 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
                   children: <Widget>[
                     const _CardTitle(icon: Icons.phone_iphone_rounded, title: 'رقم الموبايل'),
                     const SizedBox(height: 12),
-                    InfoRow(label: 'الرقم الحالي', value: user.phone, ltr: true, bold: true),
-                    const SizedBox(height: 6),
+                    if (user.hasPhone) ...<Widget>[
+                      InfoRow(label: 'الرقم الحالي', value: user.phone, ltr: true, bold: true),
+                      if (user.raw.containsKey('phone_verified')) ...<Widget>[
+                        const SizedBox(height: 6),
+                        InfoRow(label: 'حالة التوثيق', value: user.phoneVerified ? 'موثّق' : 'غير موثّق', bold: true),
+                      ],
+                      const SizedBox(height: 6),
+                    ],
                     Text(
-                      'رقم الموبايل هو اسم الدخول إلى حسابك. عند تغييره نرسل رمز تحقق إلى الرقم الجديد برسالة نصية.',
+                      user.hasPhone
+                          ? 'رقم الموبايل هو اسم الدخول إلى حسابك. عند تغييره نرسل رمز تحقق إلى الرقم الجديد برسالة نصية.'
+                          : 'حسابك مسجّل بالبريد الإلكتروني ولا يحتوي على رقم موبايل. أضف رقمك لتوثيق حسابك وليكون اسم الدخول إليه؛ نرسل رمز تحقق إلى الرقم برسالة نصية.',
                       style: TextStyle(color: p.muted, fontSize: 13, height: 1.6),
                     ),
                     const SizedBox(height: 14),
                     SecondaryButton(
-                      label: 'تغيير رقم الموبايل',
-                      icon: Icons.swap_horiz_rounded,
+                      label: user.hasPhone ? 'تغيير رقم الموبايل' : 'إضافة رقم الموبايل',
+                      icon: user.hasPhone ? Icons.swap_horiz_rounded : Icons.add_call,
                       onPressed: _changePhone,
                     ),
                   ],
@@ -316,25 +377,36 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    const _CardTitle(icon: Icons.lock_outline_rounded, title: 'تغيير كلمة المرور'),
-                    const SizedBox(height: 16),
-                    PasswordField(
-                      controller: _currentPassword,
-                      label: 'كلمة المرور الحالية',
-                      radius: 12,
-                      textInputAction: TextInputAction.next,
+                    _CardTitle(
+                      icon: Icons.lock_outline_rounded,
+                      title: user.hasPassword ? 'تغيير كلمة المرور' : 'إضافة كلمة مرور',
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
+                    if (!user.hasPassword) ...<Widget>[
+                      Text(
+                        'حسابك أُنشئ بالبريد الإلكتروني فلا توجد له كلمة مرور بعد. أضف كلمة مرور (8 أحرف على الأقل) لتسجّل بها الدخول برقم موبايلك.',
+                        style: TextStyle(color: p.muted, fontSize: 13, height: 1.6),
+                      ),
+                      const SizedBox(height: 14),
+                    ] else ...<Widget>[
+                      PasswordField(
+                        controller: _currentPassword,
+                        label: 'كلمة المرور الحالية',
+                        radius: 12,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      const SizedBox(height: 14),
+                    ],
                     PasswordField(
                       controller: _newPassword,
-                      label: 'كلمة المرور الجديدة',
+                      label: user.hasPassword ? 'كلمة المرور الجديدة' : 'كلمة المرور',
                       radius: 12,
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 14),
                     PasswordField(
                       controller: _confirmPassword,
-                      label: 'تأكيد كلمة المرور الجديدة',
+                      label: user.hasPassword ? 'تأكيد كلمة المرور الجديدة' : 'تأكيد كلمة المرور',
                       radius: 12,
                       textInputAction: TextInputAction.done,
                       onSubmitted: (String value) => _savePassword(),
@@ -349,12 +421,17 @@ class _AccountDataScreenState extends State<AccountDataScreen> {
                     ],
                     const SizedBox(height: 16),
                     PrimaryButton(
-                      label: 'تغيير كلمة المرور',
-                      icon: Icons.lock_reset_rounded,
+                      label: user.hasPassword ? 'تغيير كلمة المرور' : 'إضافة كلمة المرور',
+                      icon: user.hasPassword ? Icons.lock_reset_rounded : Icons.lock_outline_rounded,
                       radius: 12,
                       busy: _savingPassword,
                       onPressed: _savePassword,
                     ),
+                    if (user.hasPassword)
+                      TextButton(
+                        onPressed: _savingPassword ? null : _forgotPassword,
+                        child: const Text('نسيت كلمة المرور؟'),
+                      ),
                   ],
                 ),
               ),
@@ -387,7 +464,13 @@ class _CardTitle extends StatelessWidget {
 
 /// The two steps of a phone change in a bottom sheet: new number + current password, then the SMS code.
 class _PhoneChangeSheet extends StatefulWidget {
-  const _PhoneChangeSheet();
+  const _PhoneChangeSheet({this.adding = false, this.needsPassword = true});
+
+  /// The account has no phone yet (made with e-mail): the number is added, not changed.
+  final bool adding;
+
+  /// The account has a password to ask for. An account made with e-mail has none: the SMS code is the proof.
+  final bool needsPassword;
 
   @override
   State<_PhoneChangeSheet> createState() => _PhoneChangeSheetState();
@@ -418,7 +501,7 @@ class _PhoneChangeSheetState extends State<_PhoneChangeSheet> {
       setState(() => _error = 'أدخل الرقم الجديد بالصيغة الدولية (مثال 9639XXXXXXXX).');
       return;
     }
-    if (_password.text.isEmpty) {
+    if (widget.needsPassword && _password.text.isEmpty) {
       setState(() => _error = 'أدخل كلمة المرور الحالية.');
       return;
     }
@@ -431,7 +514,7 @@ class _PhoneChangeSheetState extends State<_PhoneChangeSheet> {
     try {
       final String message = await state.requestPhoneChange(
         newPhone: _phone.text,
-        currentPassword: _password.text,
+        currentPassword: widget.needsPassword ? _password.text : '',
       );
       if (mounted) {
         setState(() {
@@ -507,29 +590,32 @@ class _PhoneChangeSheetState extends State<_PhoneChangeSheet> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
               Text(
-                'تغيير رقم الموبايل',
+                widget.adding ? 'إضافة رقم الموبايل' : 'تغيير رقم الموبايل',
                 style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 14),
               if (!_codeStep) ...<Widget>[
                 AppTextField(
                   controller: _phone,
-                  label: 'الرقم الجديد',
+                  label: widget.adding ? 'رقم الموبايل' : 'الرقم الجديد',
                   hint: '9639XXXXXXXX',
                   icon: Icons.phone_iphone_rounded,
                   keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.next,
+                  textInputAction: widget.needsPassword ? TextInputAction.next : TextInputAction.done,
                   ltr: true,
                   radius: 12,
+                  onSubmitted: widget.needsPassword ? null : (String value) => _request(),
                 ),
-                const SizedBox(height: 12),
-                PasswordField(
-                  controller: _password,
-                  label: 'كلمة المرور الحالية',
-                  radius: 12,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (String value) => _request(),
-                ),
+                if (widget.needsPassword) ...<Widget>[
+                  const SizedBox(height: 12),
+                  PasswordField(
+                    controller: _password,
+                    label: 'كلمة المرور الحالية',
+                    radius: 12,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (String value) => _request(),
+                  ),
+                ],
                 if (error != null) ...<Widget>[
                   const SizedBox(height: 12),
                   NoticeBanner(message: error, kind: NoticeKind.error),
@@ -558,7 +644,13 @@ class _PhoneChangeSheetState extends State<_PhoneChangeSheet> {
                   NoticeBanner(message: error, kind: NoticeKind.error),
                 ],
                 const SizedBox(height: 16),
-                PrimaryButton(label: 'تأكيد وتغيير الرقم', icon: Icons.check_rounded, radius: 12, busy: _busy, onPressed: _confirm),
+                PrimaryButton(
+                  label: widget.adding ? 'تأكيد وإضافة الرقم' : 'تأكيد وتغيير الرقم',
+                  icon: Icons.check_rounded,
+                  radius: 12,
+                  busy: _busy,
+                  onPressed: _confirm,
+                ),
                 TextButton(
                   onPressed: _busy
                       ? null
@@ -568,6 +660,210 @@ class _PhoneChangeSheetState extends State<_PhoneChangeSheet> {
                             _code.clear();
                           }),
                   child: const Text('تعديل الرقم أو إعادة الإرسال'),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "Forgot my password" for a signed-in user, in two steps: an SMS code goes to the phone number of the account, then the
+/// code and the new password are sent together. This device stays signed in (the server returns a new session token).
+class _PasswordRecoverySheet extends StatefulWidget {
+  const _PasswordRecoverySheet({required this.phone});
+
+  final String phone;
+
+  @override
+  State<_PasswordRecoverySheet> createState() => _PasswordRecoverySheetState();
+}
+
+class _PasswordRecoverySheetState extends State<_PasswordRecoverySheet> {
+  final TextEditingController _code = TextEditingController();
+  final TextEditingController _newPassword = TextEditingController();
+  final TextEditingController _confirmPassword = TextEditingController();
+  bool _codeStep = false;
+  bool _busy = false;
+  String? _error;
+  String? _info;
+
+  @override
+  void dispose() {
+    _code.dispose();
+    _newPassword.dispose();
+    _confirmPassword.dispose();
+    super.dispose();
+  }
+
+  /// The number with only its last digits readable, e.g. ••••••4567.
+  String get _maskedPhone {
+    final String digits = widget.phone.trim();
+    if (digits.length <= 4) {
+      return digits;
+    }
+    return '••••••${digits.substring(digits.length - 4)}';
+  }
+
+  Future<void> _send() async {
+    if (_busy) {
+      return;
+    }
+    final AppState state = AppScope.read(context);
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final String message = await state.requestPasswordRecovery();
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _codeStep = true;
+          _info = message;
+        });
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = error.message;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = unexpectedMessage;
+        });
+      }
+    }
+  }
+
+  Future<void> _confirm() async {
+    if (_busy) {
+      return;
+    }
+    final String next = _newPassword.text;
+    String? problem;
+    if (_code.text.trim().length != 6) {
+      problem = 'أدخل رمز التحقق المكوّن من 6 أرقام.';
+    } else if (next.length < minNewPasswordLength) {
+      problem = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.';
+    } else if (next != _confirmPassword.text) {
+      problem = 'كلمتا المرور الجديدتان غير متطابقتين.';
+    }
+    if (problem != null) {
+      setState(() => _error = problem);
+      return;
+    }
+    final AppState state = AppScope.read(context);
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await state.confirmPasswordRecovery(code: _code.text, newPassword: next);
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } on ApiException catch (error) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = error.message;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = unexpectedMessage;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final Palette p = Palette.of(context);
+    final String? error = _error;
+    final String? info = _info;
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 4, 20, 20 + MediaQuery.viewInsetsOf(context).bottom),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: <Widget>[
+              Text(
+                'استعادة كلمة المرور',
+                style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 14),
+              if (!_codeStep) ...<Widget>[
+                Text(
+                  'نرسل رمز تحقق برسالة نصية إلى رقم الموبايل المسجّل في حسابك، ثم تعيّن كلمة مرور جديدة دون أن تخرج من حسابك.',
+                  style: TextStyle(color: p.muted, fontSize: 13, height: 1.6),
+                ),
+                const SizedBox(height: 10),
+                InfoRow(label: 'الرقم', value: _maskedPhone, ltr: true, bold: true),
+                if (error != null) ...<Widget>[
+                  const SizedBox(height: 12),
+                  NoticeBanner(message: error, kind: NoticeKind.error),
+                ],
+                const SizedBox(height: 16),
+                PrimaryButton(label: 'إرسال رمز التحقق', icon: Icons.send_rounded, radius: 12, busy: _busy, onPressed: _send),
+              ] else ...<Widget>[
+                if (info != null) ...<Widget>[
+                  NoticeBanner(message: info, kind: NoticeKind.success),
+                  const SizedBox(height: 12),
+                ],
+                AppTextField(
+                  controller: _code,
+                  label: 'رمز التحقق (6 أرقام)',
+                  icon: Icons.pin_outlined,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.next,
+                  maxLength: 6,
+                  ltr: true,
+                  radius: 12,
+                  inputFormatters: <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly],
+                ),
+                const SizedBox(height: 12),
+                PasswordField(
+                  controller: _newPassword,
+                  label: 'كلمة المرور الجديدة',
+                  radius: 12,
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 12),
+                PasswordField(
+                  controller: _confirmPassword,
+                  label: 'تأكيد كلمة المرور الجديدة',
+                  radius: 12,
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (String value) => _confirm(),
+                ),
+                if (error != null) ...<Widget>[
+                  const SizedBox(height: 12),
+                  NoticeBanner(message: error, kind: NoticeKind.error),
+                ],
+                const SizedBox(height: 16),
+                PrimaryButton(
+                  label: 'تأكيد وتعيين كلمة المرور',
+                  icon: Icons.check_rounded,
+                  radius: 12,
+                  busy: _busy,
+                  onPressed: _confirm,
+                ),
+                TextButton(
+                  onPressed: _busy ? null : _send,
+                  child: const Text('إعادة إرسال الرمز'),
                 ),
               ],
             ],

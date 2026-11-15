@@ -18,6 +18,7 @@ import '../../widgets/feedback.dart';
 import '../../widgets/inputs.dart';
 import '../../widgets/panel.dart';
 import '../../widgets/pickers.dart';
+import '../account/account_data_screen.dart';
 import '../home/tab_header.dart';
 import 'dashboard_widgets.dart';
 import '../../widgets/tx.dart';
@@ -673,7 +674,10 @@ class _InvitationPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Palette p = Palette.of(context);
-    final String link = data.referralUrl;
+    // Until the marketer's phone number is added and confirmed the server sends no link; the buttons stay locked
+    // (also against an older server that still sends one).
+    final bool locked = !data.phoneVerified;
+    final String link = locked ? '' : data.referralUrl;
     final bool hasLink = link.isNotEmpty;
 
     return Panel(
@@ -696,11 +700,24 @@ class _InvitationPanel extends StatelessWidget {
                       style: TextStyle(color: p.text, fontSize: 13.5, height: 1.5),
                     )
                   : Text(
-                      'لا يوجد كود دعوة لحسابك',
+                      locked ? 'رابط الدعوة غير مفعّل بعد' : 'لا يوجد كود دعوة لحسابك',
                       style: TextStyle(color: p.placeholder, fontSize: 14),
                     ),
             ),
           ),
+          if (locked) ...<Widget>[
+            const SizedBox(height: 12),
+            const NoticeBanner(
+              message: 'يجب إضافة وتأكيد رقم الموبايل لتفعيل رابط الإحالة',
+              kind: NoticeKind.warning,
+            ),
+            const SizedBox(height: 10),
+            SecondaryButton(
+              label: 'إضافة رقم الموبايل',
+              icon: Icons.add_call,
+              onPressed: () => openAccountData(context),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             children: <Widget>[
@@ -721,7 +738,7 @@ class _InvitationPanel extends StatelessWidget {
               ),
             ],
           ),
-          if (data.code.isNotEmpty) ...<Widget>[
+          if (!locked && data.code.isNotEmpty) ...<Widget>[
             const SizedBox(height: 10),
             Text(
               'كود الدعوة: ${data.code}',

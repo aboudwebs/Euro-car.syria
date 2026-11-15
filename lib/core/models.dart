@@ -75,6 +75,16 @@ class AppUser {
   bool get isWorkshop => role == 'workshop';
   bool get isMarketer => role == 'marketer';
 
+  /// A phone number is saved. An account made with e-mail has none until its owner adds one.
+  bool get hasPhone => phone.trim().isNotEmpty;
+
+  /// False only when the server says the account has no password yet (made with e-mail). Unknown counts as true,
+  /// so older servers keep the "change password" form.
+  bool get hasPassword => raw['has_password'] != false;
+
+  /// The saved phone was confirmed by an SMS code. When the server does not say, any saved phone counts.
+  bool get phoneVerified => hasPhone && raw['phone_verified'] != false;
+
   /// Only workshop and marketer accounts may use the mobile app (admin is web only).
   bool get isCustomer => isWorkshop || isMarketer;
 
@@ -633,6 +643,7 @@ class MarketerDashboard {
     required this.name,
     required this.code,
     required this.referralUrl,
+    this.phoneVerified = true,
     this.workshops = 0,
     this.commissions = const Commissions(),
     this.payoutRequest,
@@ -645,6 +656,8 @@ class MarketerDashboard {
       name: asString(marketer['name']),
       code: asString(marketer['code']),
       referralUrl: asString(marketer['referralUrl']),
+      // Older servers do not send it: the link then works as before.
+      phoneVerified: marketer['phoneVerified'] != false,
       workshops: asInt(json['workshops']) ?? 0,
       commissions: Commissions.fromJson(asMap(json['commissions'])),
       payoutRequest: json['payoutRequest'] is Map ? MarketerPayoutRequest.fromJson(asMap(json['payoutRequest'])) : null,
@@ -655,6 +668,10 @@ class MarketerDashboard {
   final String name;
   final String code;
   final String referralUrl;
+
+  /// The marketer's phone number is added and confirmed. Until then the server sends no invitation link and the
+  /// app locks the copy and share buttons.
+  final bool phoneVerified;
   final int workshops;
   final Commissions commissions;
   final MarketerPayoutRequest? payoutRequest;

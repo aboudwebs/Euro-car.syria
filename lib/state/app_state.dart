@@ -1759,13 +1759,48 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
-  /// Step 1 of a phone change: a code is sent to the NEW number by SMS. Returns the server's message.
-  Future<String> requestPhoneChange({required String newPhone, required String currentPassword}) async {
+  /// Adds the FIRST password of an account that has none (made with e-mail): no current password is asked for.
+  /// The server refuses it once a password exists. Like a change, it replaces the session token. Throws [ApiException].
+  Future<void> addPassword({required String newPassword}) async {
+    await _rotatingSession(
+      () => _guard(() => api.postJson('/api/account/password', <String, dynamic>{'newPassword': newPassword})),
+    );
+    _mergeUser(<String, dynamic>{'has_password': true});
+    notifyListeners();
+  }
+
+  /// "Forgot my password" for a user who is signed in: an SMS code goes to the phone number of the account. Needs a
+  /// saved phone (the caller checks [AppUser.hasPhone]). Returns the server's message.
+  Future<String> requestPasswordRecovery() async {
+    final Map<String, dynamic> data = await _guard(
+      () => api.postJson('/api/account/password', <String, dynamic>{'mode': 'forgot-request'}),
+    );
+    return asString(data['message'], 'تم إرسال رمز التحقق برسالة نصية إلى رقمك.');
+  }
+
+  /// Checks the code and sets the new password. This device stays signed in (the server returns a new token).
+  Future<void> confirmPasswordRecovery({required String code, required String newPassword}) async {
+    await _rotatingSession(
+      () => _guard(
+        () => api.postJson('/api/account/password', <String, dynamic>{
+          'mode': 'forgot-confirm',
+          'code': toWesternDigits(code).trim(),
+          'newPassword': newPassword,
+        }),
+      ),
+    );
+    _mergeUser(<String, dynamic>{'has_password': true});
+    notifyListeners();
+  }
+
+  /// Step 1 of adding or changing the phone number: a code is sent to the NEW number by SMS. The current password is
+  /// asked for only when the account has one (an account made with e-mail has none). Returns the server's message.
+  Future<String> requestPhoneChange({required String newPhone, String currentPassword = ''}) async {
     final Map<String, dynamic> data = await _guard(
       () => api.postJson('/api/account/phone', <String, dynamic>{
         'mode': 'request',
         'newPhone': canonicalPhone(newPhone),
-        'currentPassword': currentPassword,
+        if (currentPassword.isNotEmpty) 'currentPassword': currentPassword,
       }),
     );
     return asString(data['message'], 'تم إرسال رمز التحقق إلى الرقم الجديد برسالة نصية');
@@ -1787,6 +1822,10 @@ class AppState extends ChangeNotifier {
       _mergeUser(asMap(fresh));
     }
     notifyListeners();
+    // A marketer's invitation link appears once the phone is confirmed: reload the dashboard.
+    if (_user?.isMarketer ?? false) {
+      unawaited(loadDashboard(silent: true));
+    }
   }
 
   Future<void> loadDeletion({bool silent = false}) async {

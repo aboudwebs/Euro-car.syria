@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:euro_cars/app.dart';
 import 'package:euro_cars/core/session_store.dart';
+import 'package:euro_cars/widgets/inputs.dart' show PrimaryButton, SecondaryButton;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -271,5 +272,109 @@ void main() {
         await tester.pumpWidget(const SizedBox.shrink());
       });
     }
+
+    const String lockMessage = 'يجب إضافة وتأكيد رقم الموبايل لتفعيل رابط الإحالة';
+
+    testWidgets('a marketer without a confirmed phone sees the invitation buttons locked', (WidgetTester tester) async {
+      usePhoneScreen(tester);
+      final Map<String, dynamic> account = <String, dynamic>{...marketerJson(), 'phone': null, 'has_password': false, 'phone_verified': false};
+      final FakeServer server = serverFor(account)
+        ..reply('GET', '/api/marketer/dashboard', <String, dynamic>{
+          'marketer': <String, dynamic>{
+            'name': 'مسوّق الشمال',
+            'code': 'MK-1A2B3C',
+            'referralUrl': null,
+            'phoneVerified': false,
+            'referralLocked': true,
+          },
+          'workshops': 0,
+          'commissions': <String, dynamic>{'available': 0, 'held': 0, 'paid': 0, 'total': 0},
+        });
+      final MemoryStore store = MemoryStore(<String, String>{tokenKey: 'tok-1', userKey: jsonEncode(account)});
+      await tester.pumpWidget(EuroApp(store: store, httpClient: server.client));
+      await settle(tester);
+
+      await tester.tap(find.text('لوحتي').last);
+      await settle(tester);
+
+      await tester.scrollUntilVisible(find.text(lockMessage), 300, scrollable: find.byType(Scrollable).first);
+      expect(find.text(lockMessage), findsOneWidget);
+      expect(find.text('كود الدعوة: MK-1A2B3C'), findsNothing);
+      expect(tester.widget<SecondaryButton>(find.widgetWithText(SecondaryButton, 'نسخ')).onPressed, isNull);
+      expect(tester.widget<PrimaryButton>(find.widgetWithText(PrimaryButton, 'واتساب')).onPressed, isNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('a marketer with a confirmed phone can copy and share the invitation link', (WidgetTester tester) async {
+      usePhoneScreen(tester);
+      final Map<String, dynamic> account = marketerJson();
+      final FakeServer server = serverFor(account);
+      final MemoryStore store = MemoryStore(<String, String>{tokenKey: 'tok-1', userKey: jsonEncode(account)});
+      await tester.pumpWidget(EuroApp(store: store, httpClient: server.client));
+      await settle(tester);
+
+      await tester.tap(find.text('لوحتي').last);
+      await settle(tester);
+
+      await tester.scrollUntilVisible(find.text('كود الدعوة: MK-1A2B3C'), 300, scrollable: find.byType(Scrollable).first);
+      expect(find.text(lockMessage), findsNothing);
+      expect(tester.widget<SecondaryButton>(find.widgetWithText(SecondaryButton, 'نسخ')).onPressed, isNotNull);
+      expect(tester.widget<PrimaryButton>(find.widgetWithText(PrimaryButton, 'واتساب')).onPressed, isNotNull);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    Future<void> openAccountDataPage(WidgetTester tester) async {
+      await tester.tap(find.text('حسابي').last);
+      await settle(tester);
+      await tester.scrollUntilVisible(find.text('بيانات الحساب'), 300, scrollable: find.byType(Scrollable).first);
+      await tester.tap(find.text('بيانات الحساب'));
+      await settle(tester);
+    }
+
+    testWidgets('account data of an e-mail account offers to add the phone and a first password', (WidgetTester tester) async {
+      usePhoneScreen(tester);
+      final Map<String, dynamic> account = <String, dynamic>{...marketerJson(), 'phone': null, 'has_password': false, 'phone_verified': false};
+      final FakeServer server = serverFor(account);
+      final MemoryStore store = MemoryStore(<String, String>{tokenKey: 'tok-1', userKey: jsonEncode(account)});
+      await tester.pumpWidget(EuroApp(store: store, httpClient: server.client));
+      await settle(tester);
+
+      await openAccountDataPage(tester);
+
+      expect(find.text('إضافة رقم الموبايل'), findsWidgets);
+      expect(find.text('تغيير رقم الموبايل'), findsNothing);
+      await tester.scrollUntilVisible(find.text('إضافة كلمة مرور'), 300, scrollable: find.byType(Scrollable).first);
+      expect(find.text('إضافة كلمة مرور'), findsOneWidget);
+      expect(find.text('كلمة المرور الحالية'), findsNothing, reason: 'there is no current password to ask for');
+      expect(find.text('نسيت كلمة المرور؟'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('account data of a normal account keeps "change" and offers "forgot password" without signing out', (WidgetTester tester) async {
+      usePhoneScreen(tester);
+      final Map<String, dynamic> account = workshopJson();
+      final FakeServer server = serverFor(account);
+      final MemoryStore store = MemoryStore(<String, String>{tokenKey: 'tok-1', userKey: jsonEncode(account)});
+      await tester.pumpWidget(EuroApp(store: store, httpClient: server.client));
+      await settle(tester);
+
+      await openAccountDataPage(tester);
+
+      expect(find.text('تغيير رقم الموبايل'), findsOneWidget);
+      expect(find.text('إضافة رقم الموبايل'), findsNothing);
+      await tester.scrollUntilVisible(find.text('نسيت كلمة المرور؟'), 300, scrollable: find.byType(Scrollable).first);
+      expect(find.text('كلمة المرور الحالية'), findsWidgets);
+      expect(find.text('إضافة كلمة مرور'), findsNothing);
+
+      await tester.tap(find.text('نسيت كلمة المرور؟'));
+      await settle(tester);
+      expect(find.text('استعادة كلمة المرور'), findsOneWidget);
+      expect(find.text('إرسال رمز التحقق'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 }

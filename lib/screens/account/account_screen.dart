@@ -573,7 +573,9 @@ class _AccountScreenState extends State<AccountScreen> {
 
   Widget _statTiles(Palette p, AppUser user) {
     if (user.isMarketer) {
-      final String? code = user.myRefCode;
+      // The code is handed out (shown and copyable) only once the phone number is added and confirmed.
+      final bool locked = !user.phoneVerified;
+      final String? code = locked ? null : user.myRefCode;
       return Panel(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -586,7 +588,7 @@ class _AccountScreenState extends State<AccountScreen> {
                 children: <Widget>[
                   Text('كود المسوّق', style: TextStyle(color: p.muted, fontSize: 13.5)),
                   Text(
-                    code ?? 'غير متوفر',
+                    code ?? (locked ? 'غير مفعّل' : 'غير متوفر'),
                     textDirection: TextDirection.ltr,
                     style: TextStyle(
                       color: p.primary,
@@ -596,7 +598,9 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
                   ),
                   Text(
-                    'يُستخدم هذا الكود عند تسجيل ورشة جديدة.',
+                    locked
+                        ? 'يجب إضافة وتأكيد رقم الموبايل لتفعيل كود المسوّق.'
+                        : 'يُستخدم هذا الكود عند تسجيل ورشة جديدة.',
                     style: TextStyle(color: p.placeholder, fontSize: 12.5),
                   ),
                 ],

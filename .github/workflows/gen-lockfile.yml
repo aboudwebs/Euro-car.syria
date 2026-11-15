@@ -1,0 +1,36 @@
+# One-off: generates pubspec.lock on a clean runner and commits it. Removed right after use.
+name: Generate lockfile (one-off)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: 3.47.9
+      - name: Resolve dependencies into pubspec.lock
+        run: flutter pub get
+      - name: Analyze (information only)
+        continue-on-error: true
+        run: flutter analyze --no-pub
+      - name: Tests (information only)
+        continue-on-error: true
+        run: flutter test --no-pub
+      - name: Commit the lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pubspec.lock
+          git diff --cached --quiet && { echo "No lockfile change"; exit 0; }
+          git commit -m "Add pubspec.lock (generated once by CI) [skip ci]"
+          git push origin HEAD:main

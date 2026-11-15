@@ -5,6 +5,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:math';
 import 'dart:typed_data';
 
@@ -447,7 +448,7 @@ class AppState extends ChangeNotifier {
     try {
       await api.postJson('/api/push/register', <String, dynamic>{
         'token': pushToken,
-        'platform': defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android',
+        'platform': Platform.isIOS ? 'ios' : 'android',
       });
     } catch (_) {
       // Push registration is best-effort; it must never block sign-in or app startup.

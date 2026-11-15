@@ -300,11 +300,20 @@ void main() {
       await h.state.loadDeletion();
       expect(h.state.deletion, isNull);
 
+      h.server.reply('POST', '/api/account/deletion', <String, dynamic>{'message': 'code sent'});
+      expect(await h.state.sendAccountDeletionCode(), 'code sent');
+      expect(h.state.deletion, isNull, reason: 'sending the code does not start the countdown');
+
       h.server.reply('POST', '/api/account/deletion', <String, dynamic>{
         'request': <String, dynamic>{'requestedAt': DateTime.now().toUtc().toIso8601String(), 'dueAt': due},
       });
-      await h.state.requestAccountDeletion('pw');
-      expect(bodyOf(h.server.requestsTo('POST', '/api/account/deletion').single), <String, dynamic>{'password': 'pw'});
+      await h.state.confirmAccountDeletion(' 123456 ');
+      final List<Map<String, dynamic>> bodies =
+          h.server.requestsTo('POST', '/api/account/deletion').map(bodyOf).toList();
+      expect(bodies, <Map<String, dynamic>>[
+        <String, dynamic>{'action': 'send-code'},
+        <String, dynamic>{'action': 'confirm-code', 'code': '123456'},
+      ]);
       expect(h.state.deletion?.daysLeft, inInclusiveRange(29, 30));
 
       h.server.reply('DELETE', '/api/account/deletion', <String, dynamic>{'ok': true});
@@ -312,10 +321,10 @@ void main() {
       expect(h.state.deletion, isNull);
     });
 
-    test('a wrong password does not start the countdown', () async {
+    test('a wrong email code does not start the countdown', () async {
       final Harness h = await signedInHarness();
-      h.server.reply('POST', '/api/account/deletion', <String, dynamic>{'error': 'كلمة المرور غير صحيحة'}, 403);
-      await expectLater(h.state.requestAccountDeletion('bad'), throwsA(apiError(status: 403)));
+      h.server.reply('POST', '/api/account/deletion', <String, dynamic>{'error': 'رمز التحقق غير صحيح'}, 403);
+      await expectLater(h.state.confirmAccountDeletion('000000'), throwsA(apiError(status: 403)));
       expect(h.state.deletion, isNull);
     });
   });

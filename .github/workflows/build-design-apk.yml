@@ -1,8 +1,14 @@
-name: Build EURO CARS release artifacts (APK + AAB)
+name: Build EURO CARS APK (Google Play AAB is manual)
 # Release validation includes unified Firebase authentication, MsgPlus SMS verification and the read-only guest catalog.
 
 on:
   workflow_dispatch:
+    inputs:
+      build_play_bundle:
+        description: 'Build the signed Google Play AAB (only after final audit)'
+        required: true
+        default: false
+        type: boolean
   push:
     branches:
       - main
@@ -129,11 +135,11 @@ jobs:
       - name: Verify APK
         run: bash tool/verify_apk.sh build/app/outputs/flutter-apk/app-release.apk
       - name: Build signed AAB for Google Play (final package)
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch' && inputs.build_play_bundle
         run: flutter build appbundle --release --target-platform android-arm,android-arm64 --dart-define=EURO_API_URL=https://control-panel-euro-cars.onrender.com --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ vars.GOOGLE_SERVER_CLIENT_ID }}
 
       - name: Verify signed AAB and APK generated from the bundle
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch' && inputs.build_play_bundle
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
@@ -178,7 +184,7 @@ jobs:
           } > "$AAB.verification.txt"
 
       - name: Upload Google Play AAB artifact
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch' && inputs.build_play_bundle
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: euro-cars-play-aab
@@ -224,7 +230,7 @@ jobs:
   publish:
     name: Publish permanent APK download
     needs: build
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.build_play_bundle && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

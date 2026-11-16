@@ -65,7 +65,8 @@ without it a release APK cannot reach the server.
 * `flutter analyze` and `flutter test` are hard gates. If either fails, the job stops before building the APK.
 * The APK is uploaded as the artifact **`euro-cars-main-apk`** (with its `.sha256` and report) only after
   `verify_apk.sh` passed: archive integrity, Android signature, package name, label, INTERNET permission, minSdk,
-  exactly the architectures `armeabi-v7a` and `arm64-v8a`, engine and Dart libraries, the bundled font, zip alignment.
+  exactly the architectures `armeabi-v7a` and `arm64-v8a`, engine and Dart libraries, the bundled font, API 36,
+  16 KB ZIP alignment and every native ELF `PT_LOAD` segment's 16 KB alignment.
 * The verification report is uploaded in every run as `euro-cars-apk-verification-report`, and the run summary shows
   the result of each check, so a failure can be read without building again. Artifacts are kept for 14 days.
 

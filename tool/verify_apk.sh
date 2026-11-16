@@ -318,6 +318,16 @@ else
     while IFS= read -r entry; do
       case "$entry" in
         *.so)
+          # 16 KB page-size kernels are supported on arm64-v8a (and x86_64 emulators),
+          # not armeabi-v7a. Keep ZIP alignment checks for every ABI above, but inspect
+          # ELF PT_LOAD alignment only for ABIs that can run on 16 KB page-size devices.
+          case "$entry" in
+            lib/arm64-v8a/*|lib/x86_64/*) ;;
+            *)
+              say "INFO  skipped ELF 16 KB check for $entry (32-bit ABI; not supported on 16 KB page-size devices)"
+              continue
+              ;;
+          esac
           so_count=$((so_count + 1))
           tmp_so="$(mktemp)"
           if ! unzip -p "$APK" "$entry" > "$tmp_so"; then

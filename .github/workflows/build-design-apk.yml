@@ -152,6 +152,15 @@ jobs:
           jarsigner -verify -verbose -certs "$AAB" > /tmp/euro-aab-signature.txt 2>&1
           grep -qi "jar verified" /tmp/euro-aab-signature.txt
           keytool -printcert -jarfile "$AAB" > "$AAB.certificate.txt"
+          # Match the local EURO upload keystore; verify this same fingerprint in Play Console before upload.
+          expected_upload_cert_sha256="A7E183D1F02AB3D5D48F6C0067F864DCBEAA5130A35F8F50F52EF1DC458CED1E"
+          actual_upload_cert_sha256="$(awk '/SHA256:/{gsub(":", "", $2); print toupper($2); exit}' "$AAB.certificate.txt")"
+          if [ "$actual_upload_cert_sha256" != "$expected_upload_cert_sha256" ]; then
+            echo "AAB signer certificate does not match the EURO upload keystore." >&2
+            echo "Expected SHA-256: $expected_upload_cert_sha256" >&2
+            echo "Actual SHA-256: ${actual_upload_cert_sha256:-unavailable}" >&2
+            exit 1
+          fi
 
           curl -fsSL "https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar" -o /tmp/bundletool.jar
           java -jar /tmp/bundletool.jar validate --bundle="$AAB"
@@ -178,6 +187,7 @@ jobs:
           {
             echo "AAB archive, signature and bundletool validation: PASS"
             echo "Target SDK: 36"
+            echo "Upload certificate SHA-256: $actual_upload_cert_sha256"
             echo "SHA-256: $(sha256sum "$AAB" | cut -d ' ' -f 1)"
             echo "Universal APK extracted from the AAB passed tool/verify_apk.sh."
             cat /tmp/euro-aab-signature.txt

@@ -143,10 +143,20 @@ def patch_manifest(path: pathlib.Path) -> bool:
     if count != 1:
         raise PatchError('<application android:label="..."> not found in AndroidManifest.xml')
 
-    if "android:allowBackup" not in text:
-        text, count = re.subn(r"<application\b", '<application\n        android:allowBackup="false"', text, count=1)
-        if count != 1:
-            raise PatchError("<application> not found in AndroidManifest.xml")
+    # Disable both cloud backup and cleartext HTTP at the application boundary.
+    for attribute in ("allowBackup", "usesCleartextTraffic"):
+        pattern = r'(<application\b[^>]*\sandroid:' + attribute + r'=")[^"]*(")'
+        if re.search(pattern, text):
+            text = re.sub(pattern, r'\g<1>false\2', text, count=1)
+        else:
+            text, count = re.subn(
+                r"<application\b",
+                '<application\n        android:' + attribute + '="false"',
+                text,
+                count=1,
+            )
+            if count != 1:
+                raise PatchError("<application> not found while setting android:" + attribute)
 
     if 'android:scheme="https"' not in text or 'android:scheme="http"' not in text:
         if "</queries>" in text:
@@ -175,7 +185,7 @@ def patch_manifest(path: pathlib.Path) -> bool:
 
     # Fail loudly if anything the app depends on is still missing.
     final = path.read_text(encoding="utf-8")
-    for needle in (INTERNET, POST_NOTIFICATIONS, CAMERA, CAMERA_FEATURE, CAMERA_FEATURE_OPTIONAL, f'android:label="{APP_LABEL}"', 'android:allowBackup="false"', 'android:scheme="https"', 'android:scheme="eurocars"'):
+    for needle in (INTERNET, POST_NOTIFICATIONS, CAMERA, CAMERA_FEATURE, CAMERA_FEATURE_OPTIONAL, f'android:label="{APP_LABEL}"', 'android:allowBackup="false"', 'android:usesCleartextTraffic="false"', 'android:scheme="https"', 'android:scheme="eurocars"'):
         if needle not in final:
             raise PatchError(f"AndroidManifest.xml is missing {needle!r} after patching")
     return changed

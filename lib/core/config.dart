@@ -108,7 +108,6 @@ const String defaultGovernorate = 'حلب';
 const String companyAddressAr = 'إدلب، سرمدا';
 const String companyAddressEn = 'Idlib, Sarmada';
 const String companyNameAr = 'شركة اليورو';
-const String companyWebsite = 'https://al-euro-cdzo.onrender.com';
 
 /// Social pages shown as the two icons of the About page.
 const String instagramUrl = 'https://www.instagram.com/36ue/';

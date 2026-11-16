@@ -155,12 +155,38 @@ else
   else
     fail "INTERNET permission is missing"
   fi
-  if printf '%s\n' "$badging" | grep -q "^uses-feature-not-required: name='android.hardware.camera'"; then
-    pass "camera hardware is optional (manual VIN entry remains available)"
-  elif printf '%s\n' "$badging" | grep -q "^uses-feature: name='android.hardware.camera'"; then
-    fail "camera hardware is marked required; VIN scanning must remain optional"
+  if [ -n "$apkanalyzer" ]; then
+    camera_feature_check="$(python3 - "$APK" "$apkanalyzer" <<'PY'
+import re
+import subprocess
+import sys
+
+apk, apkanalyzer = sys.argv[1], sys.argv[2]
+try:
+    xml = subprocess.check_output([apkanalyzer, "manifest", "print", apk], text=True, stderr=subprocess.STDOUT)
+except subprocess.CalledProcessError as exc:
+    print(exc.output.strip() or "apkanalyzer could not print the merged manifest")
+    raise SystemExit(2)
+features = re.findall(r"<uses-feature\\b[^>]*>", xml)
+for tag in features:
+    if re.search(r'android:name="android\\.hardware\\.camera"', tag):
+        print(tag)
+        if re.search(r'android:required="false"', tag):
+            raise SystemExit(0)
+        raise SystemExit(1)
+print("No explicit android.hardware.camera feature found in the merged manifest")
+raise SystemExit(2)
+PY
+    )"
+    camera_feature_status=$?
+    say "INFO  camera feature manifest: $camera_feature_check"
+    if [ "$camera_feature_status" -eq 0 ]; then
+      pass "camera hardware is optional (manual VIN entry remains available)"
+    else
+      fail "camera hardware is not explicitly marked optional in the merged manifest"
+    fi
   else
-    fail "optional camera hardware feature declaration is missing"
+    fail "apkanalyzer is required to verify the optional camera hardware declaration"
   fi
 
   for permission in android.permission.POST_NOTIFICATIONS android.permission.CAMERA; do

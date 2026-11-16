@@ -1,7 +1,7 @@
 # EURO CARS — Flutter Android
 
 Native Flutter client (Arabic, RTL, dark and light themes) for the existing EURO CARS platform. It talks to the
-current Next.js API (`https://al-euro-cdzo.onrender.com`) with the signed mobile session token kept in Android secure
+current Next.js API (`https://control-panel-euro-cars.onrender.com`) with the signed mobile session token kept in Android secure
 storage. It never connects to Supabase directly. The admin role is web only: an admin account cannot sign in here.
 
 ## What the app does

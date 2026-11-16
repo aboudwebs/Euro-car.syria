@@ -212,7 +212,7 @@ const Map<String, String> enTexts = <String, String>{
   'سيُحذف حسابك نهائياً بعد {} يوم. يمكنك إلغاء الطلب حتى اكتمال الحذف.': 'Your account will be deleted after {} days. You can cancel the request until deletion is completed.',
   'سيُحذف حسابك بعد {} يوماً من تأكيد الطلب، ويمكنك إلغاء الطلب حتى اكتمال التنفيذ. استخدم أي رصيد كاش باك متاح وسوِّ الديون والطلبات والعمولات قبل طلب الحذف. بعد انتهاء المهلة تُزال بياناتك الشخصية، وتبقى السجلات المالية اللازمة للمحاسبة.': 'Your account will be deleted {} days after confirmation. You can cancel the request until deletion is completed. Use any available cashback and settle debts, orders and commissions before requesting deletion. After the grace period, personal data is removed while necessary financial records are retained for accounting.',
   'لديك رصيد كاش باك متاح. استخدمه قبل طلب حذف الحساب حتى لا تفقد قيمته.': 'You have available cashback. Use it before requesting account deletion so you do not lose its value.',
-  'لديك طلبات مفتوحة لدى ورش مرتبطة بك. انتظر إكمالها أو إلغاءها حتى لا تضيع عمولتك.': 'There are open orders at workshops referred by you. Wait for them to complete or be cancelled so your commission is not lost.'
+  'لديك طلبات مفتوحة لدى ورش مرتبطة بك. انتظر إكمالها أو إلغاءها حتى لا تضيع عمولتك.': 'There are open orders at workshops referred by you. Wait for them to complete or be cancelled so your commission is not lost.',
   'النخبة VIP': 'Elite',
   'النظام': 'System',
   'اليورو': 'EURO',

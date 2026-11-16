@@ -173,7 +173,7 @@ jobs:
           apksigner="$(find "$sdk/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)"
           test -x "$apksigner"
           output="$("$apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk)"
-          actual="$(printf '%s\\n' "$output" | sed -nE 's/^Signer #1 certificate SHA-256 digest: ([0-9A-Fa-f:]+)$/\\1/p' | head -n 1 | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          actual="$(printf '%s\\n' "$output" | awk 'tolower($0) ~ /certificate sha-256 digest:/ { sub(/^.*digest:[[:space:]]*/, ""); gsub(/:/, ""); gsub(/[[:space:]]/, ""); print toupper($0); exit }')"
           if [ "$actual" != "$EXPECTED_UPLOAD_CERT_SHA256" ]; then
             echo "Release APK signer does not match the configured EURO upload certificate." >&2
             echo "Expected SHA-256: $EXPECTED_UPLOAD_CERT_SHA256" >&2

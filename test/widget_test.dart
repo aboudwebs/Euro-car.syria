@@ -370,6 +370,9 @@ void main() {
       expect(find.text('تغيير رقم الموبايل'), findsOneWidget);
       expect(find.text('إضافة رقم الموبايل'), findsNothing);
       await tester.scrollUntilVisible(find.text('نسيت كلمة المرور؟'), 300, scrollable: accountDataList());
+      // The lazy list may already have built the button just below the screen: bring it fully on screen before tapping.
+      await tester.ensureVisible(find.text('نسيت كلمة المرور؟'));
+      await tester.pump();
       expect(find.text('كلمة المرور الحالية'), findsWidgets);
       expect(find.text('إضافة كلمة مرور'), findsNothing);
 

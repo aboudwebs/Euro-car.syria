@@ -65,7 +65,7 @@ to_int() {
   local re_dec='^[0-9]+$'
   local re_quoted='^"([0-9]+)"$'
   if [[ $v =~ $re_typed ]]; then
-    printf '%d' "${BASH_REMATCH[2]}"
+    printf '%d' "${BASH_REMATCH[1]}"
   elif [[ $v =~ $re_hex ]]; then
     printf '%d' "$v"
   elif [[ $v =~ $re_dec ]]; then

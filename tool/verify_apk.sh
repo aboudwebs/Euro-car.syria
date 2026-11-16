@@ -189,6 +189,56 @@ PY
     fail "apkanalyzer is required to verify the optional camera hardware declaration"
   fi
 
+  if [ -n "$apkanalyzer" ]; then
+    manifest_security_check="$(python3 - "$APK" "$apkanalyzer" <<'PY'
+import subprocess
+import sys
+import xml.etree.ElementTree as ET
+apk, apkanalyzer = sys.argv[1], sys.argv[2]
+ns = "{http://schemas.android.com/apk/res/android}"
+try:
+    xml = subprocess.check_output([apkanalyzer, "manifest", "print", apk], text=True, stderr=subprocess.STDOUT)
+    root = ET.fromstring(xml)
+except Exception as exc:
+    print(f"Could not parse merged manifest: {exc}")
+    raise SystemExit(2)
+app = root.find("application")
+if app is None:
+    print("application element is missing")
+    raise SystemExit(2)
+checks = [(app.get(ns + "allowBackup"), "allowBackup=false"), (app.get(ns + "usesCleartextTraffic"), "usesCleartextTraffic=false")]
+failed = False
+for actual, label in checks:
+    print(f"{label}: {actual}")
+    if actual != "false": failed = True
+main_activity_ok = False
+for tag in ("activity", "activity-alias", "service", "receiver", "provider"):
+    for component in app.findall(tag):
+        has_filter = component.find("intent-filter") is not None
+        exported = component.get(ns + "exported")
+        name = component.get(ns + "name", "(unnamed)")
+        if has_filter and exported not in ("true", "false"):
+            print(f"{tag} {name} has an intent-filter but no explicit android:exported")
+            failed = True
+        if tag == "activity" and name.endswith(".MainActivity"):
+            main_activity_ok = exported == "true"
+if not main_activity_ok:
+    print("MainActivity must explicitly declare android:exported=true")
+    failed = True
+if failed: raise SystemExit(1)
+print("Merged manifest security attributes and exported-component declarations are valid")
+PY
+    )"
+    manifest_security_status=$?
+    say "INFO  manifest security: $manifest_security_check"
+    if [ "$manifest_security_status" -eq 0 ]; then
+      pass "backup disabled, cleartext traffic disabled, and intent-filter components declare android:exported"
+    else
+      fail "merged manifest security checks failed"
+    fi
+  else
+    fail "apkanalyzer is required to verify merged manifest security attributes"
+  fi
   for permission in android.permission.POST_NOTIFICATIONS android.permission.CAMERA; do
     if printf '%s\n' "$badging" | grep -q "^uses-permission: name='$permission'"; then
       pass "$permission is present"

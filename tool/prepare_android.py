@@ -29,6 +29,7 @@ import sys
 
 APP_LABEL = "EURO CARS"
 MIN_SDK = 24
+TARGET_SDK = 36
 
 INTERNET = '<uses-permission android:name="android.permission.INTERNET"/>'
 POST_NOTIFICATIONS = '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>'
@@ -232,6 +233,14 @@ def patch_gradle(path: pathlib.Path) -> bool:
         text, count = re.subn(r"minSdk = flutter\.minSdkVersion", f"minSdk = maxOf(flutter.minSdkVersion, {MIN_SDK})", text, count=1)
         if count != 1:
             raise PatchError("`minSdk = flutter.minSdkVersion` not found in app/build.gradle.kts")
+
+    # Google Play requires API 36 for new apps and updates submitted from 31 August 2026.
+    if f"targetSdk = {TARGET_SDK}" not in text:
+        text, count = re.subn(r"targetSdk = flutter\.targetSdkVersion", f"targetSdk = {TARGET_SDK}", text, count=1)
+        if count != 1:
+            raise PatchError("`targetSdk = flutter.targetSdkVersion` not found in app/build.gradle.kts")
+    if f"targetSdk = {TARGET_SDK}" not in text:
+        raise PatchError(f"targetSdk could not be set to {TARGET_SDK}")
 
     # flutter_local_notifications requires Java 8+ API desugaring on Android.
     if "isCoreLibraryDesugaringEnabled = true" not in text:

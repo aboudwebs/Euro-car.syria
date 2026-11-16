@@ -123,6 +123,30 @@ jobs:
       - name: Configure R8 for optional ML Kit OCR scripts
         run: python3 tool/configure_mlkit_r8.py
 
+      - name: Validate Google OAuth Web client configuration
+        env:
+          GOOGLE_SERVER_CLIENT_ID: ${{ vars.GOOGLE_SERVER_CLIENT_ID }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          configured = os.environ.get("GOOGLE_SERVER_CLIENT_ID", "").strip()
+          if not configured:
+              raise SystemExit("Missing repository variable GOOGLE_SERVER_CLIENT_ID (Firebase Web OAuth client ID).")
+          config = json.loads(Path("firebase/google-services.json").read_text(encoding="utf-8"))
+          web_clients = {
+              item.get("client_id")
+              for client in config.get("client", [])
+              for item in client.get("oauth_client", [])
+              if item.get("client_type") == 3
+          }
+          if configured not in web_clients:
+              raise SystemExit("GOOGLE_SERVER_CLIENT_ID does not match a Web OAuth client in firebase/google-services.json.")
+          print("Google OAuth Web client ID is present and matches Firebase Android configuration.")
+          PY
+
       - name: Get Flutter dependencies
         run: flutter pub get
 

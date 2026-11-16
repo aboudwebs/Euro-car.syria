@@ -194,6 +194,19 @@ def patch_gradle(path: pathlib.Path) -> bool:
         if count != 1:
             raise PatchError("the release signingConfig line was not found in app/build.gradle.kts")
 
+    abi_filters = 'abiFilters += setOf("armeabi-v7a", "arm64-v8a")'
+    if abi_filters not in text:
+        ndk_block = """    ndk {
+            abiFilters += setOf("armeabi-v7a", "arm64-v8a")
+        }
+
+"""
+        text, count = re.subn(r"(?m)^android \\{\\n", lambda match: match.group(0) + ndk_block, text, count=1)
+        if count != 1:
+            raise PatchError("android block not found for ARM ABI filters")
+    if abi_filters not in text:
+        raise PatchError("ARM32/ARM64 ABI filters could not be applied")
+
     if f"maxOf(flutter.minSdkVersion, {MIN_SDK})" not in text:
         text, count = re.subn(r"minSdk = flutter\.minSdkVersion", f"minSdk = maxOf(flutter.minSdkVersion, {MIN_SDK})", text, count=1)
         if count != 1:

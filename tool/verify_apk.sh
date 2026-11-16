@@ -178,7 +178,7 @@ else
   for abi in $native; do
     case " $EXPECTED_ABIS " in
       *" $abi "*) ;;
-      *) warn "unexpected architecture $abi is included" ;;
+      *) fail "unexpected architecture $abi is included" ;;
     esac
   done
 fi

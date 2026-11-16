@@ -356,8 +356,36 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       OutlinedButton.icon(onPressed: _busy ? null : () => _authenticate('google'),
           icon: const Icon(Icons.g_mobiledata_rounded, size: 25), label: const Text('المتابعة باستخدام Google')),
       const SizedBox(height: 8),
-      OutlinedButton.icon(onPressed: _busy ? null : () => _authenticate('apple'),
-          icon: const Icon(Icons.apple_rounded, size: 21), label: const Text('المتابعة باستخدام Apple')),
+      const SizedBox(height: 8),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.45)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.lock_outline_rounded, size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(width: 7),
+            Text(
+              'هذه الخدمة ستتوفر قريباً',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 6),
+      OutlinedButton.icon(
+        onPressed: null,
+        icon: const Icon(Icons.apple_rounded, size: 21),
+        label: const Text('المتابعة باستخدام Apple'),
+      ),
     ],
   );
 }

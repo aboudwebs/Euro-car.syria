@@ -935,6 +935,16 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
                 style: TextStyle(color: p.muted, fontSize: 12, height: 1.5),
               ),
             ],
+            TextButton.icon(
+              onPressed: () async {
+                final bool opened = await openExternalUrl(accountDeletionUrl);
+                if (!opened && context.mounted) {
+                  showSnack(context, 'تعذر فتح صفحة طلب الحذف.');
+                }
+              },
+              icon: const Icon(Icons.open_in_new_rounded, size: 17),
+              label: const Text('لا تملك بريداً موثّقاً؟ اطلب الحذف عبر SMS'),
+            ),
             if (error != null) ...<Widget>[
               const SizedBox(height: 10),
               NoticeBanner(message: error, kind: NoticeKind.error),

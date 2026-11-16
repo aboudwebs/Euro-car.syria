@@ -40,10 +40,9 @@ branding      launcher icons (adaptive + legacy) and launch background copied in
 
 ## Build
 
-The Android folder is generated, not committed. With Flutter 3.47 (stable) and JDK 17:
+The Android folder is generated, not committed. Run these commands from the repository root with Flutter 3.47 (stable) and JDK 17:
 
 ```sh
-cd flutter_app
 flutter create --platforms=android --org com.eurocars --project-name euro_cars .
 python3 tool/prepare_android.py          # INTERNET permission, label, icons, optional signing
 flutter pub get
@@ -63,9 +62,8 @@ without it a release APK cannot reach the server.
 `.github/workflows/build-design-apk.yml` runs the steps above on every relevant push to `main` and manually
 (Actions → "Build EURO CARS APK (main)" → Run workflow).
 
-* `flutter analyze` and `flutter test` are gates: the last step fails the run if either failed, but they do not stop
-  the build, so the APK and its report can still be inspected.
-* The APK is uploaded as the artifact **`euro-cars-flutter-apk`** (with its `.sha256` and report) only after
+* `flutter analyze` and `flutter test` are hard gates. If either fails, the job stops before building the APK.
+* The APK is uploaded as the artifact **`euro-cars-main-apk`** (with its `.sha256` and report) only after
   `verify_apk.sh` passed: archive integrity, Android signature, package name, label, INTERNET permission, minSdk,
   exactly the architectures `armeabi-v7a` and `arm64-v8a`, engine and Dart libraries, the bundled font, zip alignment.
 * The verification report is uploaded in every run as `euro-cars-apk-verification-report`, and the run summary shows
@@ -73,9 +71,9 @@ without it a release APK cannot reach the server.
 
 ### Release signing
 
-Without secrets the APK is signed with the debug key: it installs, but updates only work between builds made with the
-same key, and it is not for the Play Store. To sign with your own key, create a keystore and add these repository
-secrets: `ANDROID_KEYSTORE_BASE64` (`base64 -w0 release.jks`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
+The CI release workflow requires all four signing secrets and fails closed if any are missing; it never falls back to a debug key.
+For local test builds only, omitting `android/key.properties` uses the debug key, which is not acceptable for Play Store uploads.
+To sign with the release key, create a keystore and add these repository secrets: `ANDROID_KEYSTORE_BASE64` (`base64 -w0 release.jks`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
 `ANDROID_KEY_PASSWORD`. Locally, put `android/key.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`)
 next to the generated project; keep both files out of git.
 
@@ -92,8 +90,7 @@ up to a minute to wake up on the first request):
 4. Special request with a photo; dashboard (tier, debt, cashback); account (profile photo, theme, currency, language).
    Also try: add an address and pick it in the cart; add a vehicle with a VIN and search with it; scan a VIN with the
    camera (deny the permission once to see the message); open a section in the catalog; Sham Cash in the cart (barcode,
-   copy the address); About EURO (the two icons open Instagram and TikTok); forgot password (needs the SQL file and WhatsApp
-   configured on the server). Features that need the database update are listed in `FEATURE_PRESERVATION_CHECKLIST.md` K-12.
+   copy the address); About EURO (the two icons open Instagram and TikTok); forgot password (requires MsgPlus SMS to be configured on the server). Features that need the database update are listed in `FEATURE_PRESERVATION_CHECKLIST.md` K-12.
 5. Close and reopen the app: the session and the cart must still be there. Sign out must clear them.
 6. Sign in as a marketer: referral code and share link, workshops, commissions; the debt option must not be offered.
 7. Sign in with an admin account: the app must refuse it (admin is web only).

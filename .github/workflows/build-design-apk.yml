@@ -159,6 +159,7 @@ jobs:
       - name: Build release APK (ARM32 + ARM64)
         run: flutter build apk --release --target-platform android-arm,android-arm64 --dart-define=EURO_API_URL=https://control-panel-euro-cars.onrender.com --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ vars.GOOGLE_SERVER_CLIENT_ID }}
 
+      # ELF PT_LOAD 16 KB alignment applies to arm64-v8a/x86_64; ZIP alignment is checked for every packaged ABI.
       - name: Verify APK
         run: bash tool/verify_apk.sh build/app/outputs/flutter-apk/app-release.apk
       - name: Build signed AAB for Google Play (final package)

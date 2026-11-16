@@ -196,14 +196,14 @@ def patch_gradle(path: pathlib.Path) -> bool:
 
     abi_filters = 'abiFilters += setOf("armeabi-v7a", "arm64-v8a")'
     if abi_filters not in text:
-        ndk_block = """    ndk {
+        ndk_block = """        ndk {
             abiFilters += setOf("armeabi-v7a", "arm64-v8a")
         }
 
 """
-        text, count = re.subn(r"(?m)^android \{\n", lambda match: match.group(0) + ndk_block, text, count=1)
+        text, count = re.subn(r"(?m)^    defaultConfig \{\n", lambda match: match.group(0) + ndk_block, text, count=1)
         if count != 1:
-            raise PatchError("android block not found for ARM ABI filters")
+            raise PatchError("defaultConfig block not found for ARM ABI filters")
     if abi_filters not in text:
         raise PatchError("ARM32/ARM64 ABI filters could not be applied")
 

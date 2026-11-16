@@ -73,6 +73,7 @@ without it a release APK cannot reach the server.
 ### Release signing
 
 The CI release workflow requires all four signing secrets and fails closed if any are missing; it never falls back to a debug key.
+It also requires the repository variable `GOOGLE_SERVER_CLIENT_ID` to contain the Firebase Web OAuth client ID; CI checks it against `firebase/google-services.json` before building.
 For local test builds only, omitting `android/key.properties` uses the debug key, which is not acceptable for Play Store uploads.
 To sign with the release key, create a keystore and add these repository secrets: `ANDROID_KEYSTORE_BASE64` (`base64 -w0 release.jks`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
 `ANDROID_KEY_PASSWORD`. Locally, put `android/key.properties` (`storeFile`, `storePassword`, `keyAlias`, `keyPassword`)

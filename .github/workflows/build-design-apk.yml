@@ -162,6 +162,26 @@ jobs:
       # ELF PT_LOAD 16 KB alignment applies to arm64-v8a/x86_64; ZIP alignment is checked for every packaged ABI.
       - name: Verify APK
         run: bash tool/verify_apk.sh build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Verify release upload certificate fingerprint
+        env:
+          EXPECTED_UPLOAD_CERT_SHA256: A7E183D1F02AB3D5D48F6C0067F864DCBEAA5130A35F8F50F52EF1DC458CED1E
+        run: |
+          set -euo pipefail
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          test -n "$sdk"
+          apksigner="$(find "$sdk/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -n 1)"
+          test -x "$apksigner"
+          output="$("$apksigner" verify --print-certs build/app/outputs/flutter-apk/app-release.apk)"
+          actual="$(printf '%s\\n' "$output" | sed -nE 's/^Signer #1 certificate SHA-256 digest: ([0-9A-Fa-f:]+)$/\\1/p' | head -n 1 | tr -d ':' | tr '[:lower:]' '[:upper:]')"
+          if [ "$actual" != "$EXPECTED_UPLOAD_CERT_SHA256" ]; then
+            echo "Release APK signer does not match the configured EURO upload certificate." >&2
+            echo "Expected SHA-256: $EXPECTED_UPLOAD_CERT_SHA256" >&2
+            echo "Actual SHA-256: ${actual:-unavailable}" >&2
+            exit 1
+          fi
+          echo "PASS: release APK signer matches the configured EURO upload certificate ($actual)."
+
       - name: Build signed AAB for Google Play (final package)
         if: (github.event_name == 'workflow_dispatch' && inputs.build_play_bundle) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[EURO-PLAY-AAB-ONCE]'))
         run: flutter build appbundle --release --target-platform android-arm,android-arm64 --dart-define=EURO_API_URL=https://control-panel-euro-cars.onrender.com --dart-define=GOOGLE_SERVER_CLIENT_ID=${{ vars.GOOGLE_SERVER_CLIENT_ID }}

@@ -6,8 +6,9 @@ machine) and then adapted here. Every change is idempotent, and the script stops
 anchor is missing, so a Flutter template change can never silently produce an APK without network access.
 
 What it does:
-  * AndroidManifest.xml: INTERNET permission (the template only grants it to debug and profile builds, so a
-    release APK would have no network at all), the app label "EURO CARS", android:allowBackup="false" (an
+  * AndroidManifest.xml: INTERNET, POST_NOTIFICATIONS and CAMERA permissions (the VIN scanner needs camera
+    access; camera hardware remains optional so manual VIN entry still works), the app label "EURO CARS",
+    android:allowBackup="false" (an
     Auto Backup restore brings back encrypted preferences without their Keystore key), and <queries> for
     https / http links so url_launcher can open WhatsApp and the web on Android 11+.
   * app/build.gradle.kts: minSdk of at least 23 and optional release signing from android/key.properties
@@ -31,6 +32,8 @@ MIN_SDK = 23
 
 INTERNET = '<uses-permission android:name="android.permission.INTERNET"/>'
 POST_NOTIFICATIONS = '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>'
+CAMERA = '<uses-permission android:name="android.permission.CAMERA"/>'
+CAMERA_FEATURE = '<uses-feature android:name="android.hardware.camera.any" android:required="false"/>'
 QUERY_HTTPS = (
     "        <intent>\n"
     '            <action android:name="android.intent.action.VIEW"/>\n'
@@ -118,6 +121,16 @@ def patch_manifest(path: pathlib.Path) -> bool:
         if count != 1:
             raise PatchError("no <manifest> element found in AndroidManifest.xml")
 
+    if "android.permission.CAMERA" not in text:
+        text, count = re.subn(r"(<manifest\b[^>]*>)", r"\1\n    " + CAMERA, text, count=1)
+        if count != 1:
+            raise PatchError("no <manifest> element found for camera permission")
+
+    if "android.hardware.camera.any" not in text:
+        text, count = re.subn(r"(<manifest\b[^>]*>)", r"\1\n    " + CAMERA_FEATURE, text, count=1)
+        if count != 1:
+            raise PatchError("no <manifest> element found for optional camera feature")
+
     text, count = re.subn(r'(<application\b[^>]*?\sandroid:label=")[^"]*(")', r"\g<1>" + APP_LABEL + r"\2", text, count=1)
     if count != 1:
         raise PatchError('<application android:label="..."> not found in AndroidManifest.xml')
@@ -154,7 +167,7 @@ def patch_manifest(path: pathlib.Path) -> bool:
 
     # Fail loudly if anything the app depends on is still missing.
     final = path.read_text(encoding="utf-8")
-    for needle in (INTERNET, f'android:label="{APP_LABEL}"', 'android:allowBackup="false"', 'android:scheme="https"', 'android:scheme="eurocars"'):
+    for needle in (INTERNET, POST_NOTIFICATIONS, CAMERA, CAMERA_FEATURE, f'android:label="{APP_LABEL}"', 'android:allowBackup="false"', 'android:scheme="https"', 'android:scheme="eurocars"'):
         if needle not in final:
             raise PatchError(f"AndroidManifest.xml is missing {needle!r} after patching")
     return changed

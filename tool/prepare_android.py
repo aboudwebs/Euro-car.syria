@@ -11,7 +11,7 @@ What it does:
     android:allowBackup="false" (an
     Auto Backup restore brings back encrypted preferences without their Keystore key), and <queries> for
     https / http links so url_launcher can open WhatsApp and the web on Android 11+.
-  * app/build.gradle.kts: minSdk of at least 23 and optional release signing from android/key.properties
+  * app/build.gradle.kts: minSdk of at least 24 and optional release signing from android/key.properties
     (without that file the release build is signed with the debug key, which is installable but not for the Play Store).
   * res: the launcher icons and the dark launch background from branding/android/res.
 
@@ -28,7 +28,7 @@ import shutil
 import sys
 
 APP_LABEL = "EURO CARS"
-MIN_SDK = 23
+MIN_SDK = 24
 
 INTERNET = '<uses-permission android:name="android.permission.INTERNET"/>'
 POST_NOTIFICATIONS = '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>'

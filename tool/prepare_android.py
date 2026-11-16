@@ -134,7 +134,7 @@ def patch_manifest(path: pathlib.Path) -> bool:
 
     # CAMERA permission otherwise implies android.hardware.camera is required by Google Play.
     if 'android:name="android.hardware.camera"' not in text:
-        text, count = re.subn(r"(<manifest\\b[^>]*>)", r"\\1\\n    " + CAMERA_FEATURE_OPTIONAL, text, count=1)
+        text, count = re.subn(r"(<manifest\b[^>]*>)", r"\1\n    " + CAMERA_FEATURE_OPTIONAL, text, count=1)
         if count != 1:
             raise PatchError("no <manifest> element found for optional camera hardware feature")
 

@@ -155,9 +155,9 @@ else
   else
     fail "INTERNET permission is missing"
   fi
-  if printf '%s\\n' "$badging" | grep -q "^uses-feature-not-required: name='android.hardware.camera'"; then
+  if printf '%s\n' "$badging" | grep -q "^uses-feature-not-required: name='android.hardware.camera'"; then
     pass "camera hardware is optional (manual VIN entry remains available)"
-  elif printf '%s\\n' "$badging" | grep -q "^uses-feature: name='android.hardware.camera'"; then
+  elif printf '%s\n' "$badging" | grep -q "^uses-feature: name='android.hardware.camera'"; then
     fail "camera hardware is marked required; VIN scanning must remain optional"
   else
     fail "optional camera hardware feature declaration is missing"

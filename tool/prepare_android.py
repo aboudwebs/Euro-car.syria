@@ -34,6 +34,7 @@ INTERNET = '<uses-permission android:name="android.permission.INTERNET"/>'
 POST_NOTIFICATIONS = '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>'
 CAMERA = '<uses-permission android:name="android.permission.CAMERA"/>'
 CAMERA_FEATURE = '<uses-feature android:name="android.hardware.camera.any" android:required="false"/>'
+CAMERA_FEATURE_OPTIONAL = '<uses-feature android:name="android.hardware.camera" android:required="false"/>'
 QUERY_HTTPS = (
     "        <intent>\n"
     '            <action android:name="android.intent.action.VIEW"/>\n'
@@ -131,6 +132,12 @@ def patch_manifest(path: pathlib.Path) -> bool:
         if count != 1:
             raise PatchError("no <manifest> element found for optional camera feature")
 
+    # CAMERA permission otherwise implies android.hardware.camera is required by Google Play.
+    if 'android:name="android.hardware.camera"' not in text:
+        text, count = re.subn(r"(<manifest\\b[^>]*>)", r"\\1\\n    " + CAMERA_FEATURE_OPTIONAL, text, count=1)
+        if count != 1:
+            raise PatchError("no <manifest> element found for optional camera hardware feature")
+
     text, count = re.subn(r'(<application\b[^>]*?\sandroid:label=")[^"]*(")', r"\g<1>" + APP_LABEL + r"\2", text, count=1)
     if count != 1:
         raise PatchError('<application android:label="..."> not found in AndroidManifest.xml')
@@ -167,7 +174,7 @@ def patch_manifest(path: pathlib.Path) -> bool:
 
     # Fail loudly if anything the app depends on is still missing.
     final = path.read_text(encoding="utf-8")
-    for needle in (INTERNET, POST_NOTIFICATIONS, CAMERA, CAMERA_FEATURE, f'android:label="{APP_LABEL}"', 'android:allowBackup="false"', 'android:scheme="https"', 'android:scheme="eurocars"'):
+    for needle in (INTERNET, POST_NOTIFICATIONS, CAMERA, CAMERA_FEATURE, CAMERA_FEATURE_OPTIONAL, f'android:label="{APP_LABEL}"', 'android:allowBackup="false"', 'android:scheme="https"', 'android:scheme="eurocars"'):
         if needle not in final:
             raise PatchError(f"AndroidManifest.xml is missing {needle!r} after patching")
     return changed

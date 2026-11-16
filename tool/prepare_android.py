@@ -201,7 +201,7 @@ def patch_gradle(path: pathlib.Path) -> bool:
         }
 
 """
-        text, count = re.subn(r"(?m)^android \\{\\n", lambda match: match.group(0) + ndk_block, text, count=1)
+        text, count = re.subn(r"(?m)^android \{\n", lambda match: match.group(0) + ndk_block, text, count=1)
         if count != 1:
             raise PatchError("android block not found for ARM ABI filters")
     if abi_filters not in text:

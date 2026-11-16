@@ -7,11 +7,12 @@
 #     the tools must agree, and the value must be at least MIN_SDK_REQUIRED (24),
 #   * it contains native code for exactly the supported CPU architectures (armeabi-v7a and arm64-v8a),
 #   * the Dart code, the Flutter engine and the bundled Arabic font are inside,
-#   * ZIP alignment is correct,
+#   * ZIP and required 16 KB native-library alignment are correct,
+#   * targetSdk is at least TARGET_SDK_REQUIRED,
 # and finally writes the SHA-256 next to the APK.
 #
 # Usage: tool/verify_apk.sh path/to/app-release.apk
-# Environment (optional): EXPECTED_PACKAGE, EXPECTED_LABEL, EXPECTED_ABIS, MIN_SDK_REQUIRED,
+# Environment (optional): EXPECTED_PACKAGE, EXPECTED_LABEL, EXPECTED_ABIS, MIN_SDK_REQUIRED, TARGET_SDK_REQUIRED,
 #                         ANDROID_HOME / ANDROID_SDK_ROOT.
 set -uo pipefail
 
@@ -20,6 +21,7 @@ EXPECTED_PACKAGE="${EXPECTED_PACKAGE:-com.eurocars.euro_cars}"
 EXPECTED_LABEL="${EXPECTED_LABEL:-EURO CARS}"
 EXPECTED_ABIS="${EXPECTED_ABIS:-armeabi-v7a arm64-v8a}"
 MIN_SDK_REQUIRED="${MIN_SDK_REQUIRED:-24}"
+TARGET_SDK_REQUIRED="${TARGET_SDK_REQUIRED:-36}"
 
 failures=0
 report="$(mktemp)"
@@ -140,11 +142,26 @@ else
   [ "$package" = "$EXPECTED_PACKAGE" ] && pass "package is $package" || fail "package is '$package', expected '$EXPECTED_PACKAGE'"
   [ "$label" = "$EXPECTED_LABEL" ] && pass "app label is '$label'" || fail "app label is '$label', expected '$EXPECTED_LABEL'"
   say "INFO  version $version ($code), targetSdk ${target_sdk:-unknown}"
+  target_sdk_number="$(to_int "$target_sdk")"
+  if [ -z "$target_sdk_number" ]; then
+    fail "targetSdk could not be read from the APK manifest"
+  elif [ "$target_sdk_number" -ge "$TARGET_SDK_REQUIRED" ]; then
+    pass "targetSdk $target_sdk_number meets the required API $TARGET_SDK_REQUIRED"
+  else
+    fail "targetSdk $target_sdk_number is below the required API $TARGET_SDK_REQUIRED"
+  fi
   if printf '%s\n' "$badging" | grep -q "^uses-permission: name='android.permission.INTERNET'"; then
     pass "INTERNET permission is present (without it the release app has no network)"
   else
     fail "INTERNET permission is missing"
   fi
+  for permission in android.permission.POST_NOTIFICATIONS android.permission.CAMERA; do
+    if printf '%s\n' "$badging" | grep -q "^uses-permission: name='$permission'"; then
+      pass "$permission is present"
+    else
+      fail "$permission is missing"
+    fi
+  done
   if printf '%s\n' "$badging" | grep -q "^uses-permission: name='android.permission.READ_EXTERNAL_STORAGE'"; then
     warn "READ_EXTERNAL_STORAGE is requested, which the app does not need"
   fi
@@ -242,10 +259,10 @@ for entry in classes.dex AndroidManifest.xml \
   fi
 done
 
-# 6. ZIP alignment (and, informational, the 16 KB page alignment Google Play asks for on new apps)
+# 6. ZIP alignment and mandatory 16 KB native-library page alignment
 zipalign="$(tool zipalign || true)"
 if [ -z "$zipalign" ]; then
-  warn "zipalign not found, alignment was not checked"
+  fail "zipalign not found; required alignment checks cannot be performed"
 else
   if "$zipalign" -c 4 "$APK" >/dev/null 2>&1; then
     pass "ZIP alignment is correct (zipalign -c 4)"
@@ -255,7 +272,7 @@ else
   if "$zipalign" -c -P 16 4 "$APK" >/dev/null 2>&1; then
     pass "native libraries are 16 KB aligned"
   else
-    warn "16 KB page alignment could not be confirmed (needs build-tools 35.0.0 or newer)"
+    fail "16 KB native-library alignment check failed (requires build-tools 35.0.0 or newer)"
   fi
 fi
 

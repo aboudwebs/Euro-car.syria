@@ -838,8 +838,8 @@ class _DeletionBanner extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             days <= 0
-                ? 'ينتهي الاسترجاع اليوم. بعدها يُحذف الحساب نهائياً.'
-                : 'سيُحذف حسابك نهائياً بعد $days يوم. يمكنك إلغاء الطلب قبل ذلك.',
+                ? 'انتهت مهلة الـ30 يوماً، لكن الحذف لم يكتمل بعد بسبب التزامات معلّقة. يمكنك إلغاء الطلب ما دام قيد الانتظار.'
+                : 'سيُحذف حسابك نهائياً بعد $days يوم. يمكنك إلغاء الطلب حتى اكتمال الحذف.',
             style: TextStyle(color: p.text, fontSize: 13.5, height: 1.6),
           ),
           const SizedBox(height: 12),
@@ -906,8 +906,9 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
             Text(
-              'سيُحذف حسابك بعد $accountDeletionGraceDays يوماً من تأكيد الطلب، ويمكنك إلغاء الحذف خلال هذه المدة. '
-              'بعد انتهاء المدة تُزال بياناتك الشخصية، وتبقى السجلات المالية اللازمة للمحاسبة.',
+              'سيُحذف حسابك بعد $accountDeletionGraceDays يوماً من تأكيد الطلب، ويمكنك إلغاء الطلب حتى اكتمال التنفيذ. '
+              'استخدم أي رصيد كاش باك متاح وسوِّ الديون والطلبات والعمولات قبل طلب الحذف. '
+              'بعد انتهاء المهلة تُزال بياناتك الشخصية، وتبقى السجلات المالية اللازمة للمحاسبة.',
               style: TextStyle(color: p.text, fontSize: 13.5, height: 1.6),
             ),
             const SizedBox(height: 14),

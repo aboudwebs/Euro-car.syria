@@ -4,6 +4,11 @@ Native Flutter client (Arabic, RTL, dark and light themes) for the existing EURO
 current Next.js API (`https://control-panel-euro-cars.onrender.com`) with the signed mobile session token kept in Android secure
 storage. It never connects to Supabase directly. The admin role is web only: an admin account cannot sign in here.
 
+## Public privacy and account deletion
+- Privacy policy: `https://control-panel-euro-cars.onrender.com/privacy`
+- External account deletion: `https://control-panel-euro-cars.onrender.com/delete-account`
+- The About screen links to both pages. The external deletion flow verifies phone ownership by SMS and applies the same 30-day deletion process as the app.
+
 ## What the app does
 
 | Area | Workshop | Marketer |
@@ -15,7 +20,7 @@ storage. It never connects to Supabase directly. The admin role is web only: an 
 | Dashboard | server-authoritative loyalty tier and 90-day season progress, cashback, debt balance and 30-day window, ledger | referral code/share link, workshops, 2% commissions, payout requests and payout history |
 | Account | profile photo; currency (USD / SYP using the admin-published rate) and language; account data; saved addresses and vehicles (VIN); active/previous orders, tracking and Sham Cash refund status; in-app notifications for orders, debt, cashback, loyalty and payouts; About EURO; support; sign-out; account deletion | same |
 | Catalog extras | sections (categories), VIN search by camera (on-device text reading) or from a saved vehicle | same |
-| Sign-in | forgot password by WhatsApp code | same |
+| Sign-in | forgot password by MsgPlus SMS code | same |
 
 The server stays the authority for prices, stock, totals, roles and limits; the app only sends part ids and quantities.
 

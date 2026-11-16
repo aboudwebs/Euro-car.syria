@@ -10,6 +10,10 @@ const String googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT
 /// The production API (HTTPS). Release builds never talk to anything else than an https:// URL.
 const String defaultApiBase = 'https://control-panel-euro-cars.onrender.com';
 
+/// Public policy and external account-deletion pages required for store disclosure.
+const String privacyPolicyUrl = 'https://control-panel-euro-cars.onrender.com/privacy';
+const String accountDeletionUrl = 'https://control-panel-euro-cars.onrender.com/delete-account';
+
 /// Base URL as configured at build time. Override per build with --dart-define=EURO_API_URL=https://example.com
 const String configuredApiBase = String.fromEnvironment('EURO_API_URL', defaultValue: defaultApiBase);
 

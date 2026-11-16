@@ -1,4 +1,5 @@
 import 'package:euro_cars/core/models.dart';
+import 'package:euro_cars/core/labels.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fixtures.dart';
@@ -337,11 +338,17 @@ void main() {
 
       final WorkshopDashboard top = dashboard(<Map<String, dynamic>>[
         order('o1', 50000, 'cod', 'shipped'),
-      ], null, 'VIP', 50000);
+      ], null, 'Elite', 50000);
       expect(top.tierIndex, 5);
-      expect(top.currentTier.name, 'النخبة VIP');
+      expect(top.currentTier.name, 'النخبة Elite');
       expect(top.nextTier, isNull);
       expect(top.tierProgress, 1.0);
+
+      final WorkshopDashboard legacyTop = dashboard(<Map<String, dynamic>>[
+        order('o1', 50000, 'cod', 'shipped'),
+      ], null, 'VIP', 50000);
+      expect(legacyTop.tierIndex, 5);
+      expect(legacyTop.currentTier.name, 'النخبة Elite');
     });
 
     test('debtDaysLeft counts down from the latest debit that left a balance', () {
@@ -452,6 +459,13 @@ void main() {
       expect(placed.orderNumber, 12);
       expect(placed.pay, 'cod');
       expect(placed.total, 33.5);
+    });
+  });
+
+  group('Loyalty tier labels', () {
+    test('Elite is canonical while VIP remains a legacy alias', () {
+      expect(tierLabel('Elite'), 'النخبة Elite');
+      expect(tierLabel('VIP'), 'النخبة Elite');
     });
   });
 

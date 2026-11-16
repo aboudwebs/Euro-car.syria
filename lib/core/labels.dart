@@ -35,7 +35,8 @@ const Map<String, String> tierLabels = <String, String>{
   'Silver': 'فضية',
   'Gold': 'ذهبية',
   'Platinum': 'بلاتينية',
-  'VIP': 'النخبة VIP',
+  'Elite': 'النخبة Elite',
+  'VIP': 'النخبة Elite',
 };
 
 const Map<String, String> roleLabels = <String, String>{
@@ -85,5 +86,5 @@ const List<TierStep> estimatedTiers = <TierStep>[
   TierStep('فضية', 15000, '5%'),
   TierStep('ذهبية', 20000, '7%'),
   TierStep('بلاتينية', 30000, '10%'),
-  TierStep('النخبة VIP', 50000, '15%'),
+  TierStep('النخبة Elite', 50000, '15%'),
 ];

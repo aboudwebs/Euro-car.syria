@@ -167,9 +167,9 @@ try:
 except subprocess.CalledProcessError as exc:
     print(exc.output.strip() or "apkanalyzer could not print the merged manifest")
     raise SystemExit(2)
-features = re.findall(r"<uses-feature\\b[^>]*>", xml)
+features = re.findall(r"<uses-feature\b[^>]*>", xml)
 for tag in features:
-    if re.search(r'android:name="android\\.hardware\\.camera"', tag):
+    if re.search(r'android:name="android\.hardware\.camera"', tag):
         print(tag)
         if re.search(r'android:required="false"', tag):
             raise SystemExit(0)

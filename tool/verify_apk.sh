@@ -304,9 +304,51 @@ else
     fail "ZIP alignment check failed (zipalign -c 4)"
   fi
   if "$zipalign" -c -P 16 4 "$APK" >/dev/null 2>&1; then
-    pass "native libraries are 16 KB aligned"
+    pass "uncompressed native libraries are 16 KB ZIP-aligned"
   else
-    fail "16 KB native-library alignment check failed (requires build-tools 35.0.0 or newer)"
+    fail "16 KB native-library ZIP alignment check failed (requires build-tools 35.0.0 or newer)"
+  fi
+
+  # ZIP alignment alone is not sufficient: every ELF PT_LOAD segment must also use 16 KB alignment.
+  readelf_bin="$(command -v readelf || true)"
+  if [ -z "$readelf_bin" ]; then
+    fail "readelf not found; ELF PT_LOAD 16 KB alignment cannot be verified"
+  else
+    so_count=0
+    while IFS= read -r entry; do
+      case "$entry" in
+        *.so)
+          so_count=$((so_count + 1))
+          tmp_so="$(mktemp)"
+          if ! unzip -p "$APK" "$entry" > "$tmp_so"; then
+            fail "could not extract native library $entry for ELF alignment inspection"
+            rm -f "$tmp_so"
+            continue
+          fi
+          load_alignments="$("$readelf_bin" -lW "$tmp_so" 2>/dev/null | awk '$1 == "LOAD" { print $NF }')"
+          rm -f "$tmp_so"
+          if [ -z "$load_alignments" ]; then
+            fail "no ELF LOAD segments could be read from $entry"
+            continue
+          fi
+          elf_ok=1
+          while IFS= read -r alignment; do
+            if [[ ! "$alignment" =~ ^0x[0-9a-fA-F]+$ ]] || (( alignment < 0x4000 )); then
+              fail "$entry has an ELF LOAD segment alignment below 16 KB ($alignment)"
+              elf_ok=0
+            fi
+          done <<< "$load_alignments"
+          if [ "$elf_ok" -eq 1 ]; then
+            pass "$entry ELF LOAD segments are 16 KB aligned"
+          fi
+          ;;
+      esac
+    done <<< "$entries"
+    if [ "$so_count" -eq 0 ]; then
+      fail "no native .so libraries were found for ELF alignment inspection"
+    else
+      say "INFO  inspected $so_count native ELF libraries"
+    fi
   fi
 fi
 

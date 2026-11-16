@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:euro_cars/app.dart';
 import 'package:euro_cars/core/session_store.dart';
+import 'package:euro_cars/screens/account/account_data_screen.dart' show AccountDataScreen;
 import 'package:euro_cars/widgets/inputs.dart' show PrimaryButton, SecondaryButton;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -325,6 +326,9 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
+    // The page behind (the account tab) keeps its own Scrollable in the tree, so scroll the account data page itself.
+    Finder accountDataList() => find.descendant(of: find.byType(AccountDataScreen), matching: find.byType(Scrollable)).first;
+
     Future<void> openAccountDataPage(WidgetTester tester) async {
       await tester.tap(find.text('حسابي').last);
       await settle(tester);
@@ -345,7 +349,7 @@ void main() {
 
       expect(find.text('إضافة رقم الموبايل'), findsWidgets);
       expect(find.text('تغيير رقم الموبايل'), findsNothing);
-      await tester.scrollUntilVisible(find.text('إضافة كلمة مرور'), 300, scrollable: find.byType(Scrollable).first);
+      await tester.scrollUntilVisible(find.text('إضافة كلمة مرور'), 300, scrollable: accountDataList());
       expect(find.text('إضافة كلمة مرور'), findsOneWidget);
       expect(find.text('كلمة المرور الحالية'), findsNothing, reason: 'there is no current password to ask for');
       expect(find.text('نسيت كلمة المرور؟'), findsNothing);
@@ -365,7 +369,7 @@ void main() {
 
       expect(find.text('تغيير رقم الموبايل'), findsOneWidget);
       expect(find.text('إضافة رقم الموبايل'), findsNothing);
-      await tester.scrollUntilVisible(find.text('نسيت كلمة المرور؟'), 300, scrollable: find.byType(Scrollable).first);
+      await tester.scrollUntilVisible(find.text('نسيت كلمة المرور؟'), 300, scrollable: accountDataList());
       expect(find.text('كلمة المرور الحالية'), findsWidgets);
       expect(find.text('إضافة كلمة مرور'), findsNothing);
 

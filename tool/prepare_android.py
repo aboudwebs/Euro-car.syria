@@ -194,18 +194,32 @@ def patch_gradle(path: pathlib.Path) -> bool:
         if count != 1:
             raise PatchError("the release signingConfig line was not found in app/build.gradle.kts")
 
-    abi_filters = 'abiFilters += setOf("armeabi-v7a", "arm64-v8a")'
-    if abi_filters not in text:
-        ndk_block = """        ndk {
+    # Flutter builds only ARM engines; exclude optional x86_64 OCR libraries bundled by transitive AARs.
+    abi_filter_block = 'excludes += setOf("**/x86_64/**")'
+    misplaced_ndk_block = """    ndk {
             abiFilters += setOf("armeabi-v7a", "arm64-v8a")
         }
 
 """
-        text, count = re.subn(r"(?m)^    defaultConfig \{\n", lambda match: match.group(0) + ndk_block, text, count=1)
+    default_ndk_block = """        ndk {
+            abiFilters += setOf("armeabi-v7a", "arm64-v8a")
+        }
+
+"""
+    text = text.replace(misplaced_ndk_block, "").replace(default_ndk_block, "")
+    if abi_filter_block not in text:
+        packaging_block = """    packaging {
+        jniLibs {
+            excludes += setOf("**/x86_64/**")
+        }
+    }
+
+"""
+        text, count = re.subn(r"(?m)^android \{\n", lambda match: match.group(0) + packaging_block, text, count=1)
         if count != 1:
-            raise PatchError("defaultConfig block not found for ARM ABI filters")
-    if abi_filters not in text:
-        raise PatchError("ARM32/ARM64 ABI filters could not be applied")
+            raise PatchError("android block not found for native ABI packaging filter")
+    if abi_filter_block not in text:
+        raise PatchError("x86_64 native libraries could not be excluded")
 
     if f"maxOf(flutter.minSdkVersion, {MIN_SDK})" not in text:
         text, count = re.subn(r"minSdk = flutter\.minSdkVersion", f"minSdk = maxOf(flutter.minSdkVersion, {MIN_SDK})", text, count=1)

@@ -155,6 +155,14 @@ else
   else
     fail "INTERNET permission is missing"
   fi
+  if printf '%s\\n' "$badging" | grep -q "^uses-feature-not-required: name='android.hardware.camera'"; then
+    pass "camera hardware is optional (manual VIN entry remains available)"
+  elif printf '%s\\n' "$badging" | grep -q "^uses-feature: name='android.hardware.camera'"; then
+    fail "camera hardware is marked required; VIN scanning must remain optional"
+  else
+    fail "optional camera hardware feature declaration is missing"
+  fi
+
   for permission in android.permission.POST_NOTIFICATIONS android.permission.CAMERA; do
     if printf '%s\n' "$badging" | grep -q "^uses-permission: name='$permission'"; then
       pass "$permission is present"

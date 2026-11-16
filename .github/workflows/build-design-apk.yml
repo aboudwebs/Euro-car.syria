@@ -230,7 +230,7 @@ jobs:
   publish:
     name: Publish permanent APK download
     needs: build
-    if: github.event_name == 'workflow_dispatch' && inputs.build_play_bundle && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

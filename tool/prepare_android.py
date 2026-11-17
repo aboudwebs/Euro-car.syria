@@ -368,3 +368,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+# [EURO-PLAY-AAB-ONCE] Final signed Play bundle validation is intentionally gated by this one-off CI trigger.

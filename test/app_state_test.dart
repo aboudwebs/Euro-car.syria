@@ -528,6 +528,19 @@ void main() {
       expect(h.store.data[tokenKey], 'tok-1');
     });
 
+    test('a route-specific 401 does not end a still-valid account session', () async {
+      final Harness h = await signedInHarness();
+      h.server.on('GET', '/api/orders', (_) => jsonResponse(<String, dynamic>{'error': 'غير مصرح'}, 401));
+      h.server.on('GET', '/api/auth', (_) => jsonResponse(<String, dynamic>{'user': workshopJson()}));
+
+      await h.state.loadOrders();
+      await pumpEventQueue();
+
+      expect(h.state.isSignedIn, isTrue);
+      expect(h.api.token, 'tok-1');
+      expect(h.store.data[tokenKey], 'tok-1');
+    });
+
     test('a 401 on an authenticated call ends the session but keeps the saved cart', () async {
       final Harness h = await signedInHarness(
         extraStore: <String, String>{cartKey: cartJson('w1', <String, Object?>{'p1': 2})},

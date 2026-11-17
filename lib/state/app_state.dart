@@ -764,21 +764,39 @@ class AppState extends ChangeNotifier {
     await _endSession(clearCart: true);
   }
 
+  bool _checkingUnauthorized = false;
+
   void _handleUnauthorized() {
-    if (_status != SessionStatus.signedIn) {
-      return;
-    }
+    if (_status != SessionStatus.signedIn) return;
     if (_tokenRotations > 0) {
       // A password change is in flight: this 401 may only mean the old token was just replaced.
       _unauthorizedHeld = true;
       return;
     }
-    unawaited(
-      _endSession(
-        clearCart: false,
-        notice: 'انتهت جلسة الدخول. سجّل الدخول مجدداً للمتابعة.',
-      ),
-    );
+    if (_checkingUnauthorized) return;
+    _checkingUnauthorized = true;
+    unawaited(_confirmSessionAfterUnauthorized(_epoch, api.token));
+  }
+
+  /// Confirm the shared session before clearing it: one route-specific 401 must not sign out the whole app.
+  Future<void> _confirmSessionAfterUnauthorized(int epoch, String? token) async {
+    try {
+      final Map<String, dynamic> profile = await api.getProfile();
+      if (epoch != _epoch || token != api.token || _status != SessionStatus.signedIn) return;
+      if (profile['user'] == null) {
+        await _endSession(
+          clearCart: false,
+          notice: 'انتهت جلسة الدخول. سجّل الدخول مجدداً للمتابعة.',
+        );
+      } else if (profile['user'] is Map) {
+        _mergeUser(asMap(profile['user']));
+        notifyListeners();
+      }
+    } catch (_) {
+      // Network and server errors do not erase a locally saved session.
+    } finally {
+      _checkingUnauthorized = false;
+    }
   }
 
   Future<void> _endSession({required bool clearCart, String? notice, bool serverLogout = false}) async {

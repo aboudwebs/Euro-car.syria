@@ -383,13 +383,15 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         role: _role,
         registering: true,
         onChanged: (value) {
-          if (!_busy) setState(() {
-            _role = value;
-            _error = null;
-            _notice = null;
-            _customerOtpToken = null;
-            _otp.clear();
-          });
+          if (!_busy) {
+            setState(() {
+              _role = value;
+              _error = null;
+              _notice = null;
+              _customerOtpToken = null;
+              _otp.clear();
+            });
+          }
         },
       ),
       const SizedBox(height: 12),
@@ -416,8 +418,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         SecondaryButton(
           label: _customerOtpToken == null ? 'إرسال رمز التحقق' : 'إعادة إرسال رمز التحقق',
           icon: Icons.sms_outlined,
-          busy: _busy,
-          onPressed: _sendCustomerOtp,
+          onPressed: _busy ? null : _sendCustomerOtp,
         ),
         const SizedBox(height: 8),
         PrimaryButton(label: 'إنشاء حساب', icon: Icons.person_add_alt_1_rounded, busy: _busy, onPressed: _registerCustomer),

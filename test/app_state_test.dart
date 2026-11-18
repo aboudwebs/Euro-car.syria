@@ -489,6 +489,7 @@ void main() {
     test('an expired session does not call DELETE /api/auth', () async {
       final Harness h = await signedInHarness();
       h.server.reply('GET', '/api/orders', <String, dynamic>{'error': 'غير مصرح'}, 401);
+      h.server.reply('GET', '/api/auth', <String, dynamic>{'user': null});
 
       await h.state.loadOrders();
       await pumpEventQueue();

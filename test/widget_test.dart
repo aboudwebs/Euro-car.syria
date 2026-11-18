@@ -93,6 +93,49 @@ void main() {
       expect(find.text('متابعة كضيف — تصفح الكتالوج فقط'), findsOneWidget);
     });
 
+    testWidgets('welcome screen uses the original EURO icon above the English app name', (WidgetTester tester) async {
+      usePhoneScreen(tester);
+      await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
+      await settle(tester);
+
+      expect(find.byWidgetPredicate((Widget widget) =>
+        widget is Image && widget.image is AssetImage &&
+        (widget.image as AssetImage).assetName == 'branding/icon_1024.png'), findsOneWidget);
+      expect(find.text('EURO CARS'), findsOneWidget);
+      expect(find.text('اختر نوع الحساب'), findsOneWidget);
+    });
+
+    testWidgets('independent customer login uses phone and password without an OTP field', (WidgetTester tester) async {
+      usePhoneScreen(tester);
+      await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
+      await settle(tester);
+
+      await chooseAccountType(tester, role: 'customer');
+
+      expect(find.text('رقم الهاتف'), findsOneWidget);
+      expect(find.text('كلمة المرور'), findsOneWidget);
+      expect(find.text('رمز التحقق SMS'), findsNothing);
+      expect(find.text('البريد الإلكتروني'), findsNothing);
+      expect(find.text('تسجيل الدخول'), findsOneWidget);
+    });
+
+    testWidgets('independent customer registration has no workshop license fields', (WidgetTester tester) async {
+      usePhoneScreen(tester);
+      await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
+      await settle(tester);
+
+      await chooseAccountType(tester, role: 'customer');
+      await tester.tap(find.text('ليس لديك حساب؟ إنشاء حساب جديد'));
+      await settle(tester);
+
+      expect(find.text('الاسم الكامل'), findsOneWidget);
+      expect(find.text('رقم الهاتف'), findsOneWidget);
+      expect(find.text('كلمة المرور (8 أحرف على الأقل)'), findsOneWidget);
+      expect(find.text('رمز التحقق SMS'), findsOneWidget);
+      expect(find.text('السجل التجاري / ترخيص الورشة (اختياري)'), findsNothing);
+      expect(find.text('اختصاص الورشة / الماركات'), findsNothing);
+    });
+
     testWidgets('registration offers workshop, marketer and independent customer roles', (WidgetTester tester) async {
       usePhoneScreen(tester);
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));

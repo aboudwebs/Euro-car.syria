@@ -1261,7 +1261,11 @@ class AppState extends ChangeNotifier {
     if (lines.isEmpty) {
       throw const ApiException('السلة فارغة.');
     }
-    if (cashbackUsed < 0 || cashbackUsed > cartTotalAmount || cashbackUsed > (current.cashbackBalance ?? 0)) {
+    if (current.isIndependentCustomer && cashbackUsed != 0) {
+      throw const ApiException('حساب الزبون المستقل لا يستخدم رصيد الكاش باك.');
+    }
+    if (cashbackUsed < 0 || cashbackUsed > cartTotalAmount ||
+        cashbackUsed > (current.isWorkshop ? (current.cashbackBalance ?? 0) : 0)) {
       throw const ApiException('قيمة الكاش باك غير صالحة أو الرصيد غير كافٍ.');
     }
     // Normalize full redemption here too, so non-UI callers cannot accidentally send COD with a zero balance due.

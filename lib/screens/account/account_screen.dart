@@ -531,7 +531,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
                     const SizedBox(height: 6),
                     StatusChip(
-                      label: user.isWorkshop ? 'حساب ورشة معتمد' : 'حساب مسوّق',
+                      label: user.isWorkshop ? 'حساب ورشة معتمد' : user.isMarketer ? 'حساب مسوّق' : 'حساب زبون مستقل',
                       tone: StatusTone.success,
                     ),
                     const SizedBox(height: 8),
@@ -572,6 +572,21 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Widget _statTiles(Palette p, AppUser user) {
+    if (user.isIndependentCustomer) {
+      return Panel(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Icon(Icons.shopping_bag_outlined, color: p.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('حساب زبون مستقل — لا يشمل نظام الديون أو الكاش باك أو عمولات المسوّقين.',
+                  style: TextStyle(color: p.muted, fontSize: 13, height: 1.6)),
+            ),
+          ],
+        ),
+      );
+    }
     if (user.isMarketer) {
       // The code is handed out (shown and copyable) only once the phone number is added and confirmed.
       final bool locked = !user.phoneVerified;

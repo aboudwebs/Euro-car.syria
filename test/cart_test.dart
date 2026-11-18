@@ -69,6 +69,13 @@ void main() {
       expect(check.message, isNotEmpty);
     });
 
+    test('is refused for an independent customer', () {
+      const AppUser customer = AppUser(id: 'c1', role: 'customer', name: 'زبون', phone: '0933000111');
+      final DebtCheck check = checkDebtPayment(user: customer, total: 10);
+      expect(check.allowed, isFalse);
+      expect(check.message, isNotEmpty);
+    });
+
     test('is left to the server when the limit is unknown', () {
       final DebtCheck check = checkDebtPayment(user: workshop(), total: 10);
       expect(check.allowed, isTrue);

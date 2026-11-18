@@ -124,7 +124,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       return;
     }
     setState(() { _busy = true; _error = null; _pending = null; });
-    final result = await AppScope.read(context).login(phone: _phone.text.trim(), password: _oldPassword.text);
+    final result = await AppScope.read(context).login(role: _role, phone: _phone.text.trim(), password: _oldPassword.text);
     if (!mounted) return;
     setState(() {
       _busy = false;
@@ -353,6 +353,14 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   Widget _login() => AuthFormCard(
     title: 'أهلاً بعودتك',
     children: [
+      RoleSelector(
+        role: _role,
+        registering: false,
+        onChanged: (value) {
+          if (!_busy) setState(() { _role = value; _error = null; _notice = null; });
+        },
+      ),
+      const SizedBox(height: 12),
       AppTextField(controller: _phone, label: 'رقم الهاتف',
           hint: '+963 9XXXXXXXX', keyboardType: TextInputType.phone, ltr: true, radius: 10),
       const SizedBox(height: 8),

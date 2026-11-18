@@ -195,7 +195,7 @@ class AppState extends ChangeNotifier {
   WorkshopDashboard? get workshopDashboard => _workshopDashboard;
   MarketerDashboard? get marketerDashboard => _marketerDashboard;
   bool get dashboardLoading => _dashboardLoading;
-  bool get dashboardLoaded => _workshopDashboard != null || _marketerDashboard != null;
+  bool get dashboardLoaded => _user?.isIndependentCustomer == true || _workshopDashboard != null || _marketerDashboard != null;
   String? get dashboardError => _dashboardError;
 
   Uint8List? get avatarBytes => _avatarBytes;
@@ -434,6 +434,7 @@ class AppState extends ChangeNotifier {
     unawaited(loadVehicles(silent: true));
     unawaited(loadDeletion(silent: true));
     unawaited(loadNotifications(silent: true));
+    if (_user?.isIndependentCustomer == true) unawaited(loadOrders(silent: true));
   }
 
   Future<void> _registerPushToken() async {
@@ -1420,6 +1421,9 @@ class AppState extends ChangeNotifier {
     final AppUser? current = _user;
     if (current == null) {
       return Future<void>.value();
+    }
+    if (current.isIndependentCustomer) {
+      return loadOrders(silent: silent);
     }
     if (current.isMarketer) {
       return _runLoad<MarketerDashboard>(

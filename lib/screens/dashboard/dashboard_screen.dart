@@ -35,12 +35,21 @@ class DashboardScreen extends StatelessWidget {
     }
     final Palette p = Palette.of(context);
     final bool marketer = user.isMarketer;
+    final bool independentCustomer = user.isIndependentCustomer;
     final String? error = state.dashboardError;
     final WorkshopDashboard? workshop = state.workshopDashboard;
     final MarketerDashboard? seller = state.marketerDashboard;
 
     final List<Widget> children = <Widget>[];
-    if (!state.dashboardLoaded) {
+    if (independentCustomer) {
+      if (!state.ordersLoaded) {
+        children.add(state.ordersError != null
+            ? NoticeBanner(message: state.ordersError!, kind: NoticeKind.error, onRetry: () => state.loadOrders())
+            : const LoadingBlock(message: 'جارٍ تحميل طلباتك...'));
+      } else {
+        children.addAll(_independentCustomerChildren(context, state.orders));
+      }
+    } else if (!state.dashboardLoaded) {
       if (error != null) {
         children.add(
           NoticeBanner(
@@ -70,9 +79,11 @@ class DashboardScreen extends StatelessWidget {
       }
     }
 
-    String subtitle = marketer
-        ? 'عمولة 2% على طلبات الورشات المسجّلة عبر رابطك'
-        : 'ملخص حساب الورشة وطلباتها';
+    String subtitle = independentCustomer
+        ? 'تابع طلبات قطع الغيار وحالة تجهيزها'
+        : marketer
+            ? 'عمولة 2% على طلبات الورشات المسجّلة عبر رابطك'
+            : 'ملخص حساب الورشة وطلباتها';
     if (!marketer && workshop != null && workshop.name.isNotEmpty) {
       subtitle = workshop.name;
     }
@@ -80,7 +91,7 @@ class DashboardScreen extends StatelessWidget {
     return Column(
       children: <Widget>[
         TabHeader(
-          title: marketer ? 'لوحة المسوّق' : 'لوحة الورشة',
+          title: independentCustomer ? 'حساب الزبون المستقل' : marketer ? 'لوحة المسوّق' : 'لوحة الورشة',
           subtitle: subtitle,
         ),
         Expanded(
@@ -97,6 +108,60 @@ class DashboardScreen extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  List<Widget> _independentCustomerChildren(BuildContext context, List<Order> orders) {
+    final Palette p = Palette.of(context);
+    final List<Order> recent = orders.take(8).toList();
+    String statusLabel(String status) => switch (status) {
+      'pending' => 'قيد المراجعة',
+      'approved' => 'تمت الموافقة',
+      'shipped' => 'تم الشحن',
+      'delivered' => 'تم التسليم',
+      'cancelled' => 'ملغي',
+      _ => status,
+    };
+    return <Widget>[
+      Panel(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            Text('طلباتك', style: TextStyle(color: p.text, fontSize: 16, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text('عدد الطلبات: ${orders.length}', style: TextStyle(color: p.muted, fontSize: 13)),
+            const SizedBox(height: 12),
+            if (recent.isEmpty)
+              Text('لم ترسل أي طلب بعد. تصفح الكتالوج واختر القطع التي تحتاجها.', style: TextStyle(color: p.muted, height: 1.6))
+            else
+              for (final order in recent) ...[
+                Divider(color: p.line, height: 1),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('طلب ${order.label}', style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 3),
+                            Text(statusLabel(order.status), style: TextStyle(color: p.muted, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      Text(formatUsd(order.total), style: TextStyle(color: p.text, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ],
+          ],
+        ),
+      ),
+      const SizedBox(height: 12),
+      Text('يمكنك متابعة تفاصيل كل طلب من قسم «طلباتي».', textAlign: TextAlign.center,
+          style: TextStyle(color: p.muted, fontSize: 12)),
+    ];
   }
 
   // ------------------------------------------------------------------ workshop

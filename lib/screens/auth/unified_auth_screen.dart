@@ -303,11 +303,14 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const SizedBox(height: 8),
-          const BrandMark(size: 54),
+          const Center(child: BrandMark(size: 54)),
           const SizedBox(height: 5),
           Text('EURO CARS', textAlign: TextAlign.center,
               style: TextStyle(color: p.muted, fontSize: 12, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 22),
+          if (_mode == _Mode.welcome)
+            SizedBox(height: MediaQuery.sizeOf(context).height * 0.16)
+          else
+            const SizedBox(height: 22),
           if (_mode == _Mode.welcome) _welcome(),
           if (_mode == _Mode.login) _login(),
           if (_mode == _Mode.register) _register(p),

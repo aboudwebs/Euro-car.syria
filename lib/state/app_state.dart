@@ -517,7 +517,6 @@ class AppState extends ChangeNotifier {
   Future<AuthResult> exchangeFirebaseIdentity({
     required String idToken,
     String phone = '',
-    String password = '',
     String otpCode = '',
     String otpToken = '',
   }) async {
@@ -550,12 +549,13 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Creates a EURO workshop / marketer account after Firebase has verified and linked the phone.
+  /// Creates a EURO workshop, marketer or independent customer account after Firebase identity and phone OTP verification.
   Future<AuthResult> registerFirebase({
     required String idToken,
     required String role,
     String name = '',
     String phone = '',
+    String password = '',
     String otpCode = '',
     String otpToken = '',
     String license = '',

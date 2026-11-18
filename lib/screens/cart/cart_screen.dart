@@ -491,7 +491,7 @@ class _CartScreenState extends State<CartScreen> {
     final Palette p = Palette.of(context);
     final double total = state.cartTotalAmount;
     final double cashbackBalance = user.isWorkshop ? (user.cashbackBalance ?? 0).clamp(0, double.infinity).toDouble() : 0;
-    final double cashbackUsed = _useCashback ? (double.tryParse(_cashbackController.text.trim()) ?? 0) : 0;
+    final double cashbackUsed = user.isWorkshop && _useCashback ? (double.tryParse(_cashbackController.text.trim()) ?? 0) : 0;
     final double amountDue = (total - cashbackUsed).clamp(0, double.infinity).toDouble();
     final List<String> methods = payMethodsFor(user);
     final DebtCheck debt = checkDebtPayment(user: user, total: amountDue);

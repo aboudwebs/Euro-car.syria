@@ -305,7 +305,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           const SizedBox(height: 8),
           const BrandMark(size: 54),
           const SizedBox(height: 5),
-          Text('قطع غيار السيارات الأوروبية', textAlign: TextAlign.center,
+          Text('EURO CARS', textAlign: TextAlign.center,
               style: TextStyle(color: p.muted, fontSize: 12, fontWeight: FontWeight.w600)),
           const SizedBox(height: 22),
           if (_mode == _Mode.welcome) _welcome(),
@@ -333,15 +333,60 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     );
   }
 
+  Future<void> _pickAccountType() async {
+    if (_busy) return;
+    final String? selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: Text('اختر نوع الحساب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.business_rounded),
+              title: const Text('شركة / ورشة'),
+              onTap: () => Navigator.pop(sheetContext, 'workshop'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.campaign_rounded),
+              title: const Text('مسوّق'),
+              onTap: () => Navigator.pop(sheetContext, 'marketer'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_rounded),
+              title: const Text('زبون مستقل'),
+              onTap: () => Navigator.pop(sheetContext, 'customer'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || selected == null) return;
+    setState(() {
+      _role = selected;
+      _mode = _Mode.login;
+      _error = null;
+      _notice = null;
+      _pending = null;
+    });
+  }
+
   Widget _welcome() => AuthFormCard(
-    title: 'أهلاً بك في اليورو',
+    title: 'أهلاً بك في EURO CARS',
     children: [
-      const Text('اختر طريقة المتابعة', textAlign: TextAlign.center),
-      const SizedBox(height: 18),
-      PrimaryButton(label: 'تسجيل الدخول', icon: Icons.login_rounded, onPressed: () => _modeTo(_Mode.login)),
-      const SizedBox(height: 10),
-      SecondaryButton(label: 'إنشاء حساب جديد', icon: Icons.person_add_alt_1_rounded, onPressed: () => _modeTo(_Mode.register)),
-      const SizedBox(height: 10),
+      const Text('ابدأ باختيار نوع الحساب المناسب لك', textAlign: TextAlign.center),
+      const SizedBox(height: 22),
+      PrimaryButton(
+        label: 'اختر نوع الحساب',
+        icon: Icons.person_outline_rounded,
+        onPressed: _pickAccountType,
+      ),
+      const SizedBox(height: 12),
       TextButton.icon(
         onPressed: AppScope.read(context).startGuestSession,
         icon: const Icon(Icons.storefront_outlined),

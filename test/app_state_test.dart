@@ -547,6 +547,7 @@ void main() {
         extraStore: <String, String>{cartKey: cartJson('w1', <String, Object?>{'p1': 2})},
       );
       h.server.reply('GET', '/api/orders', <String, dynamic>{'error': 'غير مصرح'}, 401);
+      h.server.reply('GET', '/api/auth', <String, dynamic>{'user': null});
 
       await h.state.loadOrders();
       await pumpEventQueue();

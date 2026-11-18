@@ -200,6 +200,32 @@ void main() {
       });
     });
 
+    test('an independent customer signs in with phone and password without requesting OTP', () async {
+      final Harness h = Harness();
+      final Map<String, dynamic> customer = <String, dynamic>{
+        'id': 'c1',
+        'role': 'customer',
+        'name': 'زبون',
+        'phone': '0933000111',
+        'is_active': true,
+      };
+      h.server.reply('POST', '/api/auth', <String, dynamic>{'accessToken': 'tok-c', 'user': customer});
+      await h.state.restore();
+
+      final AuthResult result = await h.state.login(role: 'customer', phone: '0933000111', password: 'customer-pass-123');
+      await pumpEventQueue();
+
+      expect(result.isSignedIn, isTrue);
+      expect(h.state.user?.isIndependentCustomer, isTrue);
+      expect(bodyOf(h.server.requestsTo('POST', '/api/auth').single), <String, dynamic>{
+        'mode': 'login',
+        'client': 'mobile',
+        'role': 'customer',
+        'phone': '0933000111',
+        'password': 'customer-pass-123',
+      });
+    });
+
     test('sign-in sends the phone exactly as typed, only trimmed', () async {
       final Harness h = Harness()..serveLogin(workshopJson());
       await h.state.restore();
@@ -419,6 +445,50 @@ void main() {
         bodyOf(h.server.requestsTo('POST', '/api/auth').last).keys,
         unorderedEquals(<String>['mode', 'client', 'role', 'name', 'phone', 'password', 'otpCode', 'otpToken']),
       );
+    });
+
+    test('an independent customer registers with phone, password and mandatory SMS OTP', () async {
+      final Harness h = Harness();
+      final Map<String, dynamic> customer = <String, dynamic>{
+        'id': 'c1',
+        'role': 'customer',
+        'name': 'زبون',
+        'phone': '0933000111',
+        'is_active': true,
+      };
+      h.server.on('POST', '/api/auth', (http.Request request) {
+        final Map<String, dynamic> body = bodyOf(request);
+        return jsonResponse(body['mode'] == 'send-otp'
+            ? <String, dynamic>{'ok': true, 'otpToken': 'customer-otp-token'}
+            : <String, dynamic>{'accessToken': 'tok-c', 'user': customer});
+      });
+      await h.state.restore();
+
+      final String otpToken = await h.state.requestRegistrationOtp(phone: '0933000111', role: 'customer');
+      final AuthResult result = await h.state.register(
+        role: 'customer',
+        name: 'زبون',
+        phone: '0933000111',
+        password: 'customer-pass-123',
+        otpCode: '123456',
+        otpToken: otpToken,
+      );
+      await pumpEventQueue();
+
+      expect(result.isSignedIn, isTrue);
+      expect(h.state.user?.isIndependentCustomer, isTrue);
+      expect(h.server.requestsTo('POST', '/api/auth'), hasLength(2));
+      expect(bodyOf(h.server.requestsTo('POST', '/api/auth').first)['role'], 'customer');
+      expect(bodyOf(h.server.requestsTo('POST', '/api/auth').last), <String, dynamic>{
+        'mode': 'register',
+        'client': 'mobile',
+        'role': 'customer',
+        'name': 'زبون',
+        'phone': '0933000111',
+        'password': 'customer-pass-123',
+        'otpCode': '123456',
+        'otpToken': 'customer-otp-token',
+      });
     });
 
     test('Google customer registration sends the required phone password and OTP', () async {

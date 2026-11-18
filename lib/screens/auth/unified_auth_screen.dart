@@ -311,12 +311,15 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
             image: true,
             label: 'شعار EURO CARS',
             child: Center(
-              child: Image.asset(
-                'branding/icon_1024.png',
-                width: 82,
-                height: 82,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Image.asset(
+                  'branding/icon_1024.png',
+                  width: 82,
+                  height: 82,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                ),
               ),
             ),
           ),

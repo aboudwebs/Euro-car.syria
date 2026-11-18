@@ -202,7 +202,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
   Future<void> _authenticate(String provider) async {
     if (_busy) return;
-    if (provider == 'email' && (_email.text.trim().isEmpty || _password.text.length < 6)) {
+    if (provider == 'email' && _role != 'customer' && (_email.text.trim().isEmpty || _password.text.length < 6)) {
       setState(() => _error = 'أدخل البريد وكلمة مرور من 6 أحرف على الأقل.');
       return;
     }
@@ -371,14 +371,23 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         alignment: AlignmentDirectional.centerStart,
         child: TextButton(onPressed: _busy ? null : _forgotOldPassword, child: const Text('نسيت كلمة المرور؟')),
       ),
-      const Divider(height: 22),
-      AppTextField(controller: _email, label: 'البريد الإلكتروني', keyboardType: TextInputType.emailAddress,
-          ltr: true, radius: 10),
-      const SizedBox(height: 8),
-      PasswordField(controller: _password, label: 'كلمة المرور', radius: 10),
-      const SizedBox(height: 10),
-      const SizedBox(height: 8),
-      _providers(),
+      if (_role != 'customer') ...[
+        const Divider(height: 22),
+        AppTextField(controller: _email, label: 'البريد الإلكتروني', keyboardType: TextInputType.emailAddress,
+            ltr: true, radius: 10),
+        const SizedBox(height: 8),
+        PasswordField(controller: _password, label: 'كلمة المرور', radius: 10),
+        const SizedBox(height: 10),
+        const SizedBox(height: 8),
+        _providers(),
+      ] else ...[
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _busy ? null : () => _authenticate('google'),
+          icon: const Icon(Icons.g_mobiledata_rounded, size: 25),
+          label: const Text('تسجيل الدخول باستخدام Google'),
+        ),
+      ],
       TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.register),
           child: const Text('ليس لديك حساب؟ إنشاء حساب جديد')),
     ],

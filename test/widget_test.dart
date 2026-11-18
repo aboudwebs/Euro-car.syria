@@ -41,6 +41,18 @@ Future<void> settle(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 400));
 }
 
+Future<void> chooseAccountType(WidgetTester tester, {String role = 'workshop'}) async {
+  await tester.tap(find.text('اختر نوع الحساب'));
+  await settle(tester);
+  final String label = switch (role) {
+    'marketer' => 'مسوّق',
+    'customer' => 'زبون مستقل',
+    _ => 'شركة / ورشة',
+  };
+  await tester.tap(find.text(label).last);
+  await settle(tester);
+}
+
 void main() {
   setUpAll(loadAppFont);
 
@@ -61,7 +73,7 @@ void main() {
 
       await tester.tap(find.text('تخطي'));
       await settle(tester);
-      expect(find.text('أهلاً بك في اليورو'), findsOneWidget);
+      expect(find.text('أهلاً بك في EURO CARS'), findsOneWidget);
       expect(await store.read('euro_intro_seen_v1'), '1');
     });
   });
@@ -77,21 +89,22 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('أهلاً بك في اليورو'), findsOneWidget);
-      expect(find.text('تسجيل الدخول'), findsOneWidget);
-      expect(find.text('إنشاء حساب جديد'), findsOneWidget);
+      expect(find.text('اختر نوع الحساب'), findsOneWidget);
       expect(find.text('متابعة كضيف — تصفح الكتالوج فقط'), findsOneWidget);
     });
 
-    testWidgets('registration offers only workshop and marketer roles', (WidgetTester tester) async {
+    testWidgets('registration offers workshop, marketer and independent customer roles', (WidgetTester tester) async {
       usePhoneScreen(tester);
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
       await settle(tester);
 
-      await tester.tap(find.text('إنشاء حساب جديد').first);
+      await chooseAccountType(tester);
+      await tester.tap(find.text('ليس لديك حساب؟ إنشاء حساب جديد'));
       await settle(tester);
 
       expect(find.text('حساب ورشة / شركة'), findsOneWidget);
       expect(find.text('حساب مسوّق'), findsOneWidget);
+      expect(find.text('زبون مستقل'), findsOneWidget);
     });
 
     testWidgets('an empty form is rejected before any request is sent', (WidgetTester tester) async {
@@ -100,8 +113,8 @@ void main() {
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: server.client));
       await settle(tester);
 
-      await tester.tap(find.text('تسجيل الدخول').first);
-      await settle(tester);
+      await chooseAccountType(tester);
+
       await tester.ensureVisible(find.text('تسجيل الدخول').last);
       await tester.tap(find.text('تسجيل الدخول').last);
       await settle(tester);
@@ -158,8 +171,8 @@ void main() {
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
       await settle(tester);
 
-      await tester.ensureVisible(find.text('إنشاء حساب جديد'));
-      await tester.tap(find.text('إنشاء حساب جديد'));
+      await chooseAccountType(tester);
+      await tester.tap(find.text('ليس لديك حساب؟ إنشاء حساب جديد'));
       await settle(tester);
 
       expect(find.text('اختصاص الورشة / الماركات'), findsOneWidget);

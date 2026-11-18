@@ -210,6 +210,7 @@ void main() {
         'is_active': true,
       };
       h.server.reply('POST', '/api/auth', <String, dynamic>{'accessToken': 'tok-c', 'user': customer});
+      h.serveBackground(account: customer);
       await h.state.restore();
 
       final AuthResult result = await h.state.login(role: 'customer', phone: '0933000111', password: 'customer-pass-123');
@@ -462,6 +463,7 @@ void main() {
             ? <String, dynamic>{'ok': true, 'otpToken': 'customer-otp-token'}
             : <String, dynamic>{'accessToken': 'tok-c', 'user': customer});
       });
+      h.serveBackground(account: customer);
       await h.state.restore();
 
       final String otpToken = await h.state.requestRegistrationOtp(phone: '0933000111', role: 'customer');

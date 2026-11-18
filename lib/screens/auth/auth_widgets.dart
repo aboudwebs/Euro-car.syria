@@ -169,7 +169,7 @@ class _ModeButton extends StatelessWidget {
   }
 }
 
-/// Two tiles that choose between a workshop account and a marketer account.
+/// Account type choices for workshops, marketers and independent customers.
 class RoleSelector extends StatelessWidget {
   const RoleSelector({
     super.key,
@@ -198,7 +198,7 @@ class RoleSelector extends StatelessWidget {
             onTap: () => onChanged('workshop'),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 6),
         Expanded(
           child: _RoleTile(
             icon: Icons.share_rounded,
@@ -208,6 +208,18 @@ class RoleSelector extends StatelessWidget {
             subtitle: registering ? 'تفعيل فوري' : 'تسجيل دخول المسوّق',
             selected: role == 'marketer',
             onTap: () => onChanged('marketer'),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _RoleTile(
+            icon: Icons.person_rounded,
+            iconColor: p.ok,
+            tone: const Color(0xFF10B981),
+            title: 'زبون مستقل',
+            subtitle: registering ? 'تسجيل مباشر' : 'دخول الزبائن',
+            selected: role == 'customer',
+            onTap: () => onChanged('customer'),
           ),
         ),
       ],

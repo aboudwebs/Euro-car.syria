@@ -158,7 +158,11 @@ class _CartScreenState extends State<CartScreen> {
     final AppState state = AppScope.read(context);
     final AppUser? current = state.user;
     final double total = state.cartTotalAmount;
-    final double availableCashback = current?.cashbackBalance ?? 0;
+    final double availableCashback = current?.isWorkshop == true ? (current?.cashbackBalance ?? 0) : 0;
+    if (current?.isIndependentCustomer == true && cashbackUsed != 0) {
+      setState(() => _error = 'حساب الزبون المستقل لا يستخدم رصيد الكاش باك.');
+      return;
+    }
     if (cashbackUsed < 0 || cashbackUsed > availableCashback || cashbackUsed > total) {
       setState(() => _error = 'المبلغ المحدد أكبر من رصيد الكاش باك أو من قيمة الطلب.');
       return;
@@ -688,7 +692,7 @@ class _CartScreenState extends State<CartScreen> {
                     style: TextStyle(color: p.muted, fontSize: 13, height: 1.5),
                   ),
                 ),
-              if (!user.isWorkshop)
+              if (user.isMarketer)
                 Padding(
                   padding: const EdgeInsets.only(top: 12),
                   child: Text(

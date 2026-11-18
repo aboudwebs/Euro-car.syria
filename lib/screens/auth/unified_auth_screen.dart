@@ -114,7 +114,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   }
 
   Future<void> _forgotOldPassword() async {
-    final String? message = await openForgotPassword(context, phone: _phone.text.trim());
+    final String? message = await openForgotPassword(context, role: _role, phone: _phone.text.trim());
     if (message != null && mounted) setState(() { _notice = message; _error = null; });
   }
 

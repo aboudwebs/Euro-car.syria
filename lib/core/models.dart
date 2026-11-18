@@ -74,6 +74,7 @@ class AppUser {
 
   bool get isWorkshop => role == 'workshop';
   bool get isMarketer => role == 'marketer';
+  bool get isIndependentCustomer => role == 'customer';
 
   /// A phone number is saved. An account made with e-mail has none until its owner adds one.
   bool get hasPhone => phone.trim().isNotEmpty;
@@ -85,8 +86,8 @@ class AppUser {
   /// The saved phone was confirmed by an SMS code. When the server does not say, any saved phone counts.
   bool get phoneVerified => hasPhone && raw['phone_verified'] != false;
 
-  /// Only workshop and marketer accounts may use the mobile app (admin is web only).
-  bool get isCustomer => isWorkshop || isMarketer;
+  /// All three customer-facing roles can use the mobile app; admin and worker remain web/staff roles.
+  bool get isCustomer => isWorkshop || isMarketer || isIndependentCustomer;
 
   /// Credit left under the debt limit, or null when the limit is unknown.
   double? get debtAvailable {

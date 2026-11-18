@@ -517,6 +517,7 @@ class AppState extends ChangeNotifier {
   Future<AuthResult> exchangeFirebaseIdentity({
     required String idToken,
     String phone = '',
+    String password = '',
     String otpCode = '',
     String otpToken = '',
   }) async {
@@ -572,6 +573,7 @@ class AppState extends ChangeNotifier {
           'role': role,
           if (name.trim().isNotEmpty) 'name': name.trim(),
           if (phone.trim().isNotEmpty && role == 'customer') 'contactPhone': canonicalPhone(phone),
+          if (role == 'customer' && password.isNotEmpty) 'password': password,
           if (phone.trim().isNotEmpty && role == 'workshop') 'contactPhone': canonicalPhone(phone),
           if (otpCode.trim().isNotEmpty) 'otpCode': toWesternDigits(otpCode).trim(),
           if (otpToken.trim().isNotEmpty) 'otpToken': otpToken,

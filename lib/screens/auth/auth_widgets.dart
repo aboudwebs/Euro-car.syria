@@ -249,11 +249,16 @@ class _RoleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Palette p = Palette.of(context);
+    final bool isCustomer = title == 'زبون مستقل';
+    final double tileHeight = isCustomer ? 166 : 200;
+    final double iconSize = isCustomer ? 19 : 23;
     return Semantics(
       button: true,
       selected: selected,
       label: '$title، $subtitle',
-      child: Material(
+      child: SizedBox(
+        height: tileHeight,
+        child: Material(
         color: selected ? tone.withValues(alpha: 0.15) : p.glass1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
@@ -266,7 +271,7 @@ class _RoleTile extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
             child: Column(
               children: <Widget>[
-                Icon(icon, color: iconColor, size: 20),
+                Icon(icon, color: iconColor, size: iconSize),
                 const SizedBox(height: 5),
                 Text(
                   title,
@@ -283,6 +288,7 @@ class _RoleTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

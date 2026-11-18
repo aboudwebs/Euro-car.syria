@@ -24,7 +24,7 @@ class _AuthFlowState extends State<AuthFlow> {
     _IntroPage(Icons.search_rounded, 'كل القطع بمكان واحد', 'ابحث عن قطع غيار السيارات الأوروبية بسهولة عبر رقم القطعة أو رقم الهيكل VIN.'),
     _IntroPage(Icons.directions_car_filled_rounded, 'نتائج أدق لسيارتك', 'احفظ مركباتك وارجع لمعلوماتها وقت ما تحتاج، بدون إعادة إدخال البيانات.'),
     _IntroPage(Icons.local_shipping_rounded, 'تابع طلبك خطوة بخطوة', 'أرسل طلب القطعة وتابع مراحل التجهيز والشحن والتسليم من داخل التطبيق.'),
-    _IntroPage(Icons.handshake_rounded, 'خدمات مخصصة لحسابك', 'أنشئ حساب ورشة أو مسوّق للوصول إلى خدمات EURO ومزايا الحساب.'),
+    _IntroPage(Icons.handshake_rounded, 'خدمات مخصصة لحسابك', 'أنشئ حساب ورشة أو مسوّق أو زبون مستقل للوصول إلى خدمات EURO ومزايا الحساب.'),
   ];
 
   @override

@@ -125,7 +125,10 @@ void main() {
       await settle(tester);
 
       await chooseAccountType(tester, role: 'customer');
-      await tester.tap(find.text('ليس لديك حساب؟ إنشاء حساب جديد'));
+      final Finder createAccountLink = find.text('ليس لديك حساب؟ إنشاء حساب جديد');
+      await tester.ensureVisible(createAccountLink);
+      await tester.pump();
+      await tester.tap(createAccountLink);
       await settle(tester);
 
       expect(find.text('الاسم الكامل'), findsOneWidget);

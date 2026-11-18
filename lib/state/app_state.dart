@@ -646,12 +646,13 @@ class AppState extends ChangeNotifier {
   }
 
   /// Requests an SMS verification code before account creation.
-  Future<String> requestRegistrationOtp({required String phone}) async {
+  Future<String> requestRegistrationOtp({required String phone, String role = "workshop"}) async {
     final Map<String, dynamic> data = await api.postJson(
       '/api/auth',
       <String, dynamic>{
         'mode': 'send-otp',
         'client': 'mobile',
+        'role': role,
         'phone': canonicalPhone(phone),
       },
       auth: false,

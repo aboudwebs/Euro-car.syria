@@ -170,6 +170,7 @@ void main() {
       await settle(tester);
 
       await chooseAccountType(tester);
+      await tester.ensureVisible(find.text('ليس لديك حساب؟ إنشاء حساب جديد'));
       await tester.tap(find.text('ليس لديك حساب؟ إنشاء حساب جديد'));
       await settle(tester);
 

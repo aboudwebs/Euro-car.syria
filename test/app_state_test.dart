@@ -421,6 +421,41 @@ void main() {
       );
     });
 
+    test('Google customer registration sends the required phone password and OTP', () async {
+      final Harness h = Harness();
+      final Map<String, dynamic> customer = <String, dynamic>{
+        'id': 'c1',
+        'role': 'customer',
+        'name': 'زبون',
+        'phone': '0933000111',
+        'is_active': true,
+      };
+      h.server.reply('POST', '/api/auth/firebase/register', <String, dynamic>{
+        'accessToken': 'tok-c',
+        'user': customer,
+      });
+      await h.state.restore();
+
+      final AuthResult result = await h.state.registerFirebase(
+        idToken: 'firebase-id-token',
+        role: 'customer',
+        name: 'زبون',
+        phone: '0933000111',
+        password: 'customer-pass-123',
+        otpCode: '123456',
+        otpToken: 'otp-token',
+      );
+
+      expect(result.isSignedIn, isTrue);
+      expect(h.state.user?.isIndependentCustomer, isTrue);
+      final Map<String, dynamic> body = bodyOf(h.server.requestsTo('POST', '/api/auth/firebase/register').single);
+      expect(body['role'], 'customer');
+      expect(body['password'], 'customer-pass-123');
+      expect(body['otpCode'], '123456');
+      expect(body['otpToken'], 'otp-token');
+      expect(body.containsKey('license'), isFalse);
+    });
+
     test('a refused registration shows the server message after OTP', () async {
       final Harness h = Harness();
       h.server.on('POST', '/api/auth', (http.Request request) {

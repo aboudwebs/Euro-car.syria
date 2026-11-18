@@ -250,15 +250,13 @@ class _RoleTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final Palette p = Palette.of(context);
     final bool isCustomer = title == 'زبون مستقل';
-    final double tileHeight = isCustomer ? 166 : 200;
-    final double iconSize = isCustomer ? 19 : 23;
+    final double iconSize = isCustomer ? 18 : 22;
+    final double verticalPadding = isCustomer ? 8 : 10;
     return Semantics(
       button: true,
       selected: selected,
       label: '$title، $subtitle',
-      child: SizedBox(
-        height: tileHeight,
-        child: Material(
+      child: Material(
         color: selected ? tone.withValues(alpha: 0.15) : p.glass1,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
@@ -268,27 +266,36 @@ class _RoleTile extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+            padding: EdgeInsets.symmetric(horizontal: 6, vertical: verticalPadding),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Icon(icon, color: iconColor, size: iconSize),
-                const SizedBox(height: 5),
+                const SizedBox(height: 4),
                 Text(
                   title,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: p.text, fontSize: 13.5, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                    color: p.text,
+                    fontSize: isCustomer ? 12.5 : 13.5,
+                    fontWeight: FontWeight.w700,
+                    height: 1.15,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: p.muted, fontSize: 11.5),
+                  style: TextStyle(
+                    color: p.muted,
+                    fontSize: isCustomer ? 10.5 : 11.5,
+                    height: 1.15,
+                  ),
                 ),
               ],
             ),
           ),
         ),
-      ),
       ),
     );
   }

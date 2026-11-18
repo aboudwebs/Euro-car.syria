@@ -341,7 +341,7 @@ void main() {
       expect(h.state.status, SessionStatus.signedOut);
       final List<http.Request> sent = h.server.requestsTo('POST', '/api/auth');
       expect(bodyOf(sent.first), <String, dynamic>{
-        'mode': 'send-otp', 'client': 'mobile', 'phone': '0982026134',
+        'mode': 'send-otp', 'client': 'mobile', 'role': 'workshop', 'phone': '0982026134',
       });
       expect(bodyOf(sent.last), <String, dynamic>{
         'mode': 'register',

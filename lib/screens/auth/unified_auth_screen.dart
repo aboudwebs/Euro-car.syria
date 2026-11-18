@@ -216,6 +216,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       setState(() => _error = _role == 'customer' ? 'رقم الهاتف إلزامي لإنشاء حساب الزبون.' : 'رقم هاتف الورشة إلزامي، أدخل رقماً صحيحاً للتواصل معك.');
       return;
     }
+    if (_mode == _Mode.register && _role == 'customer' && _password.text.length < minNewPasswordLength) {
+      setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
+      return;
+    }
     if (_mode == _Mode.register && _role == 'customer' &&
         (_customerOtpToken == null || _otp.text.trim().length != 6)) {
       setState(() => _error = 'أرسل رمز التحقق وأدخله قبل المتابعة باستخدام Google.');
@@ -255,6 +259,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           role: _role,
           name: _name.text,
           phone: (_role == 'workshop' || _role == 'customer') ? _phone.text : '',
+          password: _role == 'customer' ? _password.text : '',
           otpCode: _role == 'customer' ? _otp.text : '',
           otpToken: _role == 'customer' ? (_customerOtpToken ?? '') : '',
           license: _license.text,

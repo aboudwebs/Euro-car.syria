@@ -41,12 +41,17 @@ void main() {
       final AppUser workshop = AppUser.fromJson(workshopJson());
       final AppUser marketer = AppUser.fromJson(marketerJson());
       final AppUser admin = AppUser.fromJson(adminJson());
+      final AppUser customer = AppUser.fromJson(<String, dynamic>{...marketerJson(), 'role': 'customer'});
 
       expect(workshop.isWorkshop, isTrue);
       expect(workshop.isMarketer, isFalse);
       expect(workshop.isCustomer, isTrue);
       expect(marketer.isMarketer, isTrue);
       expect(marketer.isCustomer, isTrue);
+      expect(customer.isIndependentCustomer, isTrue);
+      expect(customer.isWorkshop, isFalse);
+      expect(customer.isMarketer, isFalse);
+      expect(customer.isCustomer, isTrue);
       expect(admin.isCustomer, isFalse);
     });
 

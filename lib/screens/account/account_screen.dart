@@ -580,7 +580,7 @@ class _AccountScreenState extends State<AccountScreen> {
             Icon(Icons.shopping_bag_outlined, color: p.primary),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('حساب زبون مستقل — لا يشمل نظام الديون أو الكاش باك أو عمولات المسوّقين.',
+              child: Text('حساب زبون مستقل — يمكنك تصفح الكتالوج وإرسال طلبات قطع الغيار.',
                   style: TextStyle(color: p.muted, fontSize: 13, height: 1.6)),
             ),
           ],

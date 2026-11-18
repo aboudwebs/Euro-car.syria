@@ -56,13 +56,6 @@ Future<void> chooseAccountType(WidgetTester tester, {String role = 'workshop'}) 
 void main() {
   setUpAll(loadAppFont);
 
-  Future<void> chooseWorkshop(WidgetTester tester) async {
-    await tester.tap(find.text('اختر نوع الحساب'));
-    await settle(tester);
-    await tester.tap(find.text('شركة / ورشة'));
-    await settle(tester);
-  }
-
   group('first launch onboarding', () {
     testWidgets('shows four intro pages and skip opens authentication', (WidgetTester tester) async {
       usePhoneScreen(tester);

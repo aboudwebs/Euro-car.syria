@@ -233,6 +233,7 @@ void main() {
       final Completer<http.Response> gate = Completer<http.Response>();
       h.server.on('POST', '/api/account/password', (http.Request _) => gate.future);
       h.server.reply('GET', '/api/orders', <String, dynamic>{'error': 'الجلسة غير صالحة'}, 401);
+      h.server.reply('GET', '/api/auth', <String, dynamic>{'user': null});
 
       final Future<void> change = h.state.changePassword(currentPassword: 'old1', newPassword: 'new22222');
       await pumpEventQueue();

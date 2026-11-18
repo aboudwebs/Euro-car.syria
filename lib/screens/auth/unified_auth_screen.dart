@@ -9,7 +9,6 @@ import '../../core/referral.dart';
 import '../../state/app_state.dart';
 import '../../theme/palette.dart';
 import '../../widgets/inputs.dart';
-import '../../widgets/part_plate.dart';
 import '../../widgets/tx.dart';
 import 'auth_widgets.dart';
 import 'forgot_password_screen.dart';

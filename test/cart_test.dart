@@ -54,6 +54,12 @@ void main() {
     test('marketers may not use the debt ledger', () {
       expect(payMethodsFor(marketer()), <String>['cod', 'sham']);
     });
+
+    test('independent customers may use only cash on delivery and Sham Cash', () {
+      const AppUser customer = AppUser(id: 'c1', role: 'customer', name: 'زبون', phone: '0933000111');
+      expect(customer.isIndependentCustomer, isTrue);
+      expect(payMethodsFor(customer), <String>['cod', 'sham']);
+    });
   });
 
   group('checkDebtPayment', () {

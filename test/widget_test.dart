@@ -88,7 +88,7 @@ void main() {
       await settle(tester);
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.text('أهلاً بك في اليورو'), findsOneWidget);
+      expect(find.text('أهلاً بك في EURO CARS'), findsOneWidget);
       expect(find.text('اختر نوع الحساب'), findsOneWidget);
       expect(find.text('متابعة كضيف — تصفح الكتالوج فقط'), findsOneWidget);
     });
@@ -130,8 +130,7 @@ void main() {
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: server.client));
       await settle(tester);
 
-      await tester.tap(find.text('تسجيل الدخول').first);
-      await settle(tester);
+      await chooseAccountType(tester);
       await tester.enterText(find.byType(TextField).at(0), '0982026134');
       await tester.enterText(find.byType(TextField).at(1), 'wrong-password');
       await tester.ensureVisible(find.text('تسجيل الدخول').last);
@@ -141,7 +140,7 @@ void main() {
       expect(find.text('بيانات الدخول غير صحيحة'), findsOneWidget);
       expect(server.requestsTo('POST', '/api/auth'), hasLength(1));
       final Map<String, dynamic> sent = jsonDecode(utf8.decode(server.requestsTo('POST', '/api/auth').single.bodyBytes)) as Map<String, dynamic>;
-      expect(sent.containsKey('role'), isFalse);
+      expect(sent['role'], 'workshop');
     });
 
     testWidgets('forgot password opens the SMS recovery page and asks for the number first', (WidgetTester tester) async {
@@ -150,8 +149,7 @@ void main() {
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: server.client));
       await settle(tester);
 
-      await tester.tap(find.text('تسجيل الدخول').first);
-      await settle(tester);
+      await chooseAccountType(tester);
       await tester.ensureVisible(find.text('نسيت كلمة المرور؟'));
       await tester.tap(find.text('نسيت كلمة المرور؟'));
       await settle(tester);

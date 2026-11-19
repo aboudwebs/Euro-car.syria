@@ -160,7 +160,7 @@ class _CartScreenState extends State<CartScreen> {
     final double total = state.cartTotalAmount;
     final double availableCashback = current?.isWorkshop == true ? (current?.cashbackBalance ?? 0) : 0;
     if (current?.isIndependentCustomer == true && cashbackUsed != 0) {
-      setState(() => _error = 'حساب الزبون المستقل لا يستخدم رصيد الكاش باك.');
+      setState(() => _error = 'العميل لا يستخدم رصيد الكاش باك.');
       return;
     }
     if (cashbackUsed < 0 || cashbackUsed > availableCashback || cashbackUsed > total) {

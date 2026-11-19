@@ -417,16 +417,36 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     ],
   );
 
+  String get _accountTypeLabel => switch (_role) {
+    'workshop' => 'شركة / ورشة',
+    'marketer' => 'مسوّق',
+    'customer' => 'زبون مستقل',
+    _ => 'حساب',
+  };
+
+  Widget _accountTypeBadge() => Container(
+    alignment: Alignment.center,
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.55),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.verified_user_outlined, size: 17, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: 7),
+        Text('نوع الحساب: $_accountTypeLabel',
+          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontWeight: FontWeight.w700, fontSize: 13)),
+      ],
+    ),
+  );
+
   Widget _login() => AuthFormCard(
     title: 'أهلاً بعودتك',
     children: [
-      RoleSelector(
-        role: _role,
-        registering: false,
-        onChanged: (value) {
-          if (!_busy) setState(() { _role = value; _error = null; _notice = null; });
-        },
-      ),
+      _accountTypeBadge(),
       const SizedBox(height: 12),
       AppTextField(controller: _phone, label: 'رقم الهاتف',
           hint: '+963 9XXXXXXXX', keyboardType: TextInputType.phone, ltr: true, radius: 10),
@@ -463,21 +483,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   Widget _register(Palette p) => AuthFormCard(
     title: _registrationFromLogin ? 'اختر نوع حسابك' : 'إنشاء حساب جديد',
     children: [
-      RoleSelector(
-        role: _role,
-        registering: true,
-        onChanged: (value) {
-          if (!_busy) {
-            setState(() {
-              _role = value;
-              _error = null;
-              _notice = null;
-              _customerOtpToken = null;
-              _otp.clear();
-            });
-          }
-        },
-      ),
+      _accountTypeBadge(),
       const SizedBox(height: 12),
       Text(
         _role == 'workshop'

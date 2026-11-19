@@ -330,7 +330,7 @@ const Map<String, String> enTexts = <String, String>{
   'حذف العنوان': 'Delete address',
   'حذف المركبة': 'Delete vehicle',
   'حذف من السلة': 'Remove from cart',
-  'حساب عميل / مسوّق': 'Customer / marketer account',
+  'عميل / مسوّق': 'Customer / marketer account',
   'حساب مسوّق': 'Marketer account',
   'حساب ورشة / شركة': 'Workshop / company account',
   'حساب ورشة معتمد': 'Approved workshop account',

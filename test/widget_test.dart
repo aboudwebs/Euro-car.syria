@@ -139,7 +139,7 @@ void main() {
       expect(find.text('اختصاص الورشة / الماركات'), findsNothing);
     });
 
-    testWidgets('registration offers workshop, marketer and independent customer roles', (WidgetTester tester) async {
+    testWidgets('registration keeps the account type selected on the welcome screen', (WidgetTester tester) async {
       usePhoneScreen(tester);
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
       await settle(tester);
@@ -148,9 +148,15 @@ void main() {
       await tester.tap(find.text('ليس لديك حساب؟ إنشاء حساب جديد'));
       await settle(tester);
 
-      expect(find.text('حساب ورشة / شركة'), findsOneWidget);
-      expect(find.text('حساب مسوّق'), findsOneWidget);
-      expect(find.text('زبون مستقل'), findsOneWidget);
+      expect(find.text('نوع الحساب: شركة / ورشة'), findsOneWidget);
+      expect(find.text('حساب ورشة / شركة'), findsNothing);
+      expect(find.text('حساب مسوّق'), findsNothing);
+      expect(find.text('زبون مستقل'), findsNothing);
+
+      await tester.ensureVisible(find.text('العودة للبداية'));
+      await tester.tap(find.text('العودة للبداية'));
+      await settle(tester);
+      expect(find.text('اختر نوع الحساب'), findsOneWidget);
     });
 
     testWidgets('an empty form is rejected before any request is sent', (WidgetTester tester) async {

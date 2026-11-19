@@ -216,7 +216,7 @@ class RoleSelector extends StatelessWidget {
             icon: Icons.person_rounded,
             iconColor: p.ok,
             tone: const Color(0xFF10B981),
-            title: 'زبون مستقل',
+            title: 'عميل',
             subtitle: registering ? 'تسجيل مباشر' : 'دخول الزبائن',
             selected: role == 'customer',
             onTap: () => onChanged('customer'),
@@ -249,7 +249,7 @@ class _RoleTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Palette p = Palette.of(context);
-    final bool isCustomer = title == 'زبون مستقل';
+    final bool isCustomer = title == 'عميل';
     final double iconSize = isCustomer ? 18 : 22;
     final double verticalPadding = isCustomer ? 8 : 10;
     return Semantics(

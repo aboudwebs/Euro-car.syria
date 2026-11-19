@@ -275,7 +275,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
               _mode = _Mode.register;
               _registrationFromLogin = true;
               _busy = false;
-              _notice = 'تم التحقق من هويتك. اختر نوع الحساب لإنشاء حساب EURO.';
+              _notice = 'تم التحقق من هويتك. أكمل بيانات حساب EURO من النوع المحدد.';
             });
           }
           return;
@@ -481,7 +481,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   );
 
   Widget _register(Palette p) => AuthFormCard(
-    title: _registrationFromLogin ? 'اختر نوع حسابك' : 'إنشاء حساب جديد',
+    title: _registrationFromLogin ? 'إكمال إنشاء الحساب' : 'إنشاء حساب جديد',
     children: [
       _accountTypeBadge(),
       const SizedBox(height: 12),

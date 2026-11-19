@@ -171,7 +171,7 @@ class _TopBar extends StatelessWidget {
     final bool dark = Theme.of(context).brightness == Brightness.dark;
     final String who = guest
         ? 'تسجيل الدخول'
-        : user == null ? '' : '${user.name} (${user.isWorkshop ? 'ورشة' : user.isMarketer ? 'مسوّق' : 'زبون مستقل'})';
+        : user == null ? '' : '${user.name} (${user.isWorkshop ? 'ورشة' : user.isMarketer ? 'مسوّق' : 'عميل'})';
 
     return DecoratedBox(
       decoration: BoxDecoration(

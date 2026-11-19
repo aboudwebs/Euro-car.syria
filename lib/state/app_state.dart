@@ -1264,7 +1264,7 @@ class AppState extends ChangeNotifier {
       throw const ApiException('السلة فارغة.');
     }
     if (current.isIndependentCustomer && cashbackUsed != 0) {
-      throw const ApiException('حساب الزبون المستقل لا يستخدم رصيد الكاش باك.');
+      throw const ApiException('العميل لا يستخدم رصيد الكاش باك.');
     }
     if (cashbackUsed < 0 || cashbackUsed > cartTotalAmount ||
         cashbackUsed > (current.isWorkshop ? (current.cashbackBalance ?? 0) : 0)) {

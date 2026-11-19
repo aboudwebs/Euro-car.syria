@@ -91,7 +91,7 @@ class DashboardScreen extends StatelessWidget {
     return Column(
       children: <Widget>[
         TabHeader(
-          title: independentCustomer ? 'حساب الزبون المستقل' : marketer ? 'لوحة المسوّق' : 'لوحة الورشة',
+          title: independentCustomer ? 'العميل' : marketer ? 'لوحة المسوّق' : 'لوحة الورشة',
           subtitle: subtitle,
         ),
         Expanded(

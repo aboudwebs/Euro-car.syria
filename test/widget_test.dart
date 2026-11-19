@@ -46,7 +46,7 @@ Future<void> chooseAccountType(WidgetTester tester, {String role = 'workshop'}) 
   await settle(tester);
   final String label = switch (role) {
     'marketer' => 'مسوّق',
-    'customer' => 'زبون مستقل',
+    'customer' => 'عميل',
     _ => 'شركة / ورشة',
   };
   await tester.tap(find.text(label).last);

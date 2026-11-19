@@ -380,7 +380,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.person_rounded),
-              title: const Text('زبون مستقل'),
+              title: const Text('عميل'),
               onTap: () => Navigator.pop(sheetContext, 'customer'),
             ),
             const SizedBox(height: 8),
@@ -420,7 +420,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   String get _accountTypeLabel => switch (_role) {
     'workshop' => 'شركة / ورشة',
     'marketer' => 'مسوّق',
-    'customer' => 'زبون مستقل',
+    'customer' => 'عميل',
     _ => 'حساب',
   };
 
@@ -489,7 +489,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         _role == 'workshop'
             ? 'أدخل رقم هاتف الورشة ليظهر للإدارة ضمن طلب التسجيل. توثيق الرقم برمز الرسالة النصية يبقى مطلوباً عند أول عملية شراء.'
             : _role == 'customer'
-                ? 'حساب الزبون المستقل يحتاج الاسم ورقم الهاتف وكلمة المرور، مع رمز تحقق إلزامي عند إنشاء الحساب.'
+                ? 'العميل يحتاج الاسم ورقم الهاتف وكلمة المرور، مع رمز تحقق إلزامي عند إنشاء الحساب.'
                 : 'اختر طريقة إنشاء الحساب. ستتمكن من الدخول مباشرة، وسنطلب الاسم ورقم الهاتف وتوثيقه وفق خطوات التسجيل.',
         textAlign: TextAlign.center,
       ),

@@ -531,7 +531,7 @@ class _AccountScreenState extends State<AccountScreen> {
                     ),
                     const SizedBox(height: 6),
                     StatusChip(
-                      label: user.isWorkshop ? 'حساب ورشة معتمد' : user.isMarketer ? 'حساب مسوّق' : 'حساب عميل',
+                      label: user.isWorkshop ? 'حساب ورشة معتمد' : user.isMarketer ? 'حساب مسوّق' : 'عميل',
                       tone: StatusTone.success,
                     ),
                     const SizedBox(height: 8),
@@ -580,7 +580,7 @@ class _AccountScreenState extends State<AccountScreen> {
             Icon(Icons.shopping_bag_outlined, color: p.primary),
             const SizedBox(width: 12),
             Expanded(
-              child: Text('حساب عميل — يمكنك تصفح الكتالوج وإرسال طلبات قطع الغيار.',
+              child: Text('عميل — يمكنك تصفح الكتالوج وإرسال طلبات قطع الغيار.',
                   style: TextStyle(color: p.muted, fontSize: 13, height: 1.6)),
             ),
           ],

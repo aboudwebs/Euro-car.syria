@@ -105,21 +105,22 @@ void main() {
       expect(find.text('اختر نوع الحساب'), findsOneWidget);
     });
 
-    testWidgets('independent customer login uses phone and password without an OTP field', (WidgetTester tester) async {
+    testWidgets('independent customer login offers email or Google without requiring a phone', (WidgetTester tester) async {
       usePhoneScreen(tester);
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
       await settle(tester);
 
       await chooseAccountType(tester, role: 'customer');
 
-      expect(find.text('رقم الهاتف'), findsOneWidget);
+      expect(find.textContaining('دون رقم هاتف'), findsOneWidget);
+      expect(find.text('رقم الهاتف (للدخول بهذه الطريقة)'), findsOneWidget);
       expect(find.text('كلمة المرور'), findsOneWidget);
       expect(find.text('رمز التحقق SMS'), findsNothing);
       expect(find.text('البريد الإلكتروني'), findsNothing);
       expect(find.text('تسجيل الدخول'), findsOneWidget);
     });
 
-    testWidgets('independent customer registration has no workshop license fields', (WidgetTester tester) async {
+    testWidgets('independent customer registration does not require a phone or SMS code', (WidgetTester tester) async {
       usePhoneScreen(tester);
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
       await settle(tester);
@@ -132,9 +133,10 @@ void main() {
       await settle(tester);
 
       expect(find.text('الاسم الكامل'), findsOneWidget);
-      expect(find.text('رقم الهاتف'), findsOneWidget);
-      expect(find.text('كلمة المرور (8 أحرف على الأقل)'), findsOneWidget);
-      expect(find.text('رمز التحقق SMS'), findsOneWidget);
+      expect(find.textContaining('دون رقم هاتف'), findsOneWidget);
+      expect(find.text('البريد الإلكتروني'), findsNothing);
+      expect(find.text('رقم الهاتف'), findsNothing);
+      expect(find.text('رمز التحقق SMS'), findsNothing);
       expect(find.text('السجل التجاري / ترخيص الورشة (اختياري)'), findsNothing);
       expect(find.text('اختصاص الورشة / الماركات'), findsNothing);
     });

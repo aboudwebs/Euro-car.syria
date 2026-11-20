@@ -181,6 +181,7 @@ class _CartScreenState extends State<CartScreen> {
       final bool saved = await openAddressForm(context, address: state.checkoutAddress);
       if (!mounted || !saved) return;
       await state.loadAddresses(silent: true);
+      if (!mounted) return;
       if ((state.checkoutAddress?.phone ?? '').trim().replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
         setState(() => _error = 'لا يمكن إرسال الطلب قبل إضافة رقم هاتف أو واتساب للتواصل.');
         return;

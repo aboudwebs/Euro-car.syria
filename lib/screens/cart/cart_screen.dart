@@ -177,6 +177,7 @@ class _CartScreenState extends State<CartScreen> {
     if (current?.isIndependentCustomer == true &&
         (state.checkoutAddress?.phone ?? '').trim().replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
       setState(() => _error = 'أدخل رقم هاتف أو واتساب للتواصل معك عند تسليم الطلب.');
+      if (!mounted) return;
       final bool saved = await openAddressForm(context, address: state.checkoutAddress);
       if (!mounted || !saved) return;
       await state.loadAddresses(silent: true);

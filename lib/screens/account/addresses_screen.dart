@@ -449,7 +449,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
                     const SizedBox(height: 14),
                     AppTextField(
                       controller: _phone,
-                      label: 'رقم التواصل (اختياري)',
+                      label: 'رقم الهاتف أو واتساب للتواصل عند التسليم',
                       icon: Icons.phone_outlined,
                       keyboardType: TextInputType.phone,
                       maxLength: 32,

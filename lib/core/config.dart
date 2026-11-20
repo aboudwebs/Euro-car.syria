@@ -46,8 +46,8 @@ const int minLoginPasswordLength = 4;
 /// Support WhatsApp number (same number the web account page links to).
 const String supportWhatsApp = '963982026134';
 const String supportMessage = 'أريد التواصل مع دعم اليورو';
-const String developerName = 'Aboud Web';
-const String developerUrl = 'https://aboudweb.onrender.com';
+const String developerName = 'QAMVIR';
+const String developerUrl = 'https://qamvir-syr.onrender.com/';
 
 /// The hosted API sleeps when idle (cold start), so requests get a generous timeout.
 const Duration requestTimeout = Duration(seconds: 60);

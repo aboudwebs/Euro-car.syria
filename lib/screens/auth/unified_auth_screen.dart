@@ -211,7 +211,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
       return;
     }
-    if (_mode == _Mode.register && (_role == 'workshop' || _role == 'customer' || _role == 'marketer') &&
+    if (_mode == _Mode.register && (_role == 'workshop' || _role == 'marketer') &&
         _phone.text.replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
       setState(() => _error = _role == 'workshop' ? 'رقم هاتف الورشة إلزامي، أدخل رقماً صحيحاً للتواصل معك.' : 'رقم الهاتف إلزامي لإنشاء هذا الحساب.');
       return;
@@ -220,11 +220,11 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       setState(() => _error = 'أدخل اسمك الكامل.');
       return;
     }
-    if (_mode == _Mode.register && (_role == 'customer' || _role == 'marketer') && _password.text.length < minNewPasswordLength) {
+    if (_mode == _Mode.register && _role == 'marketer' && _password.text.length < minNewPasswordLength) {
       setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
       return;
     }
-    if (_mode == _Mode.register && (_role == 'customer' || _role == 'marketer') &&
+    if (_mode == _Mode.register && _role == 'marketer' &&
         (_customerOtpToken == null || _otp.text.trim().length != 6)) {
       setState(() => _error = 'أرسل رمز التحقق وأدخله قبل إكمال التسجيل.');
       return;
@@ -479,13 +479,19 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       Text(
         _role == 'workshop'
             ? 'أدخل رقم هاتف الورشة ليظهر للإدارة ضمن طلب التسجيل. توثيق الرقم برمز الرسالة النصية يبقى مطلوباً عند أول عملية شراء.'
-            : (_role == 'customer' || _role == 'marketer')
+            : _role == 'marketer'
                 ? 'أدخل الاسم ورقم الهاتف وكلمة المرور، ثم أرسل رمز SMS وأدخله لإكمال إنشاء الحساب.'
-                : 'أدخل بيانات الورشة. يبقى طلب الورشة خاضعاً لمراجعة الإدارة.',
+                : 'يمكنك إنشاء حساب العميل بالبريد الإلكتروني أو Google دون رقم هاتف. يمكنك إضافة رقم أو واتساب لاحقاً من بيانات الحساب، وسيُطلب رقم للتواصل عند إرسال الطلب.',
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 14),
-      if (_role == 'customer' || _role == 'marketer') ...[
+      if (_role == 'customer') ...[
+        AppTextField(controller: _name, label: 'الاسم الكامل', radius: 10),
+        const SizedBox(height: 12),
+        _emailAccessSection(),
+        const SizedBox(height: 8),
+        _socialProviders(),
+      ] else if (_role == 'marketer') ...[
         AppTextField(controller: _name, label: 'الاسم الكامل', radius: 10),
         const SizedBox(height: 8),
         AppTextField(controller: _phone, label: 'رقم الهاتف', hint: '+963 9XXXXXXXX',

@@ -276,6 +276,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         final login = await state.exchangeFirebaseIdentity(idToken: idToken);
         if (login.needsRegistration) {
           if (mounted) {
+            _name.text = _firebase.currentUser?.displayName ?? _name.text;
             setState(() {
               _mode = _Mode.register;
               _registrationFromLogin = true;
@@ -453,7 +454,11 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     children: [
       _accountTypeBadge(),
       const SizedBox(height: 12),
-      AppTextField(controller: _phone, label: 'رقم الهاتف',
+      if (_role == 'customer')
+        const Text('يمكنك الدخول بالبريد الإلكتروني أو Google دون رقم هاتف. تسجيل الدخول بالهاتف خيار إضافي فقط.',
+            textAlign: TextAlign.center),
+      if (_role == 'customer') const SizedBox(height: 10),
+      AppTextField(controller: _phone, label: 'رقم الهاتف (للدخول بهذه الطريقة)',
           hint: '+963 9XXXXXXXX', keyboardType: TextInputType.phone, ltr: true, radius: 10),
       const SizedBox(height: 8),
       PasswordField(controller: _oldPassword, label: 'كلمة المرور', radius: 10),

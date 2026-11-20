@@ -174,6 +174,17 @@ class _CartScreenState extends State<CartScreen> {
       await _pickAddress();
       if (!mounted || state.checkoutAddress == null) return;
     }
+    if (current?.isIndependentCustomer == true &&
+        (state.checkoutAddress?.phone ?? '').trim().replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
+      setState(() => _error = 'أدخل رقم هاتف أو واتساب للتواصل معك عند تسليم الطلب.');
+      final bool saved = await openAddressForm(context, address: state.checkoutAddress);
+      if (!mounted || !saved) return;
+      await state.loadAddresses(silent: true);
+      if ((state.checkoutAddress?.phone ?? '').trim().replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
+        setState(() => _error = 'لا يمكن إرسال الطلب قبل إضافة رقم هاتف أو واتساب للتواصل.');
+        return;
+      }
+    }
     final String invoiceCurrency = state.canUseSypInvoices ? 'SYP' : 'USD';
     if (invoiceCurrency == 'USD') {
       final bool? continueInUsd = await showDialog<bool>(

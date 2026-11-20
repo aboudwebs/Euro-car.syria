@@ -493,13 +493,13 @@ void main() {
       });
     });
 
-    test('Google customer registration sends the required phone password and OTP', () async {
+    test('Google customer registration works without phone, password or OTP', () async {
       final Harness h = Harness();
       final Map<String, dynamic> customer = <String, dynamic>{
         'id': 'c1',
         'role': 'customer',
         'name': 'زبون',
-        'phone': '0933000111',
+        'phone': '',
         'is_active': true,
       };
       h.server.reply('POST', '/api/auth/firebase/register', <String, dynamic>{
@@ -512,19 +512,16 @@ void main() {
         idToken: 'firebase-id-token',
         role: 'customer',
         name: 'زبون',
-        phone: '0933000111',
-        password: 'customer-pass-123',
-        otpCode: '123456',
-        otpToken: 'otp-token',
       );
 
       expect(result.isSignedIn, isTrue);
       expect(h.state.user?.isIndependentCustomer, isTrue);
       final Map<String, dynamic> body = bodyOf(h.server.requestsTo('POST', '/api/auth/firebase/register').single);
       expect(body['role'], 'customer');
-      expect(body['password'], 'customer-pass-123');
-      expect(body['otpCode'], '123456');
-      expect(body['otpToken'], 'otp-token');
+      expect(body.containsKey('contactPhone'), isFalse);
+      expect(body.containsKey('password'), isFalse);
+      expect(body.containsKey('otpCode'), isFalse);
+      expect(body.containsKey('otpToken'), isFalse);
       expect(body.containsKey('license'), isFalse);
     });
 

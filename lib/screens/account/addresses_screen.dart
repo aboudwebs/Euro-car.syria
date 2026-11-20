@@ -301,7 +301,7 @@ class _AddressFormScreenState extends State<AddressFormScreen> {
     _area = TextEditingController(text: a?.area ?? '');
     _street = TextEditingController(text: a?.street ?? '');
     _details = TextEditingController(text: a?.details ?? '');
-    _phone = TextEditingController(text: a?.phone ?? '');
+    _phone = TextEditingController(text: a?.phone ?? AppScope.read(context).user?.phone ?? '');
     _governorate = a?.governorate ?? '';
     _makeDefault = a?.isDefault ?? false;
   }

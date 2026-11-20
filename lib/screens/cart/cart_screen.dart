@@ -189,6 +189,7 @@ class _CartScreenState extends State<CartScreen> {
     }
     final String invoiceCurrency = state.canUseSypInvoices ? 'SYP' : 'USD';
     if (invoiceCurrency == 'USD') {
+      if (!mounted) return;
       final bool? continueInUsd = await showDialog<bool>(
         context: context,
         builder: (BuildContext dialogContext) => AlertDialog(

@@ -45,6 +45,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   bool _busy = false;
   bool _firebaseAttemptStarted = false;
   bool _registrationFromLogin = false;
+  bool _emailSectionExpanded = false;
   ReferralInput? _signedReferral;
 
   @override
@@ -135,7 +136,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     });
   }
 
-  Future<void> _sendCustomerOtp() async {
+  Future<void> _sendRegistrationOtp() async {
     if (_busy) return;
     if (_phone.text.replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
       setState(() => _error = 'أدخل رقم هاتف صحيحاً لإرسال رمز التحقق.');
@@ -143,7 +144,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     }
     setState(() { _busy = true; _error = null; _notice = null; });
     try {
-      final token = await AppScope.read(context).requestRegistrationOtp(phone: _phone.text, role: 'customer');
+      final token = await AppScope.read(context).requestRegistrationOtp(phone: _phone.text, role: _role);
       if (!mounted) return;
       if (token.isEmpty) {
         setState(() { _busy = false; _error = 'تعذر إرسال رمز التحقق. خدمة الرسائل غير مفعّلة حالياً.'; });
@@ -161,7 +162,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     }
   }
 
-  Future<void> _registerCustomer() async {
+  Future<void> _registerPhoneAccount() async {
     if (_busy) return;
     if (_name.text.trim().length < 2) {
       setState(() => _error = 'أدخل اسمك الكامل.');
@@ -181,7 +182,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     }
     setState(() { _busy = true; _error = null; _notice = null; });
     final result = await AppScope.read(context).register(
-      role: 'customer',
+      role: _role,
       name: _name.text,
       phone: _phone.text,
       password: _password.text,
@@ -219,9 +220,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
       return;
     }
-    if (_mode == _Mode.register && _role == 'customer' &&
+    if (_mode == _Mode.register && (_role == 'customer' || _role == 'marketer') &&
         (_customerOtpToken == null || _otp.text.trim().length != 6)) {
-      setState(() => _error = 'أرسل رمز التحقق وأدخله قبل المتابعة باستخدام Google.');
+      setState(() => _error = 'أرسل رمز التحقق وأدخله قبل إكمال التسجيل.');
       return;
     }
 
@@ -257,10 +258,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           idToken: idToken,
           role: _role,
           name: _name.text,
-          phone: (_role == 'workshop' || _role == 'customer') ? _phone.text : '',
-          password: _role == 'customer' ? _password.text : '',
-          otpCode: _role == 'customer' ? _otp.text : '',
-          otpToken: _role == 'customer' ? (_customerOtpToken ?? '') : '',
+          phone: (_role == 'workshop' || _role == 'customer' || _role == 'marketer') ? _phone.text : '',
+          password: (_role == 'customer' || _role == 'marketer') ? _password.text : '',
+          otpCode: (_role == 'customer' || _role == 'marketer') ? _otp.text : '',
+          otpToken: (_role == 'customer' || _role == 'marketer') ? (_customerOtpToken ?? '') : '',
           license: _license.text,
           city: _city.text,
           specs: _spec.text,
@@ -458,16 +459,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         alignment: AlignmentDirectional.centerStart,
         child: TextButton(onPressed: _busy ? null : _forgotOldPassword, child: const Text('نسيت كلمة المرور؟')),
       ),
-      if (_role != 'customer') ...[
-        const Divider(height: 22),
-        AppTextField(controller: _email, label: 'البريد الإلكتروني', keyboardType: TextInputType.emailAddress,
-            ltr: true, radius: 10),
-        const SizedBox(height: 8),
-        PasswordField(controller: _password, label: 'كلمة المرور', radius: 10),
-        const SizedBox(height: 10),
-        const SizedBox(height: 8),
-        _providers(),
-      ] else ...[
+      _emailAccessSection(),
+      const SizedBox(height: 8),
+      _socialProviders(),
+      if (_role == 'customer') ...[
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: _busy ? null : () => _authenticate('google'),
@@ -494,7 +489,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 14),
-      if (_role == 'customer') ...[
+      if (_role == 'customer' || _role == 'marketer') ...[
         AppTextField(controller: _name, label: 'الاسم الكامل', radius: 10),
         const SizedBox(height: 8),
         AppTextField(controller: _phone, label: 'رقم الهاتف', hint: '+963 9XXXXXXXX',
@@ -508,16 +503,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         SecondaryButton(
           label: _customerOtpToken == null ? 'إرسال رمز التحقق' : 'إعادة إرسال رمز التحقق',
           icon: Icons.sms_outlined,
-          onPressed: _busy ? null : _sendCustomerOtp,
+          onPressed: _busy ? null : _sendRegistrationOtp,
         ),
         const SizedBox(height: 8),
-        PrimaryButton(label: 'إنشاء حساب', icon: Icons.person_add_alt_1_rounded, busy: _busy, onPressed: _registerCustomer),
-        const Divider(height: 24),
-        OutlinedButton.icon(
-          onPressed: _busy ? null : () => _authenticate('google'),
-          icon: const Icon(Icons.g_mobiledata_rounded, size: 25),
-          label: const Text('التسجيل باستخدام Google'),
-        ),
+        PrimaryButton(label: 'إنشاء حساب', icon: Icons.person_add_alt_1_rounded, busy: _busy, onPressed: _registerPhoneAccount),
       ] else ...[
         AppTextField(controller: _email, label: 'البريد الإلكتروني', keyboardType: TextInputType.emailAddress,
             ltr: true, radius: 10),
@@ -545,21 +534,43 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
               readOnly: _signedReferral?.isSigned == true, ltr: true, radius: 10),
         ],
         const SizedBox(height: 14),
-        _providers(),
+        _emailAccessSection(),
+        const SizedBox(height: 8),
+        _socialProviders(),
       ],
       TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.login), child: const Text('لديك حساب؟ تسجيل الدخول')),
     ],
   );
 
-  Widget _providers() => Column(
+  Widget _emailAccessSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      SecondaryButton(label: _mode == _Mode.register ? 'المتابعة بالبريد الإلكتروني' : 'الدخول بالبريد الإلكتروني',
-          icon: Icons.email_outlined, onPressed: _busy ? null : () => _authenticate('email')),
-      const SizedBox(height: 8),
+      OutlinedButton.icon(
+        onPressed: _busy ? null : () => setState(() => _emailSectionExpanded = !_emailSectionExpanded),
+        icon: const Icon(Icons.email_outlined),
+        label: Text(_emailSectionExpanded ? 'إخفاء الدخول بالبريد الإلكتروني' : 'الدخول بالبريد الإلكتروني وكلمة المرور'),
+      ),
+      if (_emailSectionExpanded) ...[
+        const SizedBox(height: 10),
+        AppTextField(controller: _email, label: 'البريد الإلكتروني',
+            keyboardType: TextInputType.emailAddress, ltr: true, radius: 10),
+        const SizedBox(height: 8),
+        PasswordField(controller: _password, label: 'كلمة المرور', radius: 10),
+        const SizedBox(height: 10),
+        PrimaryButton(
+          label: _mode == _Mode.register ? 'إنشاء حساب بالبريد الإلكتروني' : 'تسجيل الدخول بالبريد الإلكتروني',
+          busy: _busy,
+          onPressed: _busy ? null : () => _authenticate('email'),
+        ),
+      ],
+    ],
+  );
+
+  Widget _socialProviders() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
       OutlinedButton.icon(onPressed: _busy ? null : () => _authenticate('google'),
-          icon: const Icon(Icons.g_mobiledata_rounded, size: 25), label: const Text('المتابعة باستخدام Google')),
-      const SizedBox(height: 8),
+          icon: const Icon(Icons.g_mobiledata_rounded, size: 25), label: Text(_mode == _Mode.register ? 'التسجيل باستخدام Google' : 'تسجيل الدخول باستخدام Google')),
       const SizedBox(height: 8),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
@@ -573,23 +584,14 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           children: [
             Icon(Icons.lock_outline_rounded, size: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(width: 7),
-            Text(
-              'هذه الخدمة ستتوفر قريباً',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            Text('هذه الخدمة ستتوفر قريباً',
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
       const SizedBox(height: 6),
-      OutlinedButton.icon(
-        onPressed: null,
-        icon: const Icon(Icons.apple_rounded, size: 21),
-        label: const Text('المتابعة باستخدام Apple'),
-      ),
+      OutlinedButton.icon(onPressed: null, icon: const Icon(Icons.apple_rounded, size: 21),
+          label: const Text('المتابعة باستخدام Apple')),
     ],
   );
 }

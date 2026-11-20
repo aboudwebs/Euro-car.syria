@@ -202,7 +202,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
   Future<void> _authenticate(String provider) async {
     if (_busy) return;
-    if (provider == 'email' && _role != 'customer' && (_email.text.trim().isEmpty || _password.text.length < 6)) {
+    if (provider == 'email' && (_email.text.trim().isEmpty || _password.text.length < 6)) {
       setState(() => _error = 'أدخل البريد وكلمة مرور من 6 أحرف على الأقل.');
       return;
     }
@@ -211,12 +211,16 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
       return;
     }
-    if (_mode == _Mode.register && (_role == 'workshop' || _role == 'customer') &&
+    if (_mode == _Mode.register && (_role == 'workshop' || _role == 'customer' || _role == 'marketer') &&
         _phone.text.replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
-      setState(() => _error = _role == 'customer' ? 'رقم الهاتف إلزامي لإنشاء حساب الزبون.' : 'رقم هاتف الورشة إلزامي، أدخل رقماً صحيحاً للتواصل معك.');
+      setState(() => _error = _role == 'workshop' ? 'رقم هاتف الورشة إلزامي، أدخل رقماً صحيحاً للتواصل معك.' : 'رقم الهاتف إلزامي لإنشاء هذا الحساب.');
       return;
     }
-    if (_mode == _Mode.register && _role == 'customer' && _password.text.length < minNewPasswordLength) {
+    if (_mode == _Mode.register && (_role == 'customer' || _role == 'marketer') && _name.text.trim().length < 2) {
+      setState(() => _error = 'أدخل اسمك الكامل.');
+      return;
+    }
+    if (_mode == _Mode.register && (_role == 'customer' || _role == 'marketer') && _password.text.length < minNewPasswordLength) {
       setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
       return;
     }
@@ -462,14 +466,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       _emailAccessSection(),
       const SizedBox(height: 8),
       _socialProviders(),
-      if (_role == 'customer') ...[
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: _busy ? null : () => _authenticate('google'),
-          icon: const Icon(Icons.g_mobiledata_rounded, size: 25),
-          label: const Text('تسجيل الدخول باستخدام Google'),
-        ),
-      ],
       TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.register),
           child: const Text('ليس لديك حساب؟ إنشاء حساب جديد')),
     ],
@@ -483,9 +479,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       Text(
         _role == 'workshop'
             ? 'أدخل رقم هاتف الورشة ليظهر للإدارة ضمن طلب التسجيل. توثيق الرقم برمز الرسالة النصية يبقى مطلوباً عند أول عملية شراء.'
-            : _role == 'customer'
-                ? 'العميل يحتاج الاسم ورقم الهاتف وكلمة المرور، مع رمز تحقق إلزامي عند إنشاء الحساب.'
-                : 'اختر طريقة إنشاء الحساب. ستتمكن من الدخول مباشرة، وسنطلب الاسم ورقم الهاتف وتوثيقه وفق خطوات التسجيل.',
+            : (_role == 'customer' || _role == 'marketer')
+                ? 'أدخل الاسم ورقم الهاتف وكلمة المرور، ثم أرسل رمز SMS وأدخله لإكمال إنشاء الحساب.'
+                : 'أدخل بيانات الورشة. يبقى طلب الورشة خاضعاً لمراجعة الإدارة.',
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 14),

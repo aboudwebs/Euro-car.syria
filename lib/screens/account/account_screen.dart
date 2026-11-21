@@ -539,19 +539,12 @@ class _AccountScreenState extends State<AccountScreen> {
                       _ProfileLine(icon: Icons.phone_outlined, text: user.phone, ltr: true)
                     else if (user.isIndependentCustomer)
                       const _ProfileLine(icon: Icons.phone_outlined, text: 'رقم التواصل غير مضاف (اختياري)'),
-                    if ((user.raw['auth_email'] ?? '').toString().trim().isNotEmpty)
-                      _ProfileLine(
-                        icon: Icons.email_outlined,
-                        text: user.raw['auth_email'].toString(),
-                        ltr: true,
-                      ),
                     if ((user.raw['auth_provider'] ?? '').toString().trim().isNotEmpty)
                       _ProfileLine(
                         icon: Icons.login_rounded,
                         text: switch (user.raw['auth_provider'].toString()) {
                           'google.com' || 'google' => 'طريقة الدخول: Google',
                           'apple.com' || 'apple' => 'طريقة الدخول: Apple',
-                          'password' || 'email' => 'طريقة الدخول: البريد الإلكتروني',
                           'phone' || 'phoneNumber' => 'طريقة الدخول: رقم الهاتف',
                           _ => 'طريقة الدخول: ${user.raw['auth_provider']}',
                         },

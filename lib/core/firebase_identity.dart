@@ -28,14 +28,6 @@ class FirebaseIdentityService {
     return _auth.currentUser;
   }
 
-  Future<UserCredential> signInWithEmail(String email, String password) {
-    return _auth.signInWithEmailAndPassword(email: email.trim(), password: password);
-  }
-
-  Future<UserCredential> createEmailAccount(String email, String password) {
-    return _auth.createUserWithEmailAndPassword(email: email.trim(), password: password);
-  }
-
   Future<UserCredential> signInWithGoogle() async {
     if (googleServerClientId.isEmpty) {
       throw FirebaseAuthException(

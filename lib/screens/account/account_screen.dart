@@ -861,7 +861,7 @@ class _DeletionBanner extends StatelessWidget {
   }
 }
 
-/// Confirms account deletion with a one-time code sent to the account's verified email.
+/// Confirms account deletion with a one-time SMS code sent to the account phone.
 class _DeleteAccountDialog extends StatefulWidget {
   const _DeleteAccountDialog();
 
@@ -925,7 +925,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
             const SizedBox(height: 14),
             if (!_codeSent)
               Text(
-                'سنرسل رمز تأكيد إلى البريد الإلكتروني الموثّق المرتبط بحسابك.',
+                'سنرسل رمز تأكيد عبر رسالة SMS إلى رقم الهاتف المسجّل بحسابك.',
                 style: TextStyle(color: p.muted, fontSize: 13, height: 1.5),
               )
             else ...<Widget>[
@@ -942,7 +942,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
                 decoration: const InputDecoration(labelText: 'رمز التحقق', hintText: '000000', counterText: ''),
               ),
               Text(
-                'الرمز صالح لمدة 10 دقائق، وبعد 5 محاولات خاطئة ستحتاج لطلب رمز جديد.',
+                'الرمز صالح لمدة 10 دقائق، وبعد 5 محاولات خاطئة ستحتاج لطلب رمز SMS جديد.',
                 style: TextStyle(color: p.muted, fontSize: 12, height: 1.5),
               ),
             ],
@@ -954,7 +954,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
                 }
               },
               icon: const Icon(Icons.open_in_new_rounded, size: 17),
-              label: const Text('لا تملك بريداً موثّقاً؟ اطلب الحذف عبر SMS'),
+              label: const Text('تعذّر إكمال التحقق؟ افتح صفحة طلب الحذف عبر SMS'),
             ),
             if (error != null) ...<Widget>[
               const SizedBox(height: 10),

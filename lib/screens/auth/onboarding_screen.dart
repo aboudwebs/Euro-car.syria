@@ -69,7 +69,7 @@ class _AuthFlowState extends State<AuthFlow> {
               children: [
                 const Align(alignment: AlignmentDirectional.center, child: BrandMark(size: 42)),
                 const SizedBox(height: 8),
-                Text('EURO CARS', style: TextStyle(color: p.muted, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w800)),
+                Text('Euro Parts', style: TextStyle(color: p.muted, fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w800)),
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,

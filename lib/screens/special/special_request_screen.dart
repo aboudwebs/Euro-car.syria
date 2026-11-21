@@ -1,4 +1,4 @@
-// Special request: ask EURO CARS to source a part that is not in the catalog
+// Special request: ask Euro Parts to source a part that is not in the catalog
 // (POST /api/special-requests, same fields and rules as the web page).
 //
 // The look follows the web form: one glass card, the brand picker as an inset segmented grid, inset fields and a

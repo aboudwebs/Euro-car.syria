@@ -27,7 +27,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   late final FirebaseIdentityService _firebase = FirebaseIdentityService();
   final _phone = TextEditingController();
   final _oldPassword = TextEditingController();
-  final _email = TextEditingController();
   final _password = TextEditingController();
   final _name = TextEditingController();
   final _license = TextEditingController();
@@ -45,7 +44,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   bool _busy = false;
   bool _firebaseAttemptStarted = false;
   bool _registrationFromLogin = false;
-  bool _emailSectionExpanded = false;
   ReferralInput? _signedReferral;
 
   @override
@@ -61,7 +59,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
   @override
   void dispose() {
-    for (final controller in [_phone, _oldPassword, _email, _password, _name, _license, _city, _spec, _referral, _otp]) {
+    for (final controller in [_phone, _oldPassword, _password, _name, _license, _city, _spec, _referral, _otp]) {
       controller.dispose();
     }
     super.dispose();
@@ -96,8 +94,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       case 'wrong-password':
       case 'invalid-credential':
         return 'بيانات الدخول غير صحيحة.';
-      case 'email-already-in-use':
-        return 'هذا البريد مسجل مسبقاً. انتقل إلى تسجيل الدخول.';
       case 'weak-password':
         return 'كلمة المرور يجب أن تتكون من 6 أحرف على الأقل.';
       case 'credential-already-in-use':
@@ -173,22 +169,54 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       return;
     }
     if (_password.text.length < minNewPasswordLength) {
-      setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
+      setState(() => _error = 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.');
       return;
     }
     if (_customerOtpToken == null || _otp.text.trim().length != 6) {
-      setState(() => _error = 'أرسل رمز التحقق وأدخل الرمز المكوّن من 6 أرقام.');
+      setState(() => _error = 'أرسل رمز SMS وأدخل الرمز المكوّن من 6 أرقام.');
       return;
     }
     setState(() { _busy = true; _error = null; _notice = null; });
-    final result = await AppScope.read(context).register(
-      role: _role,
-      name: _name.text,
-      phone: _phone.text,
-      password: _password.text,
-      otpCode: _otp.text,
-      otpToken: _customerOtpToken!,
-    );
+    final AppState state = AppScope.read(context);
+    final ReferralInput referral = _signedReferral ?? parseReferral(_referral.text);
+    final AuthResult result;
+    if (_registrationFromLogin) {
+      try {
+        result = await state.registerFirebase(
+          idToken: await _firebase.freshIdToken(),
+          role: _role,
+          name: _name.text,
+          phone: _phone.text,
+          password: _password.text,
+          otpCode: _otp.text,
+          otpToken: _customerOtpToken!,
+          license: _license.text,
+          manualVerification: _role == 'workshop' && _license.text.trim().isEmpty,
+          city: _city.text,
+          specs: _spec.text,
+          refCode: referral.code,
+          refSignature: referral.signature,
+        );
+      } catch (error) {
+        if (mounted) setState(() { _busy = false; _error = error is ApiException ? error.message : unexpectedMessage; });
+        return;
+      }
+    } else {
+      result = await state.register(
+        role: _role,
+        name: _name.text,
+        phone: _phone.text,
+        password: _password.text,
+        otpCode: _otp.text,
+        otpToken: _customerOtpToken!,
+        license: _license.text,
+        manualVerification: _role == 'workshop' && _license.text.trim().isEmpty,
+        city: _city.text,
+        specs: _spec.text,
+        refCode: referral.code,
+        refSignature: referral.signature,
+      );
+    }
     if (!mounted) return;
     setState(() {
       _busy = false;
@@ -202,15 +230,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
 
   Future<void> _authenticate(String provider) async {
     if (_busy) return;
-    if (provider == 'email' && (_email.text.trim().isEmpty || _password.text.length < 6)) {
-      setState(() => _error = 'أدخل البريد وكلمة مرور من 6 أحرف على الأقل.');
-      return;
-    }
-    // A NEW e-mail account follows the 8-character rule; signing in keeps the old minimum (existing accounts).
-    if (provider == 'email' && _mode == _Mode.register && _password.text.length < minNewPasswordLength) {
-      setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
-      return;
-    }
     if (_mode == _Mode.register && (_role == 'workshop' || _role == 'marketer') &&
         _phone.text.replaceAll(RegExp(r'[^0-9]'), '').length < 8) {
       setState(() => _error = _role == 'workshop' ? 'رقم هاتف الورشة إلزامي، أدخل رقماً صحيحاً للتواصل معك.' : 'رقم الهاتف إلزامي لإنشاء هذا الحساب.');
@@ -234,13 +253,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     try {
       if (!_firebaseAttemptStarted) {
         if (_firebase.currentUser != null) await _firebase.signOut();
-        if (provider == 'email') {
-          if (_mode == _Mode.register) {
-            await _firebase.createEmailAccount(_email.text, _password.text);
-          } else {
-            await _firebase.signInWithEmail(_email.text, _password.text);
-          }
-        } else if (provider == 'google') {
+        if (provider == 'google') {
           await _firebase.signInWithGoogle();
         } else {
           await _firebase.signInWithApple();
@@ -454,11 +467,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     children: [
       _accountTypeBadge(),
       const SizedBox(height: 12),
-      if (_role == 'customer')
-        const Text('يمكنك الدخول بالبريد الإلكتروني أو Google دون رقم هاتف. تسجيل الدخول بالهاتف خيار إضافي فقط.',
-            textAlign: TextAlign.center),
-      if (_role == 'customer') const SizedBox(height: 10),
-      AppTextField(controller: _phone, label: 'رقم الهاتف (للدخول بهذه الطريقة)',
+      const Text('سجّل الدخول برقم الهاتف وكلمة المرور، أو باستخدام Google.', textAlign: TextAlign.center),
+      const SizedBox(height: 10),
+      AppTextField(controller: _phone, label: 'رقم الهاتف',
           hint: '+963 9XXXXXXXX', keyboardType: TextInputType.phone, ltr: true, radius: 10),
       const SizedBox(height: 8),
       PasswordField(controller: _oldPassword, label: 'كلمة المرور', radius: 10),
@@ -468,7 +479,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         alignment: AlignmentDirectional.centerStart,
         child: TextButton(onPressed: _busy ? null : _forgotOldPassword, child: const Text('نسيت كلمة المرور؟')),
       ),
-      _emailAccessSection(),
       const SizedBox(height: 8),
       _socialProviders(),
       TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.register),
@@ -481,95 +491,43 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     children: [
       _accountTypeBadge(),
       const SizedBox(height: 12),
-      Text(
-        _role == 'workshop'
-            ? 'أدخل رقم هاتف الورشة ليظهر للإدارة ضمن طلب التسجيل. توثيق الرقم برمز الرسالة النصية يبقى مطلوباً عند أول عملية شراء.'
-            : _role == 'marketer'
-                ? 'أدخل الاسم ورقم الهاتف وكلمة المرور، ثم أرسل رمز SMS وأدخله لإكمال إنشاء الحساب.'
-                : 'يمكنك إنشاء حساب العميل بالبريد الإلكتروني أو Google دون رقم هاتف. يمكنك إضافة رقم أو واتساب لاحقاً من بيانات الحساب، وسيُطلب رقم للتواصل عند إرسال الطلب.',
-        textAlign: TextAlign.center,
-      ),
+      const Text('أدخل بيانات الحساب ورقم الهاتف، ثم تحقق من ملكية الرقم عبر رمز SMS.', textAlign: TextAlign.center),
       const SizedBox(height: 14),
-      if (_role == 'customer') ...[
-        AppTextField(controller: _name, label: 'الاسم الكامل', radius: 10),
-        const SizedBox(height: 12),
-        _emailAccessSection(),
+      AppTextField(controller: _name, label: 'الاسم الكامل', radius: 10),
+      const SizedBox(height: 8),
+      AppTextField(controller: _phone, label: 'رقم الهاتف', hint: '+963 9XXXXXXXX',
+          keyboardType: TextInputType.phone, ltr: true, radius: 10),
+      const SizedBox(height: 8),
+      PasswordField(controller: _password, label: 'كلمة المرور (8 أحرف على الأقل)', radius: 10),
+      if (_role == 'workshop') ...[
         const SizedBox(height: 8),
-        _socialProviders(),
-      ] else if (_role == 'marketer') ...[
-        AppTextField(controller: _name, label: 'الاسم الكامل', radius: 10),
+        AppTextField(controller: _license, label: 'السجل التجاري / ترخيص الورشة (اختياري)', radius: 10),
         const SizedBox(height: 8),
-        AppTextField(controller: _phone, label: 'رقم الهاتف', hint: '+963 9XXXXXXXX',
-            keyboardType: TextInputType.phone, ltr: true, radius: 10),
-        const SizedBox(height: 8),
-        PasswordField(controller: _password, label: 'كلمة المرور (8 أحرف على الأقل)', radius: 10),
-        const SizedBox(height: 8),
-        AppTextField(controller: _otp, label: 'رمز التحقق SMS', hint: '6 أرقام',
-            keyboardType: TextInputType.number, ltr: true, radius: 10),
-        const SizedBox(height: 8),
-        SecondaryButton(
-          label: _customerOtpToken == null ? 'إرسال رمز التحقق' : 'إعادة إرسال رمز التحقق',
-          icon: Icons.sms_outlined,
-          onPressed: _busy ? null : _sendRegistrationOtp,
+        DropdownButtonFormField<String>(
+          initialValue: _city.text,
+          decoration: const InputDecoration(labelText: 'المحافظة'),
+          items: governorates.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList(),
+          onChanged: (value) { if (!_busy && value != null) setState(() => _city.text = value); },
         ),
         const SizedBox(height: 8),
-        PrimaryButton(label: 'إنشاء حساب', icon: Icons.person_add_alt_1_rounded, busy: _busy, onPressed: _registerPhoneAccount),
-      ] else ...[
-        AppTextField(controller: _email, label: 'البريد الإلكتروني', keyboardType: TextInputType.emailAddress,
-            ltr: true, radius: 10),
+        AppTextField(controller: _spec, label: 'اختصاص الورشة / الماركات', radius: 10),
         const SizedBox(height: 8),
-        PasswordField(controller: _password, label: 'كلمة المرور (للدخول بالبريد فقط)', radius: 10),
-        if (_role == 'workshop') ...[
-          const SizedBox(height: 8),
-          AppTextField(controller: _phone, label: 'رقم هاتف الورشة (إلزامي)', hint: '+963 9XXXXXXXX',
-              keyboardType: TextInputType.phone, ltr: true, radius: 10),
-          const SizedBox(height: 8),
-          AppTextField(controller: _license, label: 'السجل التجاري / ترخيص الورشة (اختياري)', radius: 10),
-          const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            initialValue: _city.text,
-            decoration: const InputDecoration(labelText: 'المحافظة (اختياري)'),
-            items: governorates.map((city) => DropdownMenuItem(value: city, child: Text(city))).toList(),
-            onChanged: (value) { if (!_busy && value != null) setState(() => _city.text = value); },
-          ),
-          const SizedBox(height: 8),
-          AppTextField(controller: _spec, label: 'اختصاص الورشة / الماركات', radius: 10),
-          const SizedBox(height: 4),
-          Text('يمكن إكمال بيانات الورشة لاحقاً.', style: TextStyle(color: p.muted, fontSize: 12)),
-          const SizedBox(height: 8),
-          AppTextField(controller: _referral, label: 'كود المسوّق (اختياري)',
-              readOnly: _signedReferral?.isSigned == true, ltr: true, radius: 10),
-        ],
-        const SizedBox(height: 14),
-        _emailAccessSection(),
-        const SizedBox(height: 8),
-        _socialProviders(),
+        AppTextField(controller: _referral, label: 'كود المسوّق (اختياري)',
+            readOnly: _signedReferral?.isSigned == true, ltr: true, radius: 10),
       ],
-      TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.login), child: const Text('لديك حساب؟ تسجيل الدخول')),
-    ],
-  );
-
-  Widget _emailAccessSection() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      OutlinedButton.icon(
-        onPressed: _busy ? null : () => setState(() => _emailSectionExpanded = !_emailSectionExpanded),
-        icon: const Icon(Icons.email_outlined),
-        label: Text(_emailSectionExpanded ? 'إخفاء الدخول بالبريد الإلكتروني' : 'الدخول بالبريد الإلكتروني وكلمة المرور'),
+      const SizedBox(height: 8),
+      AppTextField(controller: _otp, label: 'رمز التحقق SMS', hint: '6 أرقام',
+          keyboardType: TextInputType.number, ltr: true, radius: 10),
+      const SizedBox(height: 8),
+      SecondaryButton(
+        label: _customerOtpToken == null ? 'إرسال رمز التحقق' : 'إعادة إرسال رمز التحقق',
+        icon: Icons.sms_outlined,
+        onPressed: _busy ? null : _sendRegistrationOtp,
       ),
-      if (_emailSectionExpanded) ...[
-        const SizedBox(height: 10),
-        AppTextField(controller: _email, label: 'البريد الإلكتروني',
-            keyboardType: TextInputType.emailAddress, ltr: true, radius: 10),
-        const SizedBox(height: 8),
-        PasswordField(controller: _password, label: 'كلمة المرور', radius: 10),
-        const SizedBox(height: 10),
-        PrimaryButton(
-          label: _mode == _Mode.register ? 'إنشاء حساب بالبريد الإلكتروني' : 'تسجيل الدخول بالبريد الإلكتروني',
-          busy: _busy,
-          onPressed: _busy ? null : () => _authenticate('email'),
-        ),
-      ],
+      const SizedBox(height: 8),
+      PrimaryButton(label: 'إنشاء حساب', icon: Icons.person_add_alt_1_rounded,
+          busy: _busy, onPressed: _registerPhoneAccount),
+      TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.login), child: const Text('لديك حساب؟ تسجيل الدخول')),
     ],
   );
 

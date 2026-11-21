@@ -518,6 +518,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           ),
           const SizedBox(height: 8),
           AppTextField(controller: _spec, label: 'اختصاص الورشة / الماركات', radius: 10),
+          Text('يمكن إكمال بيانات الورشة لاحقاً بعد إرسال الطلب.', style: TextStyle(color: p.muted, fontSize: 12)),
           const SizedBox(height: 8),
           AppTextField(controller: _referral, label: 'كود المسوّق (اختياري)',
               readOnly: _signedReferral?.isSigned == true, ltr: true, radius: 10),

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Configure R8 for the optional non-Latin ML Kit OCR scripts.
 
-The EURO CARS VIN scanner uses Latin recognition only. The Flutter ML Kit
+The Euro Parts VIN scanner uses Latin recognition only. The Flutter ML Kit
 plugin contains references to optional Chinese, Devanagari, Japanese and
 Korean recognizers, which are intentionally not packaged by this app.
 """
@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 GRADLE = ROOT / "android" / "app" / "build.gradle.kts"
 RULES = ROOT / "android" / "app" / "proguard-rules.pro"
 
-OPTIONAL_SCRIPT_RULES = """# EURO CARS uses Latin OCR for VIN/chassis numbers only.
+OPTIONAL_SCRIPT_RULES = """# Euro Parts uses Latin OCR for VIN/chassis numbers only.
 # Other ML Kit script recognizers are optional and are not packaged.
 -dontwarn com.google.mlkit.vision.text.chinese.**
 -dontwarn com.google.mlkit.vision.text.devanagari.**

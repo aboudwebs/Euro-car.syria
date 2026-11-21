@@ -18,7 +18,7 @@ set -uo pipefail
 
 APK="${1:?usage: verify_apk.sh path/to/app-release.apk}"
 EXPECTED_PACKAGE="${EXPECTED_PACKAGE:-com.eurocars.euro_cars}"
-EXPECTED_LABEL="${EXPECTED_LABEL:-EURO CARS}"
+EXPECTED_LABEL="${EXPECTED_LABEL:-Euro Parts}"
 EXPECTED_ABIS="${EXPECTED_ABIS:-armeabi-v7a arm64-v8a}"
 MIN_SDK_REQUIRED="${MIN_SDK_REQUIRED:-24}"
 TARGET_SDK_REQUIRED="${TARGET_SDK_REQUIRED:-36}"

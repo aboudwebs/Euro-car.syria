@@ -99,7 +99,7 @@ class _EuroAppState extends State<EuroApp> with WidgetsBindingObserver {
             // A new key rebuilds the whole tree when the language or the displayed currency changes, so every
             // screen (also the ones holding already formatted prices) shows the new choice.
             key: ValueKey<int>(_state.displayVersion),
-            title: 'EURO CARS',
+            title: 'Euro Parts',
             debugShowCheckedModeBanner: false,
             theme: _lightTheme,
             darkTheme: _darkTheme,

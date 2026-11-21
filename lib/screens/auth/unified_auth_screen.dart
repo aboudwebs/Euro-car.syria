@@ -280,6 +280,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           otpCode: _otp.text,
           otpToken: _customerOtpToken ?? '',
           license: _license.text,
+          manualVerification: _role == 'workshop' && _license.text.trim().isEmpty,
           city: _city.text,
           specs: _spec.text,
           refCode: referral.code,

@@ -3,6 +3,12 @@
 // A text that is missing here is simply shown in Arabic. Server error messages come from the server in Arabic.
 
 const Map<String, String> enTexts = <String, String>{
+  'سجّل الدخول برقم الهاتف وكلمة المرور، أو باستخدام Google.': 'Sign in with your phone number and password, or with Google.',
+  'أنشئ حساب العميل باستخدام Google. رقم الهاتف اختياري ويمكن إضافته لاحقاً من بيانات الحساب.': 'Create your customer account with Google. A phone number is optional and can be added later in account details.',
+  'أدخل بيانات الحساب ورقم الهاتف، ثم تحقق من ملكية الرقم عبر رمز SMS.': 'Enter your account details and phone number, then verify ownership with an SMS code.',
+  'يمكن إكمال بيانات الورشة لاحقاً بعد إرسال الطلب.': 'You can complete the workshop details after submitting the request.',
+  'سنرسل رمز تأكيد عبر رسالة SMS إلى رقم الهاتف المسجّل بحسابك.': 'We will send an account-deletion confirmation code by SMS to your registered phone number.',
+  'تعذّر إكمال التحقق؟ افتح صفحة طلب الحذف عبر SMS': 'Unable to complete verification? Open the SMS account-deletion page.',
   // Texts with values.
   'سيُحذف حسابك بعد {} يوماً من الآن، ويمكنك إلغاء الطلب خلال هذه المدة من صفحة حسابي. بعد انتهاء المدة تُزال بياناتك الشخصية، وتبقى سجلات الطلبات والمبالغ لأغراض المحاسبة دون بياناتك.': 'Your account will be deleted {} days from now, and you can cancel the request during this time from the My account page. After that your personal data is removed; order and payment records are kept for accounting without your personal data.',
   'عدّاد 30 يومًا يبدأ من أول قطعة دين. عند تجاوزه يتوقف السحب الآجل حتى التسديد. الكاش باك والعمولة يُصرفان بعد التسديد.\nالمتاح من سقفك: {}': 'The 30-day counter starts from the first credit part. Once it is exceeded, credit purchases stop until repayment. Cashback and commission are paid after repayment.\nAvailable from your limit: {}',

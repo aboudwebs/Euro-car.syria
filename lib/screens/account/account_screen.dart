@@ -540,7 +540,8 @@ class _AccountScreenState extends State<AccountScreen> {
                     else if (user.isIndependentCustomer)
                       const _ProfileLine(icon: Icons.phone_outlined, text: 'رقم التواصل غير مضاف (اختياري)'),
                     if ((user.raw['auth_provider'] ?? '').toString().trim().isNotEmpty &&
-                        !const <String>['password', 'email'].contains(user.raw['auth_provider'].toString()))
+                        user.raw['auth_provider'].toString() != 'password' &&
+                        user.raw['auth_provider'].toString() != 'email')
                       _ProfileLine(
                         icon: Icons.login_rounded,
                         text: switch (user.raw['auth_provider'].toString()) {

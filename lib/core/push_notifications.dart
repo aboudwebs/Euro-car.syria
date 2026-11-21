@@ -16,7 +16,7 @@ class PushNotifications {
   static const String channelId = 'euro_cars_notifications';
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     channelId,
-    'إشعارات EURO CARS',
+    'إشعارات Euro Parts',
     description: 'تحديثات الطلبات والحساب والأمان',
     importance: Importance.max,
   );
@@ -95,7 +95,7 @@ class PushNotifications {
     // Only data-only messages need a local notification here.
     if (message.notification != null) return;
     final RemoteNotification? notification = message.notification;
-    final String title = notification?.title ?? message.data['title']?.toString() ?? 'EURO CARS';
+    final String title = notification?.title ?? message.data['title']?.toString() ?? 'Euro Parts';
     final String body = notification?.body ?? message.data['body']?.toString() ?? '';
     if (body.trim().isEmpty) return;
 
@@ -113,7 +113,7 @@ class PushNotifications {
       const NotificationDetails(
         android: AndroidNotificationDetails(
           channelId,
-          'إشعارات EURO CARS',
+          'إشعارات Euro Parts',
           channelDescription: 'تحديثات الطلبات والحساب والأمان',
           importance: Importance.max,
           priority: Priority.high,
@@ -126,7 +126,7 @@ class PushNotifications {
 
   static Future<void> _showForegroundNotification(RemoteMessage message) async {
     final notification = message.notification;
-    final title = notification?.title ?? message.data['title']?.toString() ?? 'EURO CARS';
+    final title = notification?.title ?? message.data['title']?.toString() ?? 'Euro Parts';
     final body = notification?.body ?? message.data['body']?.toString() ?? '';
     if (body.isEmpty) return;
     await _local.show(
@@ -136,7 +136,7 @@ class PushNotifications {
       const NotificationDetails(
         android: AndroidNotificationDetails(
           channelId,
-          'إشعارات EURO CARS',
+          'إشعارات Euro Parts',
           channelDescription: 'تحديثات الطلبات والحساب والأمان',
           importance: Importance.max,
           priority: Priority.high,

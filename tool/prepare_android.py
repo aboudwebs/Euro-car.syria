@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepares the Android project that `flutter create --platforms=android .` generates for EURO CARS.
+"""Prepares the Android project that `flutter create --platforms=android .` generates for Euro Parts.
 
 The repository keeps only the Dart side of the app; the Android folder is generated in CI (and on a developer
 machine) and then adapted here. Every change is idempotent, and the script stops with an error when an expected
@@ -7,7 +7,7 @@ anchor is missing, so a Flutter template change can never silently produce an AP
 
 What it does:
   * AndroidManifest.xml: INTERNET, POST_NOTIFICATIONS and CAMERA permissions (the VIN scanner needs camera
-    access; camera hardware remains optional so manual VIN entry still works), the app label "EURO CARS",
+    access; camera hardware remains optional so manual VIN entry still works), the app label "Euro Parts",
     android:allowBackup="false" (an
     Auto Backup restore brings back encrypted preferences without their Keystore key), and <queries> for
     https / http links so url_launcher can open WhatsApp and the web on Android 11+.
@@ -27,7 +27,7 @@ import re
 import shutil
 import sys
 
-APP_LABEL = "EURO CARS"
+APP_LABEL = "Euro Parts"
 MIN_SDK = 24
 TARGET_SDK = 36
 

@@ -1,6 +1,6 @@
-# EURO CARS — Flutter Android
+# Euro Parts — Flutter Android
 
-Native Flutter client (Arabic, RTL, dark and light themes) for the existing EURO CARS platform. It talks to the
+Native Flutter client (Arabic, RTL, dark and light themes) for the existing Euro Parts platform. It talks to the
 current Next.js API (`https://control-panel-euro-cars.onrender.com`) with the signed mobile session token kept in Android secure
 storage. It never connects to Supabase directly. The admin role is web only: an admin account cannot sign in here.
 
@@ -60,7 +60,7 @@ without it a release APK cannot reach the server.
 ## Continuous integration
 
 `.github/workflows/build-design-apk.yml` runs the steps above on every relevant push to `main` and manually
-(Actions → "Build EURO CARS APK (main)" → Run workflow).
+(Actions → "Build Euro Parts APK (main)" → Run workflow).
 
 * `flutter analyze` and `flutter test` are hard gates. If either fails, the job stops before building the APK.
 * The APK is uploaded as the artifact **`euro-cars-main-apk`** (with its `.sha256` and report) only after

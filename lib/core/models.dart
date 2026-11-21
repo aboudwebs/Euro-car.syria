@@ -1,4 +1,4 @@
-// Data models for the EURO CARS API. Every parser tolerates missing or oddly typed fields.
+// Data models for the Euro Parts API. Every parser tolerates missing or oddly typed fields.
 
 import 'config.dart';
 import 'json_utils.dart';

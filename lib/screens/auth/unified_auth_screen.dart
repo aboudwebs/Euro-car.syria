@@ -235,7 +235,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       setState(() => _error = _role == 'workshop' ? 'رقم هاتف الورشة إلزامي، أدخل رقماً صحيحاً للتواصل معك.' : 'رقم الهاتف إلزامي لإنشاء هذا الحساب.');
       return;
     }
-    if (_mode == _Mode.register && (_role == 'customer' || _role == 'marketer') && _name.text.trim().length < 2) {
+    if (_mode == _Mode.register && _name.text.trim().length < 2) {
       setState(() => _error = 'أدخل اسمك الكامل.');
       return;
     }

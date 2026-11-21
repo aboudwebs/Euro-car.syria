@@ -536,7 +536,7 @@ const Map<String, String> enTexts = <String, String>{
   'يرجى تسجيل الدخول لإتمام الطلب': 'Please sign in to complete the order',
   'يرجى كتابة اسم الماركة الإضافية في حقل (أخرى)': 'Please write the extra make name in the “Other” field',
   'يرجى كتابة نوع السيارة.': 'Please enter the car model.',
-  'يلزم حساب مسجّل ومفعّل من إدارة EURO CARS.': 'You need an account registered and activated by EURO CARS administration.',
+  'يلزم حساب مسجّل ومفعّل من إدارة Euro Parts.': 'You need an account registered and activated by Euro Parts administration.',
   'يمكنك اختيار صورة محفوظة على الهاتف أو التقاط صورة جديدة من واجهة اختيار الصور.': 'You can choose a photo saved on your phone or take a new one from the photo picker.',
   'ينتهي الاسترجاع اليوم. بعدها يُحذف الحساب نهائياً.': 'Recovery ends today. After that the account is permanently deleted.',
   'يُستخدم هذا الكود عند تسجيل ورشة جديدة.': 'This code is used when registering a new workshop.',

@@ -412,6 +412,7 @@ class AppState extends ChangeNotifier {
     _vehiclesError = null;
     _vehiclesReady = true;
     _deletion = null;
+    _deletionOtpToken = null;
     _deletionLoaded = false;
     _pendingCatalogQuery = null;
   }

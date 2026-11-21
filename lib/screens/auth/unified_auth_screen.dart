@@ -239,11 +239,11 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       setState(() => _error = 'أدخل اسمك الكامل.');
       return;
     }
-    if (_mode == _Mode.register && _role == 'marketer' && _password.text.length < minNewPasswordLength) {
+    if (_mode == _Mode.register && _role != 'customer' && _password.text.length < minNewPasswordLength) {
       setState(() => _error = 'كلمة المرور الجديدة يجب أن تكون 8 أحرف على الأقل.');
       return;
     }
-    if (_mode == _Mode.register && _role == 'marketer' &&
+    if (_mode == _Mode.register && _role != 'customer' &&
         (_customerOtpToken == null || _otp.text.trim().length != 6)) {
       setState(() => _error = 'أرسل رمز التحقق وأدخله قبل إكمال التسجيل.');
       return;
@@ -276,9 +276,9 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           role: _role,
           name: _name.text,
           phone: (_role == 'workshop' || _role == 'customer' || _role == 'marketer') ? _phone.text : '',
-          password: (_role == 'customer' || _role == 'marketer') ? _password.text : '',
-          otpCode: (_role == 'customer' || _role == 'marketer') ? _otp.text : '',
-          otpToken: (_role == 'customer' || _role == 'marketer') ? (_customerOtpToken ?? '') : '',
+          password: _password.text,
+          otpCode: _otp.text,
+          otpToken: _customerOtpToken ?? '',
           license: _license.text,
           city: _city.text,
           specs: _spec.text,
@@ -535,6 +535,8 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         const SizedBox(height: 8),
         PrimaryButton(label: 'إنشاء حساب', icon: Icons.person_add_alt_1_rounded,
             busy: _busy, onPressed: _registerPhoneAccount),
+        const SizedBox(height: 8),
+        _socialProviders(),
       ],
       TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.login), child: const Text('لديك حساب؟ تسجيل الدخول')),
     ],

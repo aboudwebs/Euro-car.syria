@@ -329,7 +329,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           const SizedBox(height: 8),
           Semantics(
             image: true,
-            label: 'شعار EURO CARS',
+            label: 'شعار Euro Parts',
             child: Center(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(18),
@@ -344,7 +344,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
             ),
           ),
           const SizedBox(height: 7),
-          Text('EURO CARS', textAlign: TextAlign.center,
+          Text('Euro Parts', textAlign: TextAlign.center,
               style: TextStyle(color: p.muted, fontSize: 13, fontWeight: FontWeight.w700, letterSpacing: 1.1)),
           if (_mode == _Mode.welcome)
             SizedBox(height: MediaQuery.sizeOf(context).height * 0.16)
@@ -368,7 +368,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           if (_mode != _Mode.welcome)
             TextButton(onPressed: _busy ? null : () => _modeTo(_Mode.welcome), child: const Text('العودة للبداية')),
           const SizedBox(height: 8),
-          Text('EURO CARS • قطع غيار السيارات الأوروبية', textAlign: TextAlign.center,
+          Text('Euro Parts • قطع غيار السيارات الأوروبية', textAlign: TextAlign.center,
               style: TextStyle(color: p.muted, fontSize: 11)),
         ],
       ),
@@ -419,7 +419,7 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   }
 
   Widget _welcome() => AuthFormCard(
-    title: 'أهلاً بك في EURO CARS',
+    title: 'أهلاً بك في Euro Parts',
     children: [
       const Text('ابدأ باختيار نوع الحساب المناسب لك', textAlign: TextAlign.center),
       const SizedBox(height: 22),

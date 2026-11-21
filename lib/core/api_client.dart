@@ -1,4 +1,4 @@
-// HTTP client for the EURO CARS API.
+// HTTP client for the Euro Parts API.
 //
 // Notes on compatibility with the existing Next.js backend (which is not modified):
 // * Responses are decoded as UTF-8 explicitly. package:http falls back to Latin-1 when the server sends no

@@ -42,14 +42,12 @@ Future<void> settle(WidgetTester tester) async {
 }
 
 Future<void> chooseAccountType(WidgetTester tester, {String role = 'workshop'}) async {
-  await tester.tap(find.text('اختر نوع الحساب'));
-  await settle(tester);
   final String label = switch (role) {
     'marketer' => 'مسوّق',
     'customer' => 'عميل',
     _ => 'شركة / ورشة',
   };
-  await tester.tap(find.text(label).last);
+  await tester.tap(find.text(label).first);
   await settle(tester);
 }
 
@@ -89,7 +87,7 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text('أهلاً بك في Euro Parts'), findsOneWidget);
-      expect(find.text('اختر نوع الحساب'), findsOneWidget);
+      expect(find.text('اختر نوع حسابك للمتابعة'), findsOneWidget);
       expect(find.text('متابعة كضيف — تصفح الكتالوج فقط'), findsOneWidget);
     });
 
@@ -102,7 +100,7 @@ void main() {
         widget is Image && widget.image is AssetImage &&
         (widget.image as AssetImage).assetName == 'branding/icon_1024.png'), findsOneWidget);
       expect(find.text('Euro Parts'), findsOneWidget);
-      expect(find.text('اختر نوع الحساب'), findsOneWidget);
+      expect(find.text('اختر نوع حسابك للمتابعة'), findsOneWidget);
     });
 
     testWidgets('independent customer login uses phone/password or Google without requiring a phone', (WidgetTester tester) async {
@@ -158,7 +156,7 @@ void main() {
       await tester.ensureVisible(find.text('العودة للبداية'));
       await tester.tap(find.text('العودة للبداية'));
       await settle(tester);
-      expect(find.text('اختر نوع الحساب'), findsOneWidget);
+      expect(find.text('اختر نوع حسابك للمتابعة'), findsOneWidget);
     });
 
     testWidgets('an empty form is rejected before any request is sent', (WidgetTester tester) async {

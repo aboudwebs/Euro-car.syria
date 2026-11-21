@@ -155,7 +155,7 @@ Future<bool> openExternalUrl(String url) async {
   }
 }
 
-/// WhatsApp chat with EURO CARS support, with the same greeting the web app uses.
+/// WhatsApp chat with Euro Parts support, with the same greeting the web app uses.
 String supportUrl() {
   return 'https://wa.me/$supportWhatsApp?text=${Uri.encodeComponent(supportMessage)}';
 }

@@ -105,15 +105,15 @@ void main() {
       expect(find.text('اختر نوع الحساب'), findsOneWidget);
     });
 
-    testWidgets('independent customer login offers email or Google without requiring a phone', (WidgetTester tester) async {
+    testWidgets('independent customer login uses phone/password or Google without requiring a phone', (WidgetTester tester) async {
       usePhoneScreen(tester);
       await tester.pumpWidget(EuroApp(store: MemoryStore(<String, String>{'euro_intro_seen_v1': '1'}), httpClient: FakeServer().client));
       await settle(tester);
 
       await chooseAccountType(tester, role: 'customer');
 
-      expect(find.textContaining('دون رقم هاتف'), findsOneWidget);
-      expect(find.text('رقم الهاتف (للدخول بهذه الطريقة)'), findsOneWidget);
+      expect(find.textContaining('أو باستخدام Google'), findsOneWidget);
+      expect(find.text('رقم الهاتف'), findsOneWidget);
       expect(find.text('كلمة المرور'), findsOneWidget);
       expect(find.text('رمز التحقق SMS'), findsNothing);
       expect(find.text('البريد الإلكتروني'), findsNothing);
@@ -133,7 +133,7 @@ void main() {
       await settle(tester);
 
       expect(find.text('الاسم الكامل'), findsOneWidget);
-      expect(find.textContaining('دون رقم هاتف'), findsOneWidget);
+      expect(find.textContaining('رقم الهاتف اختياري'), findsOneWidget);
       expect(find.text('البريد الإلكتروني'), findsNothing);
       expect(find.text('رقم الهاتف'), findsNothing);
       expect(find.text('رمز التحقق SMS'), findsNothing);

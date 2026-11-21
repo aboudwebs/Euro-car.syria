@@ -442,7 +442,7 @@ void main() {
       await h.state.loadDeletion();
       expect(h.state.deletion, isNull);
 
-      h.server.reply('POST', '/api/account/deletion', <String, dynamic>{'message': 'code sent'});
+      h.server.reply('POST', '/api/account/deletion', <String, dynamic>{'message': 'code sent', 'otpToken': 'otp-token-1'});
       expect(await h.state.sendAccountDeletionCode(), 'code sent');
       expect(h.state.deletion, isNull, reason: 'sending the code does not start the countdown');
 
@@ -454,7 +454,7 @@ void main() {
           h.server.requestsTo('POST', '/api/account/deletion').map(bodyOf).toList();
       expect(bodies, <Map<String, dynamic>>[
         <String, dynamic>{'action': 'send-code'},
-        <String, dynamic>{'action': 'confirm-code', 'code': '123456'},
+        <String, dynamic>{'action': 'confirm-code', 'code': '123456', 'otpToken': 'otp-token-1'},
       ]);
       expect(h.state.deletion?.daysLeft, inInclusiveRange(29, 30));
 
@@ -463,9 +463,11 @@ void main() {
       expect(h.state.deletion, isNull);
     });
 
-    test('a wrong email code does not start the countdown', () async {
+    test('a wrong SMS code does not start the countdown', () async {
       final Harness h = await signedInHarness();
-      h.server.reply('POST', '/api/account/deletion', <String, dynamic>{'error': 'رمز التحقق غير صحيح'}, 403);
+      h.server.reply('POST', '/api/account/deletion', <String, dynamic>{'message': 'code sent', 'otpToken': 'otp-token-2'});
+      await h.state.sendAccountDeletionCode();
+      h.server.reply('POST', '/api/account/deletion', <String, dynamic>{'error': 'رمز SMS غير صحيح'}, 403);
       await expectLater(h.state.confirmAccountDeletion('000000'), throwsA(apiError(status: 403)));
       expect(h.state.deletion, isNull);
     });

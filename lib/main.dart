@@ -1,4 +1,4 @@
-// EURO CARS - native app for workshops and marketers.
+// Euro Parts - native app for workshops and marketers.
 
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -16,7 +16,7 @@ Future<void> main() async {
     await PushNotifications.initialize();
   } catch (error) {
     // Push is optional; Firebase setup must never prevent sign-in or offline app use.
-    debugPrint('EURO CARS push initialization failed: $error');
+    debugPrint('Euro Parts push initialization failed: $error');
   }
   await _activateAppCheck();
   runApp(const EuroApp());
@@ -40,6 +40,6 @@ Future<void> _activateAppCheck() async {
         )
         .timeout(const Duration(seconds: 5));
   } catch (error) {
-    debugPrint('EURO CARS App Check activation failed: $error');
+    debugPrint('Euro Parts App Check activation failed: $error');
   }
 }

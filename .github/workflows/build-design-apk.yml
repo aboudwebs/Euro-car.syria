@@ -1,4 +1,4 @@
-name: Build EURO CARS APK (Google Play AAB is manual)
+name: Build Euro Parts APK (Google Play AAB is manual)
 # Release validation includes unified Firebase authentication, MsgPlus SMS verification and the read-only guest catalog.
 
 on:
@@ -270,7 +270,7 @@ jobs:
       - name: Build summary
         if: always()
         run: |
-          echo "### EURO CARS — main" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Euro Parts — main" >> "$GITHUB_STEP_SUMMARY"
           apk="build/app/outputs/flutter-apk/app-release.apk"
           if [ -s "$apk" ]; then
             echo "APK size: $(stat -c %s "$apk") bytes ($(du -h "$apk" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
@@ -304,9 +304,9 @@ jobs:
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           tag_name: mobile-latest
-          name: EURO CARS — Latest Android APK
+          name: Euro Parts — Latest Android APK
           body: |
-            Verified standalone EURO CARS Android APK (ARM32 + ARM64).
+            Verified standalone Euro Parts Android APK (ARM32 + ARM64).
             Download app-release.apk below to install. Do not use the Actions artifact ZIP as the installer.
             The SHA-256 checksum and full verification report are attached.
           prerelease: true

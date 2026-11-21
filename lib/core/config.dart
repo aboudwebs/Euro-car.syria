@@ -34,7 +34,7 @@ String resolveApiBase(String configured, {required bool release}) {
   return url.isEmpty ? defaultApiBase : url;
 }
 
-/// Base URL of the EURO CARS API used by the app (see [resolveApiBase]).
+/// Base URL of the Euro Parts API used by the app (see [resolveApiBase]).
 final String apiBase = resolveApiBase(configuredApiBase, release: kReleaseMode);
 
 /// Shortest NEW password (registration, password reset, password change). The server enforces the same 8.

@@ -114,6 +114,7 @@ class AppState extends ChangeNotifier {
   bool _vehiclesReady = true;
 
   DeletionRequest? _deletion;
+  String? _deletionOtpToken;
   bool _deletionLoaded = false;
 
   /// A catalog search requested from another screen (a scanned or saved VIN); the catalog tab picks it up once.
@@ -1876,22 +1877,30 @@ class AppState extends ChangeNotifier {
     }
   }
 
-  /// Sends a one-time deletion confirmation code to the verified email linked to this account.
+  /// Sends a one-time deletion confirmation code to the account phone through MsgPlus SMS.
   Future<String> sendAccountDeletionCode() async {
     final Map<String, dynamic> data = await _guard(
       () => api.postJson('/api/account/deletion', <String, dynamic>{'action': 'send-code'}),
     );
-    return asString(data['message'], 'تم إرسال رمز التحقق إلى بريدك الإلكتروني.');
+    _deletionOtpToken = asString(data['otpToken']);
+    if (_deletionOtpToken == null || _deletionOtpToken!.isEmpty) {
+      throw const ApiException('لم يرجع الخادم رمز تحقق صالحاً. حاول مجدداً.');
+    }
+    return asString(data['message'], 'تم إرسال رمز التحقق برسالة SMS إلى رقم هاتفك.');
   }
 
-  /// Confirms the email code and starts the existing 30-day deletion countdown.
+  /// Confirms the SMS code and starts the existing 30-day deletion countdown.
   Future<void> confirmAccountDeletion(String code) async {
+    final String token = _deletionOtpToken ?? '';
+    if (token.isEmpty) throw const ApiException('اطلب رمز SMS جديداً أولاً.');
     final Map<String, dynamic> data = await _guard(
       () => api.postJson('/api/account/deletion', <String, dynamic>{
         'action': 'confirm-code',
         'code': code.trim(),
+        'otpToken': token,
       }),
     );
+    _deletionOtpToken = null;
     final Object? request = data['request'];
     _deletion = request is Map ? DeletionRequest.fromJson(asMap(request)) : null;
     _deletionLoaded = true;

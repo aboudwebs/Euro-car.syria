@@ -73,7 +73,7 @@ void main() {
 
       await tester.tap(find.text('تخطي'));
       await settle(tester);
-      expect(find.text('أهلاً بك في EURO CARS'), findsOneWidget);
+      expect(find.text('أهلاً بك في Euro Parts'), findsOneWidget);
       expect(await store.read('euro_intro_seen_v1'), '1');
     });
   });
@@ -88,7 +88,7 @@ void main() {
       await settle(tester);
 
       expect(find.byType(CircularProgressIndicator), findsNothing);
-      expect(find.text('أهلاً بك في EURO CARS'), findsOneWidget);
+      expect(find.text('أهلاً بك في Euro Parts'), findsOneWidget);
       expect(find.text('اختر نوع الحساب'), findsOneWidget);
       expect(find.text('متابعة كضيف — تصفح الكتالوج فقط'), findsOneWidget);
     });
@@ -101,7 +101,7 @@ void main() {
       expect(find.byWidgetPredicate((Widget widget) =>
         widget is Image && widget.image is AssetImage &&
         (widget.image as AssetImage).assetName == 'branding/icon_1024.png'), findsOneWidget);
-      expect(find.text('EURO CARS'), findsOneWidget);
+      expect(find.text('Euro Parts'), findsOneWidget);
       expect(find.text('اختر نوع الحساب'), findsOneWidget);
     });
 

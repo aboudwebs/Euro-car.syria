@@ -206,7 +206,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'يلزم حساب مسجّل ومفعّل من إدارة EURO CARS.',
+              'يلزم حساب مسجّل ومفعّل من إدارة Euro Parts.',
               textAlign: TextAlign.center,
               style: TextStyle(color: p.muted, fontSize: 12),
             ),

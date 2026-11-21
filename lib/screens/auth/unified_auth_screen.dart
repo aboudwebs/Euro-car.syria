@@ -375,42 +375,10 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
     );
   }
 
-  Future<void> _pickAccountType() async {
+  void _selectAccountType(String role) {
     if (_busy) return;
-    final String? selected = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 4, 20, 12),
-              child: Text('اختر نوع الحساب', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-            ),
-            ListTile(
-              leading: const Icon(Icons.business_rounded),
-              title: const Text('شركة / ورشة'),
-              onTap: () => Navigator.pop(sheetContext, 'workshop'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.campaign_rounded),
-              title: const Text('مسوّق'),
-              onTap: () => Navigator.pop(sheetContext, 'marketer'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person_rounded),
-              title: const Text('عميل'),
-              onTap: () => Navigator.pop(sheetContext, 'customer'),
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-    if (!mounted || selected == null) return;
     setState(() {
-      _role = selected;
+      _role = role;
       _mode = _Mode.login;
       _error = null;
       _notice = null;
@@ -421,12 +389,39 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
   Widget _welcome() => AuthFormCard(
     title: 'أهلاً بك في Euro Parts',
     children: [
-      const Text('ابدأ باختيار نوع الحساب المناسب لك', textAlign: TextAlign.center),
-      const SizedBox(height: 22),
-      PrimaryButton(
-        label: 'اختر نوع الحساب',
-        icon: Icons.person_outline_rounded,
-        onPressed: _pickAccountType,
+      const Text('اختر نوع حسابك للمتابعة', textAlign: TextAlign.center),
+      const SizedBox(height: 18),
+      OutlinedButton.icon(
+        onPressed: _busy ? null : () => _selectAccountType('workshop'),
+        icon: const Icon(Icons.business_rounded),
+        label: const Text('شركة / ورشة'),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+        ),
+      ),
+      const SizedBox(height: 10),
+      OutlinedButton.icon(
+        onPressed: _busy ? null : () => _selectAccountType('marketer'),
+        icon: const Icon(Icons.campaign_rounded),
+        label: const Text('مسوّق'),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+        ),
+      ),
+      const SizedBox(height: 10),
+      OutlinedButton.icon(
+        onPressed: _busy ? null : () => _selectAccountType('customer'),
+        icon: const Icon(Icons.person_rounded),
+        label: const Text('عميل'),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(54),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
+        ),
       ),
       const SizedBox(height: 12),
       TextButton.icon(

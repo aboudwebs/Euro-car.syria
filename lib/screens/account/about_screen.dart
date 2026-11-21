@@ -53,7 +53,7 @@ class AboutScreen extends StatelessWidget {
                     const BrandMark(size: 40),
                     const SizedBox(height: 6),
                     Text(
-                      'EURO CARS',
+                      'Euro Parts',
                       textDirection: TextDirection.ltr,
                       style: TextStyle(
                         color: p.muted,

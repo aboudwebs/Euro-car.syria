@@ -5,8 +5,8 @@ current Next.js API (`https://control-panel-euro-cars.onrender.com`) with the si
 storage. It never connects to Supabase directly. The admin role is web only: an admin account cannot sign in here.
 
 ## Public privacy and account deletion
-- Privacy policy: `https://control-panel-euro-cars.onrender.com/privacy`
-- External account deletion: `https://control-panel-euro-cars.onrender.com/delete-account`
+- Privacy policy: `https://euro-car-privacy-policy.onrender.com/`
+- External account deletion: `https://euro-car-privacy-policy.onrender.com/delete-account/`
 - The About screen links to both pages. The external deletion flow verifies phone ownership by SMS and applies the same 30-day deletion process as the app.
 
 ## What the app does

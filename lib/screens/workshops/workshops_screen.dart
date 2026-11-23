@@ -55,16 +55,23 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
 
   Future<void> _openPhone(String phone) async {
     final Uri uri = Uri(scheme: 'tel', path: phone);
-    if (await canLaunchUrl(uri)) await launchUrl(uri);
+    try {
+      await launchUrl(uri);
+    } catch (_) {
+      // The device may not have a phone app available.
+    }
   }
 
   Future<void> _openWhatsApp(String phone) async {
     String digits = phone.replaceAll(RegExp(r'[^0-9]'), '');
     if (digits.startsWith('00')) digits = digits.substring(2);
     if (digits.startsWith('0')) digits = '963${digits.substring(1)}';
+    if (digits.length < 8) return;
     final Uri uri = Uri.parse('https://wa.me/$digits');
-    if (await canLaunchUrl(uri, mode: LaunchMode.externalApplication)) {
+    try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      // WhatsApp or a compatible browser may not be available.
     }
   }
 

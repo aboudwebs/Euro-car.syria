@@ -17,7 +17,6 @@ import '../account/vehicles_screen.dart';
 import 'part_card.dart';
 import 'part_details_screen.dart';
 import 'vin_scanner_screen.dart';
-import '../workshops/workshops_screen.dart';
 import '../../widgets/tx.dart';
 
 class CatalogScreen extends StatefulWidget {
@@ -129,13 +128,6 @@ class _CatalogScreenState extends State<CatalogScreen> {
           title: 'متجر اليورو',
           subtitle: 'ابحث برقم القطعة أو رقم الشاصي واحصل على السعر فورًا',
           actions: <Widget>[
-            IconButton(
-              tooltip: 'ورشات الصيانة',
-              onPressed: () => Navigator.of(context).push<void>(
-                MaterialPageRoute<void>(builder: (_) => const WorkshopsScreen()),
-              ),
-              icon: Icon(Icons.home_repair_service_outlined, color: p.primary),
-            ),
             if (!state.isGuest)
               RoundIconButton(
                 onTap: () => openSpecialRequest(context),

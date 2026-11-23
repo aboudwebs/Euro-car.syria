@@ -72,15 +72,17 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
   Widget build(BuildContext context) {
     final Palette p = Palette.of(context);
     final List<_Workshop> shown = _filtered;
-    return Column(
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(title: const Text('ورشات الصيانة')),
+      body: SafeArea(
+        child: Column(
       children: <Widget>[
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text('ورشات الصيانة', style: TextStyle(color: p.text, fontSize: 22, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 5),
               Text('اعثر على ورشة وتواصل معها مباشرة', style: TextStyle(color: p.muted, fontSize: 13)),
               const SizedBox(height: 14),
               TextField(
@@ -137,6 +139,7 @@ class _WorkshopsScreenState extends State<WorkshopsScreen> {
           ),
         ),
       ],
+    )),
     );
   }
 }

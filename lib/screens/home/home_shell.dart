@@ -19,6 +19,7 @@ import '../catalog/catalog_screen.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../orders/orders_screen.dart';
 import '../account/notifications_screen.dart';
+import '../workshops/workshops_screen.dart';
 import '../../widgets/tx.dart';
 
 class HomeShell extends StatefulWidget {
@@ -62,6 +63,12 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
   void _openNotifications() {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(builder: (BuildContext context) => const NotificationsScreen()),
+    );
+  }
+
+  void _openWorkshops() {
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (BuildContext context) => const WorkshopsScreen()),
     );
   }
 
@@ -110,13 +117,19 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
               ),
             ],
           ),
-          bottomNavigationBar: keyboardOpen || state.isGuest
+          bottomNavigationBar: keyboardOpen
               ? null
               : DecoratedBox(
                   decoration: BoxDecoration(border: Border(top: BorderSide(color: p.barLine))),
                   child: NavigationBar(
                     selectedIndex: state.isGuest ? 0 : tab,
-                    onDestinationSelected: (int index) => _selectTab(state, index),
+                    onDestinationSelected: (int index) {
+                      if (state.isGuest ? index == 1 : index == 5) {
+                        _openWorkshops();
+                      } else {
+                        _selectTab(state, index);
+                      }
+                    },
                     destinations: <Widget>[
                       NavigationDestination(
                         icon: const Icon(Icons.storefront_outlined),
@@ -124,27 +137,32 @@ class _HomeShellState extends State<HomeShell> with WidgetsBindingObserver {
                         label: tr('الكتالوج'),
                       ),
                       if (!state.isGuest) ...<Widget>[
-                      NavigationDestination(
-                        icon: _CartIcon(count: cartCount, selected: false),
-                        selectedIcon: _CartIcon(count: cartCount, selected: true),
-                        label: tr('السلة'),
-                      ),
-                      NavigationDestination(
-                        icon: const Icon(Icons.receipt_long_outlined),
-                        selectedIcon: const Icon(Icons.receipt_long_rounded),
-                        label: tr('طلباتي'),
-                      ),
-                      NavigationDestination(
-                        icon: const Icon(Icons.insights_outlined),
-                        selectedIcon: const Icon(Icons.insights_rounded),
-                        label: tr('لوحتي'),
-                      ),
-                      NavigationDestination(
-                        icon: const Icon(Icons.person_outline_rounded),
-                        selectedIcon: const Icon(Icons.person_rounded),
-                        label: tr('حسابي'),
-                      ),
+                        NavigationDestination(
+                          icon: _CartIcon(count: cartCount, selected: false),
+                          selectedIcon: _CartIcon(count: cartCount, selected: true),
+                          label: tr('السلة'),
+                        ),
+                        NavigationDestination(
+                          icon: const Icon(Icons.receipt_long_outlined),
+                          selectedIcon: const Icon(Icons.receipt_long_rounded),
+                          label: tr('طلباتي'),
+                        ),
+                        NavigationDestination(
+                          icon: const Icon(Icons.insights_outlined),
+                          selectedIcon: const Icon(Icons.insights_rounded),
+                          label: tr('لوحتي'),
+                        ),
+                        NavigationDestination(
+                          icon: const Icon(Icons.person_outline_rounded),
+                          selectedIcon: const Icon(Icons.person_rounded),
+                          label: tr('حسابي'),
+                        ),
                       ],
+                      NavigationDestination(
+                        icon: const Icon(Icons.home_repair_service_outlined),
+                        selectedIcon: const Icon(Icons.home_repair_service_rounded),
+                        label: tr('الورشات'),
+                      ),
                     ],
                   ),
                 ),

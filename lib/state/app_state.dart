@@ -5,7 +5,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 import 'dart:math';
 import 'dart:typed_data';
@@ -569,7 +568,6 @@ class AppState extends ChangeNotifier {
     String refSignature = '',
   }) async {
     try {
-      developer.log('stage=backend_register_request_start', name: 'EURO_AUTH_DIAG');
       final Map<String, dynamic> data = await api.postJson(
         '/api/auth/firebase/register',
         <String, dynamic>{
@@ -589,26 +587,17 @@ class AppState extends ChangeNotifier {
         },
         auth: false,
       );
-      developer.log('stage=backend_register_request_success', name: 'EURO_AUTH_DIAG');
       if (data['pendingApproval'] == true) {
         return AuthResult(
           AuthResultKind.pendingApproval,
           asString(data['message'], 'تم إرسال طلب تسجيل الورشة للإدارة للمراجعة.'),
         );
       }
-      developer.log('stage=backend_register_response_received completing_session=true',
-          name: 'EURO_AUTH_DIAG');
       final AuthResult result = await _completeSignIn(data);
-      developer.log('stage=backend_register_complete_signin_result kind=${result.kind.name}',
-          name: 'EURO_AUTH_DIAG');
       return result;
     } on ApiException catch (error) {
-      developer.log('stage=backend_register_api_failed status=${error.statusCode ?? 'none'} code=${error.code ?? 'none'}',
-          name: 'EURO_AUTH_DIAG');
       return AuthResult(AuthResultKind.failed, error.message);
     } catch (error) {
-      developer.log('stage=backend_register_unexpected_failed type=${error.runtimeType}',
-          name: 'EURO_AUTH_DIAG');
       return const AuthResult(AuthResultKind.failed, unexpectedMessage);
     }
   }

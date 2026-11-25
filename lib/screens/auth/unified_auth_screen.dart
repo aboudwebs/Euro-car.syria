@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart' hide Text;
@@ -266,17 +265,13 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
       if (_firebase.currentUser == null) {
         throw FirebaseAuthException(code: 'no-current-user');
       }
-      developer.log('stage=screen_firebase_id_token_start', name: 'EURO_AUTH_DIAG');
       final String idToken = await _firebase.freshIdToken();
-      developer.log('stage=screen_firebase_id_token_success', name: 'EURO_AUTH_DIAG');
       if (!mounted) return;
       final AppState state = AppScope.read(context);
       final AuthResult result;
 
       if (_mode == _Mode.register || _registrationFromLogin) {
         final referral = _signedReferral ?? parseReferral(_referral.text);
-        developer.log('stage=screen_register_firebase_start role=$_role',
-            name: 'EURO_AUTH_DIAG');
         result = await state.registerFirebase(
           idToken: idToken,
           role: _role,
@@ -292,8 +287,6 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
           refCode: referral.code,
           refSignature: referral.signature,
         );
-        developer.log('stage=screen_register_firebase_returned kind=${result.kind.name}',
-            name: 'EURO_AUTH_DIAG');
       } else {
         final login = await state.exchangeFirebaseIdentity(idToken: idToken);
         if (login.needsRegistration) {
@@ -321,12 +314,8 @@ class _UnifiedAuthScreenState extends State<UnifiedAuthScreen> {
         }
       });
     } on FirebaseAuthException catch (error) {
-      developer.log('stage=screen_firebase_exception code=${error.code}',
-          name: 'EURO_AUTH_DIAG');
       if (mounted) setState(() { _busy = false; _error = _firebaseError(error); });
     } catch (error) {
-      developer.log('stage=screen_unexpected_exception type=${error.runtimeType}',
-          name: 'EURO_AUTH_DIAG');
       if (mounted) setState(() { _busy = false; _error = error is ApiException ? error.message : unexpectedMessage; });
     }
   }

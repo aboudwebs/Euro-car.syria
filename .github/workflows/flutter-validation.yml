@@ -30,6 +30,8 @@ jobs:
         run: flutter create --platforms=android --org com.eurocars --project-name euro_cars .
       - name: Prepare Android configuration
         run: python3 tool/prepare_android.py
+      - name: Configure R8 for optional ML Kit OCR scripts
+        run: python3 tool/configure_mlkit_r8.py
       - name: Android release build
         run: flutter build apk --release --no-pub --target-platform android-arm,android-arm64 --dart-define=EURO_API_URL=https://control-panel-euro-cars.onrender.com
 
@@ -43,6 +45,8 @@ jobs:
           channel: stable
           flutter-version: 3.47.9
           cache: true
+      - name: Generate Web project
+        run: flutter create --platforms=web .
       - name: Get dependencies
         run: flutter pub get
       - name: Flutter Web release build

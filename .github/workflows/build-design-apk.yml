@@ -4,6 +4,11 @@ name: Build Euro Parts APK (Google Play AAB is manual)
 on:
   workflow_dispatch:
     inputs:
+      publish_apk:
+        description: 'Publish the verified APK to the permanent download release (requires explicit approval)'
+        required: true
+        default: false
+        type: boolean
       build_play_bundle:
         description: 'Build the signed Google Play AAB (only after final audit)'
         required: true
@@ -288,7 +293,7 @@ jobs:
   publish:
     name: Publish permanent APK download
     needs: build
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_apk == true && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

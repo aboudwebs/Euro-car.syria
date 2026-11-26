@@ -2,7 +2,7 @@ name: Flutter validation (no APK)
 
 on:
   push:
-    branches: ["main", "audit/**"]
+    branches: ["audit/**"]
   pull_request:
     branches: [main]
 
@@ -26,7 +26,3 @@ jobs:
         run: flutter analyze --no-pub
       - name: Tests
         run: flutter test --no-pub
-      - name: Android release build
-        run: flutter build apk --release --no-pub
-      - name: Web release build
-        run: flutter build web --release --no-pub

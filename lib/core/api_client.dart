@@ -94,7 +94,10 @@ class ApiClient {
   Uri _uri(String path) => Uri.parse('$baseUrl$path');
 
   Map<String, String> _headers({bool auth = true, String? contentType, bool cookie = false}) {
-    final Map<String, String> headers = <String, String>{'Accept': 'application/json'};
+    final Map<String, String> headers = <String, String>{
+      'Accept': 'application/json',
+      if (kIsWeb) 'X-Euro-Client': 'web',
+    };
     if (contentType != null) {
       headers['Content-Type'] = contentType;
     }

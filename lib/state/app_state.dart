@@ -714,7 +714,7 @@ class AppState extends ChangeNotifier {
     String otpCode = '',
     String otpToken = '',
   }) async {
-    final String? registrationPushToken = await PushNotifications.requestPermissionAndGetToken();
+    final String? registrationPushToken = kIsWeb ? null : await PushNotifications.requestPermissionAndGetToken();
     final Map<String, dynamic> body = <String, dynamic>{
       'mode': 'register',
       'client': kIsWeb ? 'web' : 'mobile',

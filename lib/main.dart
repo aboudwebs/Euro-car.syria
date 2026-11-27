@@ -2,7 +2,7 @@
 
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kReleaseMode;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
 
 import 'app.dart';
@@ -13,12 +13,12 @@ export 'app.dart' show EuroApp;
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await PushNotifications.initialize();
+    if (!kIsWeb) await PushNotifications.initialize();
   } catch (error) {
     // Push is optional; Firebase setup must never prevent sign-in or offline app use.
     debugPrint('Euro Parts push initialization failed: $error');
   }
-  await _activateAppCheck();
+  if (!kIsWeb) await _activateAppCheck();
   runApp(const EuroApp());
 }
 

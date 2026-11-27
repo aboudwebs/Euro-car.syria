@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -29,6 +31,15 @@ class FirebaseIdentityService {
   }
 
   Future<UserCredential> signInWithGoogle() async {
+    if (kIsWeb) {
+      if (Firebase.apps.isEmpty) {
+        throw FirebaseAuthException(
+          code: 'no-app',
+          message: 'إعداد Firebase Web غير مكتمل. يلزم تسجيل تطبيق الويب في مشروع Firebase نفسه.',
+        );
+      }
+      return _auth.signInWithPopup(GoogleAuthProvider());
+    }
     if (googleServerClientId.isEmpty) {
       throw FirebaseAuthException(
         code: 'operation-not-allowed',

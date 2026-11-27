@@ -35,10 +35,8 @@ def main() -> None:
         }
     )
     manifest["icons"] = [
-        {"src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
-        {"src": "icons/Icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
-        {"src": "icons/Icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
-        {"src": "icons/Icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+        {"src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png"},
+        {"src": "icons/Icon-512.png", "sizes": "512x512", "type": "image/png"},
     ]
     MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -47,20 +45,23 @@ def main() -> None:
         for size, name in (
             (192, "Icon-192.png"),
             (512, "Icon-512.png"),
-            (192, "Icon-maskable-192.png"),
-            (512, "Icon-maskable-512.png"),
         ):
             target = WEB / "icons" / name
             target.parent.mkdir(parents=True, exist_ok=True)
             image.resize((size, size), Image.Resampling.LANCZOS).save(target, format="PNG")
+        image.resize((180, 180), Image.Resampling.LANCZOS).save(WEB / "apple-touch-icon.png", format="PNG")
         image.resize((64, 64), Image.Resampling.LANCZOS).save(WEB / "favicon.png", format="PNG")
 
     html = INDEX.read_text(encoding="utf-8")
     html = html.replace('content="A new Flutter project."', 'content="Euro Parts - قطع غيار السيارات"')
     html = html.replace('content="euro_cars"', 'content="Euro Parts"')
     html = html.replace("<title>euro_cars</title>", "<title>Euro Parts</title>")
+    html = html.replace('href="icons/Icon-192.png"', 'href="apple-touch-icon.png"')
+    if 'name="viewport"' not in html:
+        html = html.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">')
     if 'name="theme-color"' not in html:
         html = html.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n  <meta name="theme-color" content="#0b1315">')
+    html = html.replace('name="apple-mobile-web-app-status-bar-style" content="black"', 'name="apple-mobile-web-app-status-bar-style" content="black-translucent"')
     INDEX.write_text(html, encoding="utf-8")
 
 

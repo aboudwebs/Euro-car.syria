@@ -40,7 +40,7 @@ def main() -> None:
         {"src": "icons/Icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
         {"src": "icons/Icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
     ]
-    MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    MANIFEST.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     with Image.open(SOURCE_ICON) as source:
         image = source.convert("RGBA")
@@ -60,7 +60,7 @@ def main() -> None:
     html = html.replace('content="euro_cars"', 'content="Euro Parts"')
     html = html.replace("<title>euro_cars</title>", "<title>Euro Parts</title>")
     if 'name="theme-color"' not in html:
-        html = html.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\\n  <meta name="theme-color" content="#0b1315">')
+        html = html.replace('<meta charset="UTF-8">', '<meta charset="UTF-8">\n  <meta name="theme-color" content="#0b1315">')
     INDEX.write_text(html, encoding="utf-8")
 
 

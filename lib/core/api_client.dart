@@ -16,9 +16,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 
 import 'config.dart';
+import 'http_client_factory.dart';
 
 const String networkErrorMessage = 'تعذر الاتصال بالخادم. تحقق من الإنترنت وحاول مجدداً.';
 const String timeoutMessage =
@@ -73,7 +75,7 @@ class ApiClient {
     http.Client? client,
     this.retryDelay = const Duration(seconds: 2),
   })  : baseUrl = _withoutTrailingSlash(baseUrl),
-        _client = client ?? http.Client();
+        _client = client ?? createDefaultHttpClient();
 
   final String baseUrl;
   final Duration retryDelay;
@@ -97,7 +99,7 @@ class ApiClient {
       headers['Content-Type'] = contentType;
     }
     final String? current = token;
-    if (auth && current != null && current.isNotEmpty) {
+    if (!kIsWeb && auth && current != null && current.isNotEmpty) {
       headers['Authorization'] = 'Bearer $current';
       if (cookie) {
         headers['Cookie'] = 'euro_session=$current';
@@ -237,7 +239,7 @@ class ApiClient {
   /// is). The request is built before this returns, so the caller may clear [token] right after calling it.
   Future<void> logoutBestEffort({Duration timeout = const Duration(seconds: 4)}) async {
     final String? current = token;
-    if (current == null || current.isEmpty) {
+    if (!kIsWeb && (current == null || current.isEmpty)) {
       return;
     }
     try {

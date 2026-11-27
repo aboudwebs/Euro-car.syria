@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
 import '../core/api_client.dart';
@@ -327,6 +328,27 @@ class AppState extends ChangeNotifier {
     _currency = (await _safeRead(currencyKey)) == currencySyp ? currencySyp : currencyUsd;
     _applyDisplayPrefs();
 
+    if (kIsWeb) {
+      // The browser owns the HttpOnly euro_session cookie; never read or persist a bearer token in web storage.
+      try {
+        final Map<String, dynamic> profile = await api.getProfile();
+        final Object? userValue = profile['user'];
+        final AppUser? restored = userValue is Map ? _parseStoredUser(jsonEncode(userValue)) : null;
+        if (restored != null) {
+          _beginSession('', restored);
+          await _restoreCart();
+          notifyListeners();
+          _loadAfterSignIn();
+          return;
+        }
+      } catch (_) {
+        // A network failure must not leave the startup gate spinning forever.
+      }
+      _status = SessionStatus.signedOut;
+      notifyListeners();
+      return;
+    }
+
     final String? savedToken = await _safeRead(tokenKey);
     final String? savedUser = await _safeRead(userKey);
     final AppUser? restored = (savedToken != null && savedToken.isNotEmpty && savedUser != null)
@@ -365,7 +387,7 @@ class AppState extends ChangeNotifier {
 
   void _beginSession(String token, AppUser account) {
     _epoch++;
-    api.token = token;
+    api.token = kIsWeb ? null : token;
     _user = account;
     _status = SessionStatus.signedIn;
     _sessionNotice = null;
@@ -440,6 +462,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _registerPushToken() async {
+    if (kIsWeb) return;
     final int epoch = _epoch;
     final String? pushToken = await PushNotifications.requestPermissionAndGetToken();
     if (pushToken == null || pushToken.isEmpty || epoch != _epoch || !isSignedIn) return;
@@ -447,7 +470,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _registerRefreshedPushToken(String pushToken) async {
-    if (pushToken.isEmpty || !isSignedIn) return;
+    if (kIsWeb || pushToken.isEmpty || !isSignedIn) return;
     try {
       await api.postJson('/api/push/register', <String, dynamic>{
         'token': pushToken,
@@ -459,6 +482,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _unregisterPushToken(String pushToken) async {
+    if (kIsWeb) return;
     try {
       await api.deleteJson('/api/push/register?token=${Uri.encodeQueryComponent(pushToken)}');
     } catch (_) {
@@ -496,7 +520,7 @@ class AppState extends ChangeNotifier {
         '/api/auth',
         <String, dynamic>{
           'mode': 'login',
-          'client': 'mobile',
+          'client': kIsWeb ? 'web' : 'mobile',
           if (role != null && role.isNotEmpty) 'role': role,
           'phone': phone.trim(),
           'password': password,
@@ -527,6 +551,7 @@ class AppState extends ChangeNotifier {
         '/api/auth/firebase',
         <String, dynamic>{
           'idToken': idToken,
+          'client': kIsWeb ? 'web' : 'mobile',
           if (phone.trim().isNotEmpty) 'phone': canonicalPhone(phone),
           if (otpCode.trim().isNotEmpty) 'otpCode': toWesternDigits(otpCode).trim(),
           if (otpToken.trim().isNotEmpty) 'otpToken': otpToken,
@@ -572,6 +597,7 @@ class AppState extends ChangeNotifier {
         '/api/auth/firebase/register',
         <String, dynamic>{
           'idToken': idToken,
+          'client': kIsWeb ? 'web' : 'mobile',
           'role': role,
           if (name.trim().isNotEmpty) 'name': name.trim(),
           if (phone.trim().isNotEmpty) 'phone': canonicalPhone(phone),
@@ -614,6 +640,7 @@ class AppState extends ChangeNotifier {
       '/api/auth/firebase/complete-profile',
       <String, dynamic>{
         'idToken': idToken,
+          'client': kIsWeb ? 'web' : 'mobile',
         'name': name.trim(),
         'phone': canonicalPhone(phone),
         'otpCode': toWesternDigits(otpCode).trim(),
@@ -657,7 +684,7 @@ class AppState extends ChangeNotifier {
       '/api/auth',
       <String, dynamic>{
         'mode': 'send-otp',
-        'client': 'mobile',
+        'client': kIsWeb ? 'web' : 'mobile',
         'role': role,
         'phone': canonicalPhone(phone),
       },
@@ -690,7 +717,7 @@ class AppState extends ChangeNotifier {
     final String? registrationPushToken = await PushNotifications.requestPermissionAndGetToken();
     final Map<String, dynamic> body = <String, dynamic>{
       'mode': 'register',
-      'client': 'mobile',
+      'client': kIsWeb ? 'web' : 'mobile',
       'role': role,
       'name': name.trim(),
       'phone': canonicalPhone(phone),
@@ -736,16 +763,22 @@ class AppState extends ChangeNotifier {
   Future<AuthResult> _completeSignIn(Map<String, dynamic> data) async {
     final Object? tokenValue = data['accessToken'];
     final Object? userValue = data['user'];
-    if (tokenValue is! String || tokenValue.isEmpty || userValue is! Map) {
+    if (userValue is! Map || (!kIsWeb && (tokenValue is! String || tokenValue.isEmpty))) {
       return const AuthResult(AuthResultKind.failed, 'الخادم لم يرجع جلسة تطبيق صالحة');
     }
     final AppUser account = AppUser.fromJson(asMap(userValue));
     if (account.id.isEmpty || !account.isCustomer) {
       return const AuthResult(AuthResultKind.failed, 'هذا النوع من الحسابات غير متاح في التطبيق.');
     }
-    await _safeWrite(tokenKey, tokenValue);
-    await _safeWrite(userKey, jsonEncode(account.toJson()));
-    _beginSession(tokenValue, account);
+    final String sessionToken = kIsWeb ? '' : tokenValue as String;
+    if (kIsWeb) {
+      await _safeDelete(tokenKey);
+      await _safeDelete(userKey);
+    } else {
+      await _safeWrite(tokenKey, sessionToken);
+      await _safeWrite(userKey, jsonEncode(account.toJson()));
+    }
+    _beginSession(sessionToken, account);
     await _restoreCart();
     notifyListeners();
     _loadAfterSignIn();
@@ -763,7 +796,7 @@ class AppState extends ChangeNotifier {
       return;
     }
     // Unregister this device's push token first: once all tokens are revoked the call would be refused.
-    final String? pushToken = await PushNotifications.currentToken();
+    final String? pushToken = kIsWeb ? null : await PushNotifications.currentToken();
     if (pushToken != null && pushToken.isNotEmpty) {
       await _unregisterPushToken(pushToken);
     }
@@ -807,7 +840,7 @@ class AppState extends ChangeNotifier {
   }
 
   Future<void> _endSession({required bool clearCart, String? notice, bool serverLogout = false}) async {
-    if (serverLogout && api.token != null) {
+    if (serverLogout && (kIsWeb || api.token != null)) {
       // Best effort and not awaited: the request is built now, with the token that is about to be cleared.
       unawaited(api.logoutBestEffort());
     }
@@ -1782,6 +1815,10 @@ class AppState extends ChangeNotifier {
   /// Stores the `accessToken` of an answer as the session token. Returns false when there is none, or when the
   /// session it belonged to has ended meanwhile (a token must never be written back after sign-out).
   Future<bool> _adoptAccessToken(Map<String, dynamic> data, int epoch) async {
+    if (kIsWeb) {
+      // The server rotates the HttpOnly cookie in the response; the browser sends it automatically.
+      return epoch == _epoch && _user != null;
+    }
     final Object? token = data['accessToken'];
     if (token is! String || token.isEmpty || epoch != _epoch || _user == null) {
       return false;

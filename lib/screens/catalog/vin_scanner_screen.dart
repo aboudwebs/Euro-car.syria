@@ -8,6 +8,7 @@
 // * A number that is not 17 characters long is NOT rejected: older cars and some makes have other numbers. The screen
 //   only says what it looks like (see lib/core/vin.dart).
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -67,7 +68,7 @@ class VinScannerScreen extends StatefulWidget {
 
 class _VinScannerScreenState extends State<VinScannerScreen> {
   final TextEditingController _vin = TextEditingController();
-  _Stage _stage = _Stage.start;
+  _Stage _stage = kIsWeb ? _Stage.result : _Stage.start;
   List<VinCandidate> _candidates = const <VinCandidate>[];
   String? _message;
   NoticeKind _messageKind = NoticeKind.error;
@@ -330,14 +331,15 @@ class _VinScannerScreenState extends State<VinScannerScreen> {
           onPressed: isAcceptableChassis(_vin.text) ? _confirm : null,
         ),
         const SizedBox(height: 10),
-        SecondaryButton(
-          label: 'إعادة التصوير',
-          icon: Icons.refresh_rounded,
-          onPressed: () => setState(() {
-            _message = null;
-            _stage = _Stage.start;
-          }),
-        ),
+        if (!kIsWeb)
+          SecondaryButton(
+            label: 'إعادة التصوير',
+            icon: Icons.refresh_rounded,
+            onPressed: () => setState(() {
+              _message = null;
+              _stage = _Stage.start;
+            }),
+          ),
       ],
     );
   }

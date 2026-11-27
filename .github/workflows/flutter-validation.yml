@@ -47,6 +47,10 @@ jobs:
           cache: true
       - name: Generate Web project
         run: flutter create --platforms=web .
+      - name: Prepare EURO PWA branding and iPhone metadata
+        run: |
+          python3 -m pip install --user Pillow
+          python3 tool/prepare_web.py
       - name: Get dependencies
         run: flutter pub get
       - name: Flutter Web release build

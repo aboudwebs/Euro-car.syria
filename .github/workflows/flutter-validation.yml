@@ -50,4 +50,11 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
       - name: Flutter Web release build
-        run: flutter build web --release --no-pub
+        run: flutter build web --release --no-pub --base-href /app/
+      - name: Upload installable web build artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: euro-parts-pwa-web
+          path: build/web/
+          if-no-files-found: error
+          retention-days: 3

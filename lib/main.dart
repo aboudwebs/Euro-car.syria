@@ -7,11 +7,19 @@ import 'package:flutter/material.dart';
 
 import 'app.dart';
 import 'core/push_notifications.dart';
+import 'core/firebase_web_options.dart';
 
 export 'app.dart' show EuroApp;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kIsWeb) {
+    try {
+      await initializeFirebaseWebIfConfigured();
+    } catch (error) {
+      debugPrint('Euro Parts Firebase Web initialization failed: $error');
+    }
+  }
   try {
     if (!kIsWeb) await PushNotifications.initialize();
   } catch (error) {
